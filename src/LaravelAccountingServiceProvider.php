@@ -2,24 +2,46 @@
 
 namespace RingleSoft\LaravelAccounting;
 
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
-use RingleSoft\LaravelAccounting\Commands\LaravelAccountingCommand;
 
-class LaravelAccountingServiceProvider extends PackageServiceProvider
+use Illuminate\Support\ServiceProvider;
+use RingleSoft\LaravelAccounting\Commands\InstallCommand;
+
+class LaravelAccountingServiceProvider extends ServiceProvider
 {
-    public function configurePackage(Package $package): void
+    public function register(): void
     {
-        /*
-         * This class is a Package Service Provider
-         *
-         * More info: https://github.com/spatie/laravel-package-tools
-         */
-        $package
-            ->name('laravel-accounting')
-            ->hasConfigFile()
-            ->hasViews()
-            ->hasMigration('create_laravel-accounting_table')
-            ->hasCommand(LaravelAccountingCommand::class);
+        $this->app->alias(Facades\LaravelAccounting::class, 'LaravelAccounting');
+    }
+
+    public function boot(): void
+    {
+
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'ringlesoft');
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        $this->publishItems();
+
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/accounting.php', 'accounting'
+        );
+
+
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                InstallCommand::class,
+            ]);
+        }
+    }
+
+    private function publishItems(): void
+    {
+        if (!function_exists('config_path') || !$this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->publishes([
+            __DIR__ . '/../config/accounting.php' => config_path('accounting.php'),
+        ], 'jasmin-client-config');
     }
 }

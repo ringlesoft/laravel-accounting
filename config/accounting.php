@@ -7,5 +7,4 @@ return [
      */
     'table_prefix' => 'la',
 
-
 ];

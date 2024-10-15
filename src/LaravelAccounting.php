@@ -13,5 +13,4 @@ class LaravelAccounting
     public function chartsOfAccounts(): Collection
     {
         return Account::all();
-    }
-}
+    }}

@@ -7,10 +7,8 @@ use RingleSoft\LaravelAccounting\Models\Account;
 
 class LaravelAccounting
 {
-    /**
-     * @return Collection
-     */
     public function chartsOfAccounts(): Collection
     {
         return Account::all();
-    }}
+    }
+}

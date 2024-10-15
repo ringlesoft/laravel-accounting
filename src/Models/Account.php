@@ -12,4 +12,9 @@ class Account extends Model
     use HasTablePrefix, MultiTenant;
 
 
+    public function __construct()
+    {
+        $this->table = config('accounting.table_prefix', 'la').'_accounts';
+        parent::__construct();
+    }
 }

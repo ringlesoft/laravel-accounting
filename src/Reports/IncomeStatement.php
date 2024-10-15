@@ -2,8 +2,4 @@
 
 namespace RingleSoft\LaravelAccounting\Reports;
 
-class IncomeStatement extends Report
-{
-
-
-}
+class IncomeStatement extends Report {}

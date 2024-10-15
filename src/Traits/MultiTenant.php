@@ -2,7 +2,4 @@
 
 namespace RingleSoft\LaravelAccounting\Traits;
 
-trait MultiTenant
-{
-
-}
+trait MultiTenant {}

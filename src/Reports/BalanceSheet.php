@@ -2,7 +2,4 @@
 
 namespace RingleSoft\LaravelAccounting\Reports;
 
-class BalanceSheet extends Report
-{
-
-}
+class BalanceSheet extends Report {}

@@ -2,7 +2,4 @@
 
 namespace RingleSoft\LaravelAccounting\Models;
 
-class JournalEntryItem
-{
-
-}
+class JournalEntryItem {}

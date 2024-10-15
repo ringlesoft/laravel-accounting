@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @see \RingleSoft\LaravelAccounting\LaravelAccounting
+ *
  * @mixin \RingleSoft\LaravelAccounting\LaravelAccounting
  */
 class LaravelAccounting extends Facade

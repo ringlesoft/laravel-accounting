@@ -7,7 +7,6 @@ return [
      */
     'table_prefix' => 'la',
 
-
     /**
      * The name of the multi tenancy field in the users table
      */

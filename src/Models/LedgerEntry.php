@@ -7,4 +7,5 @@ use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
 class LedgerEntry
 {
-     use HasTablePrefix, MultiTenant;}
+    use HasTablePrefix, MultiTenant;
+}

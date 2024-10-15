@@ -8,5 +8,4 @@ use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 class JournalEntry
 {
     use HasTablePrefix, MultiTenant;
-
 }

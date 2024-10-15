@@ -2,9 +2,9 @@
 
 namespace RingleSoft\LaravelAccounting;
 
+use RingleSoft\LaravelAccounting\Commands\LaravelAccountingCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use RingleSoft\LaravelAccounting\Commands\LaravelAccountingCommand;
 
 class LaravelAccountingServiceProvider extends PackageServiceProvider
 {

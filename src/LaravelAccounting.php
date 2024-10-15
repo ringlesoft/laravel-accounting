@@ -2,6 +2,4 @@
 
 namespace RingleSoft\LaravelAccounting;
 
-class LaravelAccounting
-{
-}
+class LaravelAccounting {}

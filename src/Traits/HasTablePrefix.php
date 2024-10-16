@@ -10,6 +10,7 @@ trait HasTablePrefix
     {
         $prefix = trim(Config::get('accounting.table_prefix', 'la'));
         $tableName = parent::getTable();
+
         return str_starts_with($tableName, $prefix) ? $tableName : "{$prefix}_$tableName";
     }
 }

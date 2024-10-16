@@ -6,11 +6,13 @@ class PostingService
 {
 
 
-/*### 1. Sales Transaction (Credit Sale)
-Journal Entry:
-- Debit: Accounts Receivable
-- Credit: Sales Revenue
-- Credit: Sales Tax Payable (if applicable)*/
+/**
+ * ### 1. Sales Transaction (Credit Sale)
+ * Journal Entry:
+ * - Debit: Accounts Receivable
+ * - Credit: Sales Revenue
+ * - Credit: Sales Tax Payable (if applicable)
+ */
 
     public function saleTransaction()
     {
@@ -18,11 +20,13 @@ Journal Entry:
     }
 
 
-/*### 2. Cash Sale
-Journal Entry:
-- Debit: Cash
-- Credit: Sales Revenue
-- Credit: Sales Tax Payable (if applicable)*/
+/**
+ * ### 2. Cash Sale
+ * Journal Entry:
+ * - Debit: Cash
+ * - Credit: Sales Revenue
+ * - Credit: Sales Tax Payable (if applicable)
+ */
 
     public function cashSale()
     {
@@ -30,10 +34,12 @@ Journal Entry:
     }
 
 
-/*### 3. Receiving Payment on Account
-Journal Entry:
-- Debit: Cash
-- Credit: Accounts Receivable*/
+/**
+ * ### 3. Receiving Payment on Account
+ * Journal Entry:
+ * - Debit: Cash
+ * - Credit: Accounts Receivable
+ */
 
     public function receivingPayment()
     {
@@ -42,22 +48,26 @@ Journal Entry:
 
 
 
-/*### 4. Purchase on Account
-Journal Entry:
-- Debit: Inventory (or Expense)
-- Debit: Input VAT (if applicable)
-- Credit: Accounts Payable*/
+/**
+ * ### 4. Purchase on Account
+ * Journal Entry:
+ * - Debit: Inventory (or Expense)
+ * - Debit: Input VAT (if applicable)
+ * - Credit: Accounts Payable
+ */
 
     public function purchaseOnAccount() {
 
     }
 
 
-/*### 5. Cash Purchase
-Journal Entry:
-- Debit: Inventory (or Expense)
-- Debit: Input VAT (if applicable)
-- Credit: Cash*/
+/**
+ * ### 5. Cash Purchase
+ * Journal Entry:
+ * - Debit: Inventory (or Expense)
+ * - Debit: Input VAT (if applicable)
+ * - Credit: Cash
+ */
 
     public function cashPurchase()
     {
@@ -65,10 +75,12 @@ Journal Entry:
     }
 
 
-/*### 6. Paying a Bill
-Journal Entry:
-- Debit: Accounts Payable
-- Credit: Cash*/
+/**
+ * ### 6. Paying a Bill
+ * Journal Entry:
+ * - Debit: Accounts Payable
+ * - Credit: Cash
+ */
 
     public function payingBill()
     {
@@ -77,11 +89,13 @@ Journal Entry:
 
 
 
-/*### 7. Payroll
-Journal Entry:
-- Debit: Salary Expense
-- Credit: Wages Payable
-- Credit: Payroll Tax Payable*/
+/**
+ * ### 7. Payroll
+ * Journal Entry:
+ * - Debit: Salary Expense
+ * - Credit: Wages Payable
+ * - Credit: Payroll Tax Payable
+ */
 
     public function payroll()
     {
@@ -89,10 +103,12 @@ Journal Entry:
     }
 
 
-/*### 8. Paying Payroll
-Journal Entry:
-- Debit: Wages Payable
-- Credit: Cash*/
+/**
+ * ### 8. Paying Payroll
+ * Journal Entry:
+ * - Debit: Wages Payable
+ * - Credit: Cash
+ */
 
     public function payingPayroll()
     {
@@ -102,10 +118,12 @@ Journal Entry:
 
 
 
-/*### 9. Depreciation
-Journal Entry:
-- Debit: Depreciation Expense
-- Credit: Accumulated Depreciation*/
+/**
+ * ### 9. Depreciation
+ * Journal Entry:
+ * - Debit: Depreciation Expense
+ * - Credit: Accumulated Depreciation
+ */
 
     public function depreciation()
     {
@@ -114,10 +132,12 @@ Journal Entry:
 
 
 
-/*### 10. Prepaid Expense Recognition
-Journal Entry:
-- Debit: Expense
-- Credit: Prepaid Expense*/
+/**
+ * ### 10. Prepaid Expense Recognition
+ * Journal Entry:
+ * - Debit: Expense
+ * - Credit: Prepaid Expense
+ */
 
     public function prepaidExpenseRecognition()
     {
@@ -126,10 +146,12 @@ Journal Entry:
 
 
 
-/*### 11. Accrued Revenue Recognition
-Journal Entry:
-- Debit: Accrued Revenue
-- Credit: Revenue*/
+/**
+ * ### 11. Accrued Revenue Recognition
+ * Journal Entry:
+ * - Debit: Accrued Revenue
+ * - Credit: Revenue
+ */
 
     public function accruedRevenueRecognition()
     {
@@ -137,10 +159,12 @@ Journal Entry:
     }
 
 
-/*### 12. Bank Loan Receipt
-Journal Entry:
-- Debit: Cash
-- Credit: Loan Payable*/
+/**
+ * ### 12. Bank Loan Receipt
+ * Journal Entry:
+ * - Debit: Cash
+ * - Credit: Loan Payable
+ */
 
     public function bankLoanReceipt()
     {
@@ -148,11 +172,13 @@ Journal Entry:
     }
 
 
-/*### 13. Loan Payment
-Journal Entry:
-- Debit: Loan Payable
-- Debit: Interest Expense
-- Credit: Cash*/
+/**
+ * ### 13. Loan Payment
+ * Journal Entry:
+ * - Debit: Loan Payable
+ * - Debit: Interest Expense
+ * - Credit: Cash
+ */
 
     public function loanPayment()
     {
@@ -160,10 +186,12 @@ Journal Entry:
     }
 
 
-/*### 14. Owner's Investment
-Journal Entry:
-- Debit: Cash
-- Credit: Owner's Equity*/
+/**
+ * ### 14. Owner's Investment
+ * Journal Entry:
+ * - Debit: Cash
+ * - Credit: Owner's Equity
+ */
 
     public function ownerInvestment()
     {
@@ -171,10 +199,12 @@ Journal Entry:
     }
 
 
-/*### 15. Dividend Payment
-Journal Entry:
-- Debit: Retained Earnings
-- Credit: Cash*/
+/**
+ * ### 15. Dividend Payment
+ * Journal Entry:
+ * - Debit: Retained Earnings
+ * - Credit: Cash
+ */
 
     public function dividendPayment()
     {
@@ -182,20 +212,24 @@ Journal Entry:
     }
 
 
-/*### 16. Sales Return
-Journal Entry:
-- Debit: Sales Returns and Allowances
-- Credit: Accounts Receivable (or Cash)*/
+/**
+ * ### 16. Sales Return
+ * Journal Entry:
+ * - Debit: Sales Returns and Allowances
+ * - Credit: Accounts Receivable (or Cash)
+ */
 
     public function salesReturn()
     {
 
     }
 
-/*### 17. Purchase Return
-Journal Entry:
-- Debit: Accounts Payable (or Cash)
-- Credit: Inventory (or Expense)*/
+/**
+ * ### 17. Purchase Return
+ * Journal Entry:
+ * - Debit: Accounts Payable (or Cash)
+ * - Credit: Inventory (or Expense)
+ */
 
     public function purchaseReturn()
     {
@@ -203,10 +237,12 @@ Journal Entry:
     }
 
 
-/*### 18. Bad Debt Write-off
-Journal Entry:
-- Debit: Bad Debt Expense
-- Credit: Allowance for Doubtful Accounts*/
+/**
+ * ### 18. Bad Debt Write-off
+ * Journal Entry:
+ * - Debit: Bad Debt Expense
+ * - Credit: Allowance for Doubtful Accounts
+ */
 
     public function badDebtWriteoff()
     {
@@ -214,10 +250,12 @@ Journal Entry:
     }
 
 
-/*### 19. Inventory Count Adjustment
-Journal Entry:
-- Debit/Credit: Inventory
-- Credit/Debit: Inventory Shrinkage Expense*/
+/**
+ * ### 19. Inventory Count Adjustment
+ * Journal Entry:
+ * - Debit/Credit: Inventory
+ * - Credit/Debit: Inventory Shrinkage Expense
+ */
 
     public function inventoryCountAdjustment()
     {
@@ -225,16 +263,15 @@ Journal Entry:
     }
 
 
-/*### 20. Fixed Asset Purchase
-Journal Entry:
-- Debit: Fixed Asset
-- Credit: Cash (or Accounts Payable)*/
-
+/**
+ * ### 20. Fixed Asset Purchase
+ * Journal Entry:
+ * - Debit: Fixed Asset
+ * - Credit: Cash (or Accounts Payable)
+ */
     public function fixedAssetPurchase()
     {
 
     }
-
-
 
 }

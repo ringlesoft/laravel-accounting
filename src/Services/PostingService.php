@@ -11,7 +11,6 @@ class PostingService
      * - Credit: Sales Revenue
      * - Credit: Sales Tax Payable (if applicable)
      */
-
     public function saleTransaction()
     {
     }
@@ -23,7 +22,6 @@ class PostingService
      * - Credit: Sales Revenue
      * - Credit: Sales Tax Payable (if applicable)
      */
-
     public function cashSale()
     {
     }
@@ -35,10 +33,7 @@ class PostingService
      * - Credit: Accounts Receivable
      */
 
-    public function receivingPayment()
-    {
-
-    }
+    public function receivingPayment(){}
 
 
     /**
@@ -48,7 +43,6 @@ class PostingService
      * - Debit: Input VAT (if applicable)
      * - Credit: Accounts Payable
      */
-
     public function purchaseOnAccount()
     {
     }
@@ -60,7 +54,6 @@ class PostingService
      * - Debit: Input VAT (if applicable)
      * - Credit: Cash
      */
-
     public function cashPurchase()
     {
     }
@@ -71,7 +64,6 @@ class PostingService
      * - Debit: Accounts Payable
      * - Credit: Cash
      */
-
     public function payingBill()
     {
     }
@@ -83,7 +75,6 @@ class PostingService
      * - Credit: Wages Payable
      * - Credit: Payroll Tax Payable
      */
-
     public function payroll()
     {
     }
@@ -94,7 +85,6 @@ class PostingService
      * - Debit: Wages Payable
      * - Credit: Cash
      */
-
     public function payingPayroll()
     {
     }
@@ -105,7 +95,6 @@ class PostingService
      * - Debit: Depreciation Expense
      * - Credit: Accumulated Depreciation
      */
-
     public function depreciation()
     {
     }
@@ -116,7 +105,6 @@ class PostingService
      * - Debit: Expense
      * - Credit: Prepaid Expense
      */
-
     public function prepaidExpenseRecognition()
     {
     }
@@ -127,7 +115,6 @@ class PostingService
      * - Debit: Accrued Revenue
      * - Credit: Revenue
      */
-
     public function accruedRevenueRecognition()
     {
     }
@@ -138,7 +125,6 @@ class PostingService
      * - Debit: Cash
      * - Credit: Loan Payable
      */
-
     public function bankLoanReceipt()
     {
     }
@@ -150,7 +136,6 @@ class PostingService
      * - Debit: Interest Expense
      * - Credit: Cash
      */
-
     public function loanPayment()
     {
     }
@@ -161,7 +146,6 @@ class PostingService
      * - Debit: Cash
      * - Credit: Owner's Equity
      */
-
     public function ownerInvestment()
     {
     }
@@ -172,7 +156,6 @@ class PostingService
      * - Debit: Retained Earnings
      * - Credit: Cash
      */
-
     public function dividendPayment()
     {
     }
@@ -183,7 +166,6 @@ class PostingService
      * - Debit: Sales Returns and Allowances
      * - Credit: Accounts Receivable (or Cash)
      */
-
     public function salesReturn()
     {
     }
@@ -194,7 +176,6 @@ class PostingService
      * - Debit: Accounts Payable (or Cash)
      * - Credit: Inventory (or Expense)
      */
-
     public function purchaseReturn()
     {
     }
@@ -205,7 +186,6 @@ class PostingService
      * - Debit: Bad Debt Expense
      * - Credit: Allowance for Doubtful Accounts
      */
-
     public function badDebtWriteoff()
     {
     }
@@ -216,7 +196,6 @@ class PostingService
      * - Debit/Credit: Inventory
      * - Credit/Debit: Inventory Shrinkage Expense
      */
-
     public function inventoryCountAdjustment()
     {
     }

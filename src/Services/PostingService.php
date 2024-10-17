@@ -11,9 +11,7 @@ class PostingService
      * - Credit: Sales Revenue
      * - Credit: Sales Tax Payable (if applicable)
      */
-    public function saleTransaction()
-    {
-    }
+    public function saleTransaction() {}
 
     /**
      * ### 2. Cash Sale
@@ -22,9 +20,7 @@ class PostingService
      * - Credit: Sales Revenue
      * - Credit: Sales Tax Payable (if applicable)
      */
-    public function cashSale()
-    {
-    }
+    public function cashSale() {}
 
     /**
      * ### 3. Receiving Payment on Account
@@ -32,9 +28,7 @@ class PostingService
      * - Debit: Cash
      * - Credit: Accounts Receivable
      */
-
-    public function receivingPayment(){}
-
+    public function receivingPayment() {}
 
     /**
      * ### 4. Purchase on Account
@@ -43,9 +37,7 @@ class PostingService
      * - Debit: Input VAT (if applicable)
      * - Credit: Accounts Payable
      */
-    public function purchaseOnAccount()
-    {
-    }
+    public function purchaseOnAccount() {}
 
     /**
      * ### 5. Cash Purchase
@@ -54,9 +46,7 @@ class PostingService
      * - Debit: Input VAT (if applicable)
      * - Credit: Cash
      */
-    public function cashPurchase()
-    {
-    }
+    public function cashPurchase() {}
 
     /**
      * ### 6. Paying a Bill
@@ -64,9 +54,7 @@ class PostingService
      * - Debit: Accounts Payable
      * - Credit: Cash
      */
-    public function payingBill()
-    {
-    }
+    public function payingBill() {}
 
     /**
      * ### 7. Payroll
@@ -75,9 +63,7 @@ class PostingService
      * - Credit: Wages Payable
      * - Credit: Payroll Tax Payable
      */
-    public function payroll()
-    {
-    }
+    public function payroll() {}
 
     /**
      * ### 8. Paying Payroll
@@ -85,9 +71,7 @@ class PostingService
      * - Debit: Wages Payable
      * - Credit: Cash
      */
-    public function payingPayroll()
-    {
-    }
+    public function payingPayroll() {}
 
     /**
      * ### 9. Depreciation
@@ -95,9 +79,7 @@ class PostingService
      * - Debit: Depreciation Expense
      * - Credit: Accumulated Depreciation
      */
-    public function depreciation()
-    {
-    }
+    public function depreciation() {}
 
     /**
      * ### 10. Prepaid Expense Recognition
@@ -105,9 +87,7 @@ class PostingService
      * - Debit: Expense
      * - Credit: Prepaid Expense
      */
-    public function prepaidExpenseRecognition()
-    {
-    }
+    public function prepaidExpenseRecognition() {}
 
     /**
      * ### 11. Accrued Revenue Recognition
@@ -115,9 +95,7 @@ class PostingService
      * - Debit: Accrued Revenue
      * - Credit: Revenue
      */
-    public function accruedRevenueRecognition()
-    {
-    }
+    public function accruedRevenueRecognition() {}
 
     /**
      * ### 12. Bank Loan Receipt
@@ -125,9 +103,7 @@ class PostingService
      * - Debit: Cash
      * - Credit: Loan Payable
      */
-    public function bankLoanReceipt()
-    {
-    }
+    public function bankLoanReceipt() {}
 
     /**
      * ### 13. Loan Payment
@@ -136,9 +112,7 @@ class PostingService
      * - Debit: Interest Expense
      * - Credit: Cash
      */
-    public function loanPayment()
-    {
-    }
+    public function loanPayment() {}
 
     /**
      * ### 14. Owner's Investment
@@ -146,9 +120,7 @@ class PostingService
      * - Debit: Cash
      * - Credit: Owner's Equity
      */
-    public function ownerInvestment()
-    {
-    }
+    public function ownerInvestment() {}
 
     /**
      * ### 15. Dividend Payment
@@ -156,9 +128,7 @@ class PostingService
      * - Debit: Retained Earnings
      * - Credit: Cash
      */
-    public function dividendPayment()
-    {
-    }
+    public function dividendPayment() {}
 
     /**
      * ### 16. Sales Return
@@ -166,9 +136,7 @@ class PostingService
      * - Debit: Sales Returns and Allowances
      * - Credit: Accounts Receivable (or Cash)
      */
-    public function salesReturn()
-    {
-    }
+    public function salesReturn() {}
 
     /**
      * ### 17. Purchase Return
@@ -176,9 +144,7 @@ class PostingService
      * - Debit: Accounts Payable (or Cash)
      * - Credit: Inventory (or Expense)
      */
-    public function purchaseReturn()
-    {
-    }
+    public function purchaseReturn() {}
 
     /**
      * ### 18. Bad Debt Write-off
@@ -186,9 +152,7 @@ class PostingService
      * - Debit: Bad Debt Expense
      * - Credit: Allowance for Doubtful Accounts
      */
-    public function badDebtWriteoff()
-    {
-    }
+    public function badDebtWriteoff() {}
 
     /**
      * ### 19. Inventory Count Adjustment
@@ -196,9 +160,7 @@ class PostingService
      * - Debit/Credit: Inventory
      * - Credit/Debit: Inventory Shrinkage Expense
      */
-    public function inventoryCountAdjustment()
-    {
-    }
+    public function inventoryCountAdjustment() {}
 
     /**
      * ### 20. Fixed Asset Purchase
@@ -206,7 +168,5 @@ class PostingService
      * - Debit: Fixed Asset
      * - Credit: Cash (or Accounts Payable)
      */
-    public function fixedAssetPurchase()
-    {
-    }
+    public function fixedAssetPurchase() {}
 }

@@ -12,7 +12,7 @@ class Account extends Model
 
     public function __construct()
     {
-        $this->table = config('accounting.table_prefix', 'la').'_accounts';
+        $this->table = config('laravel_accounting.table_prefix', 'la').'_accounts';
         parent::__construct();
     }
 }

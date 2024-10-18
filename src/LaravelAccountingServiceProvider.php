@@ -39,6 +39,6 @@ class LaravelAccountingServiceProvider extends ServiceProvider
 
         $this->publishes([
             __DIR__.'/../config/accounting.php' => config_path('accounting.php'),
-        ], 'jasmin-client-config');
+        ], 'accounting-config');
     }
 }

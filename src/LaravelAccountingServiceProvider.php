@@ -40,5 +40,9 @@ class LaravelAccountingServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/accounting.php' => config_path('accounting.php'),
         ], 'accounting-config');
+
+        $this->publishes([
+            __DIR__.'/../database/migrations' => database_path('migrations'),
+        ], 'accounting-migrations');
     }
 }

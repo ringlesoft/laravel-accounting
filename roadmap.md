@@ -251,11 +251,6 @@ Developers may extend or override templates to match custom accounting structure
   - [ ] Add scopes: open(), closed(), current(), byTenant()
   - [ ] Implement validation: no overlapping periods, start < end
 
-- [ ] **Currency Model**
-  - [ ] Add fillable/guarded properties
-  - [ ] Implement relationships: exchangeRates()
-  - [ ] Add helper methods: format($amount)
-
 - [ ] **ExchangeRate Model**
   - [ ] Add fillable/guarded properties
   - [ ] Implement getRate($from, $to, $date) static method

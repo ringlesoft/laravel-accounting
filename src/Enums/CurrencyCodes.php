@@ -2,12 +2,12 @@
 
 namespace RingleSoft\LaravelAccounting\Enums;
 
-    /**
-     * ISO 4217 Currency Codes Enum
-     *
-     * Contains all active and some historical currency codes
-     * Values are the 3-letter ISO currency codes
-     */
+/**
+ * ISO 4217 Currency Codes Enum
+ *
+ * Contains all active and some historical currency codes
+ * Values are the 3-letter ISO currency codes
+ */
 enum CurrencyCodes: string
 {
     // Major Global Currencies
@@ -180,7 +180,7 @@ enum CurrencyCodes: string
 
         return array_filter(
             self::cases(),
-            static fn($case) => !in_array($case->value, array_merge($cryptos, $specials), true)
+            static fn ($case) => ! in_array($case->value, array_merge($cryptos, $specials), true)
         );
     }
 
@@ -193,7 +193,7 @@ enum CurrencyCodes: string
 
         return array_filter(
             self::cases(),
-            fn($case) => in_array($case->value, $major)
+            fn ($case) => in_array($case->value, $major)
         );
     }
 
@@ -210,7 +210,7 @@ enum CurrencyCodes: string
      */
     public function getMetadata(): array
     {
-        return match($this) {
+        return match ($this) {
             // Major currencies with detailed info
             self::USD => ['name' => 'US Dollar', 'symbol' => '$', 'decimal_digits' => 2, 'symbol_native' => '$', 'regions' => ['United States']],
             self::EUR => ['name' => 'Euro', 'symbol' => '€', 'decimal_digits' => 2, 'symbol_native' => '€', 'regions' => ['Eurozone']],
@@ -266,7 +266,7 @@ enum CurrencyCodes: string
      */
     private function getCurrencyName(): string
     {
-        return match($this) {
+        return match ($this) {
             // Add specific cases as needed
             default => str_replace('_', ' ', ucfirst(strtolower($this->name)))
         };
@@ -289,6 +289,7 @@ enum CurrencyCodes: string
         foreach (self::cases() as $case) {
             $result[$case->value] = $case->getMetadata()['name'] ?? $case->value;
         }
+
         return $result;
     }
 
@@ -312,7 +313,7 @@ enum CurrencyCodes: string
 
         return array_filter(
             self::cases(),
-            static fn($case) => in_array($case->value, $codes, true)
+            static fn ($case) => in_array($case->value, $codes, true)
         );
     }
 }

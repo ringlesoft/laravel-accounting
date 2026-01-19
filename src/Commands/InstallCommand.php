@@ -51,9 +51,9 @@ class InstallCommand extends Command
         $this->info('✓ Laravel Accounting installed successfully!');
         $this->newLine();
         $this->comment('Configuration:');
-        $this->line('  - Primary Key Type: ' . ($useUuid ? 'UUID' : 'Auto-incrementing ID'));
-        $this->line('  - Table Prefix: ' . config('laravel_accounting.table_prefix', 'la'));
-        $this->line('  - Default Currency: ' . config('laravel_accounting.default_currency_code', 'USD'));
+        $this->line('  - Primary Key Type: '.($useUuid ? 'UUID' : 'Auto-incrementing ID'));
+        $this->line('  - Table Prefix: '.config('laravel_accounting.table_prefix', 'la'));
+        $this->line('  - Default Currency: '.config('laravel_accounting.default_currency_code', 'USD'));
         $this->newLine();
 
         return self::SUCCESS;
@@ -67,11 +67,11 @@ class InstallCommand extends Command
             $config = File::get($configPath);
             $config = preg_replace(
                 "/'use_uuid'\s*=>\s*(true|false)/",
-                "'use_uuid' => " . ($useUuid ? 'true' : 'false'),
+                "'use_uuid' => ".($useUuid ? 'true' : 'false'),
                 $config
             );
             File::put($configPath, $config);
-            $this->info('Updated use_uuid configuration to: ' . ($useUuid ? 'true' : 'false'));
+            $this->info('Updated use_uuid configuration to: '.($useUuid ? 'true' : 'false'));
         }
     }
 }

@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create((config('table_prefix', 'laravel_accounting')).'_exchange_rates_table', function (Blueprint $table) {
             $table->id();
-            //id, account_id, date, description, debit_amount, credit_amount, balance
+            //id, base_currency, target_currency, rate, date
+            //- tenant_id
 
             $table->timestamps();
         });

@@ -10,8 +10,15 @@ return new class extends Migration
     {
         Schema::create((config('table_prefix', 'laravel_accounting')).'_fiscal_periods_table', function (Blueprint $table) {
             $table->id();
-            //id, account_id, date, description, debit_amount, credit_amount, balance
-
+            //- id
+            //- fiscal_year_id
+            //- name (e.g., "Q1 2024", "January 2024")
+            //- start_date
+            //- end_date
+            //- is_closed
+            //- closed_at
+            //- closed_by_user_id
+            //- tenant_id
             $table->timestamps();
         });
     }

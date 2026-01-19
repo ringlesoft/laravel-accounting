@@ -11,4 +11,8 @@ return [
      * The name of the multi tenancy field in the users table
      */
     'multi_tenancy_field' => 'tenant_id',
+
+    'default_currency_code' => 'USD',
+    'date_format' => 'Y-m-d',
+
 ];

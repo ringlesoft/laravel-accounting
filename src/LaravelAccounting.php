@@ -10,50 +10,31 @@ use RingleSoft\LaravelAccounting\Models\JournalEntry;
 
 class LaravelAccounting
 {
-    //- Journal creation and posting
-    //- Reversals and adjustments
-    //- Period validation and locking
-    //- Balance and ledger queries
-    //- Report data generation
-
+    // - Journal creation and posting
+    // - Reversals and adjustments
+    // - Period validation and locking
+    // - Balance and ledger queries
+    // - Report data generation
 
     public function chartsOfAccounts(): Collection
     {
         return Account::all();
     }
 
-    public function post(PostableModel $postable)
-    {
+    public function post(PostableModel $postable) {}
 
-    }
+    public function postRaw(VoucherData $voucher) {}
 
-    public function postRaw(VoucherData $voucher)
-    {
+    public function reverse(JournalEntry $journalEntry) {}
 
-    }
+    public function adjust() {}
 
-    public function reverse(JournalEntry $journalEntry)
-    {
+    public function validate(PostableModel $postable) {}
 
-    }
-
-    public function adjust()
-    {
-
-    }
-
-    public function validate(PostableModel $postable)
-    {
-
-    }
-
-    public function reports()
-    {
-
-    }
+    public function reports() {}
 
     // period()->current()
     // coa(); // chart of accounts
     // balance($account)->asOf($date)
-    //templates()->register(InvoiceTemplate::class);
+    // templates()->register(InvoiceTemplate::class);
 }

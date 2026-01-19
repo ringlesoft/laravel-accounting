@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create((config('table_prefix', 'laravel_accounting')).'_tax_rates_table', function (Blueprint $table) {
             $table->id();
-            //id, account_id, date, description, debit_amount, credit_amount, balance
+            // id, account_id, date, description, debit_amount, credit_amount, balance
 
             $table->timestamps();
         });

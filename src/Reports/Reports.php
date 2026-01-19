@@ -6,12 +6,12 @@ use RingleSoft\LaravelAccounting\Models\Report;
 
 class Reports
 {
-    //Statement of Financial Position (Balance Sheet).
-    //Statement of Profit or Loss and Other Comprehensive Income (Income Statement).
-    //Statement of Cash Flows.
-    //Statement of Changes in Equity.
-    //Trial Balance, General Ledger, Account Ledgers.
-    //Notes/disclosures (configurable).
+    // Statement of Financial Position (Balance Sheet).
+    // Statement of Profit or Loss and Other Comprehensive Income (Income Statement).
+    // Statement of Cash Flows.
+    // Statement of Changes in Equity.
+    // Trial Balance, General Ledger, Account Ledgers.
+    // Notes/disclosures (configurable).
     public array $reports = [
         'balanceSheet' => BalanceSheet::class,
         'incomeStatement' => IncomeStatement::class,
@@ -20,7 +20,6 @@ class Reports
         'generalLedger' => GeneralLedger::class,
         'accountLedgers' => AccountLedgers::class,
     ];
-
 
     public function register(string $key, string $class)
     {
@@ -34,7 +33,6 @@ class Reports
         // TODO: return the report instance
     }
 
-
-    //Invoke
+    // Invoke
 
 }

@@ -2,7 +2,4 @@
 
 namespace RingleSoft\LaravelAccounting\Traits;
 
-trait Reversible
-{
-
-}
+trait Reversible {}

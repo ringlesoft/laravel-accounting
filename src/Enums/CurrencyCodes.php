@@ -2,7 +2,4 @@
 
 namespace RingleSoft\LaravelAccounting\Enums;
 
-enum CurrencyCodes
-{
-
-}
+enum CurrencyCodes {}

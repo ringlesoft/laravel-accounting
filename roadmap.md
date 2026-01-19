@@ -160,11 +160,18 @@ Developers may extend or override templates to match custom accounting structure
 ## MVP Checklist - Path to Production Ready v1.0
 
 ### 1. Core Database Schema & Migrations ✓ (In Progress)
+- [ ] **Implement UUID/ID Dynamic Support**
+  - [ ] Create helper method in migrations to use `$table->id()` or `$table->uuid('id')->primary()` based on config
+  - [ ] Add `HasUuid` trait for models when UUID is enabled
+  - [ ] Update all migration files to use dynamic ID method
+  - [ ] Ensure foreign keys work with both UUID and integer IDs
+
 - [ ] **Complete `accounts` table migration**
   - [ ] Add all fields: code, name, account_type_id, category, sub_category, report_section, parent_id, currency_id, is_active, is_system_account, allows_manual_entries, tenant_id
   - [ ] Add proper indexes (code, parent_id, tenant_id, is_active)
   - [ ] Add foreign key constraints
   - [ ] Add unique constraint on (code, tenant_id)
+  - [ ] Use dynamic ID type based on config('laravel_accounting.use_uuid')
 
 - [ ] **Complete `journal_entries` table migration**
   - [ ] Add all fields: transaction_number, transaction_date, posted_at, description, postable_id, postable_type, reference, currency_code, exchange_rate, fiscal_period_id, created_by_user_id, posted_by_user_id, is_voided, voided_at, voided_by_user_id, is_posted, is_reversed, reversal_of_id, tenant_id
@@ -312,6 +319,12 @@ Developers may extend or override templates to match custom accounting structure
   - [ ] Add helper methods
 
 ### 5. Traits Implementation
+- [ ] **HasUuid Trait**
+  - [ ] Create trait for UUID support
+  - [ ] Auto-generate UUIDs on model creation
+  - [ ] Set $incrementing = false and $keyType = 'string'
+  - [ ] Only apply when config('laravel_accounting.use_uuid') is true
+
 - [ ] **Postable Trait**
   - [ ] Implement toVoucher(): VoucherData (abstract/interface method)
   - [ ] Complete createJournal() implementation
@@ -448,6 +461,8 @@ Developers may extend or override templates to match custom accounting structure
 
 ### 11. Artisan Commands
 - [ ] **InstallCommand**
+  - [x] Add UUID vs ID choice prompt
+  - [x] Update config file with user's UUID preference
   - [ ] Complete implementation
   - [ ] Publish config
   - [ ] Publish migrations
@@ -474,6 +489,7 @@ Developers may extend or override templates to match custom accounting structure
 
 ### 12. Configuration
 - [ ] **Review and enhance config file**
+  - [x] Add use_uuid option (true/false) - for UUID vs auto-increment IDs
   - [ ] Add base_currency option
   - [ ] Add default_fiscal_year_start (month/day)
   - [ ] Add auto_post option (true/false)
@@ -640,6 +656,187 @@ Developers may extend or override templates to match custom accounting structure
 - [ ] Multi-currency support is functional
 - [ ] Multi-tenancy is properly isolated
 - [ ] Performance benchmarks are acceptable
+
+---
+
+## UUID vs Auto-Increment ID Implementation Guide
+
+### Overview
+The package supports both **auto-incrementing integer IDs** (default) and **UUIDs** for primary keys. Users can choose their preference during installation via the `laravel-accounting:install` command.
+
+### Installation Options
+
+**Interactive Installation:**
+```bash
+php artisan laravel-accounting:install
+```
+The command will prompt: "Do you want to use UUIDs instead of auto-incrementing IDs for primary keys?"
+
+**Non-Interactive Installation:**
+```bash
+# Use UUIDs
+php artisan laravel-accounting:install --uuid
+
+# Use auto-incrementing IDs (default)
+php artisan laravel-accounting:install
+```
+
+### Configuration
+
+The choice is stored in `config/laravel_accounting.php`:
+```php
+'use_uuid' => false, // or true for UUIDs
+```
+
+### Implementation Details
+
+#### 1. Migration Helper Method
+Create a helper method in a base migration class or trait:
+```php
+protected function addPrimaryKey(Blueprint $table, string $column = 'id'): void
+{
+    if (config('laravel_accounting.use_uuid', false)) {
+        $table->uuid($column)->primary();
+    } else {
+        $table->id($column);
+    }
+}
+
+protected function addForeignKey(Blueprint $table, string $column, string $references, string $on): void
+{
+    if (config('laravel_accounting.use_uuid', false)) {
+        $table->uuid($column);
+    } else {
+        $table->unsignedBigInteger($column);
+    }
+    $table->foreign($column)->references($references)->on($on);
+}
+```
+
+#### 2. HasUuid Trait
+Create `src/Traits/HasUuid.php`:
+```php
+namespace RingleSoft\LaravelAccounting\Traits;
+
+use Illuminate\Support\Str;
+
+trait HasUuid
+{
+    protected static function bootHasUuid(): void
+    {
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) Str::uuid();
+            }
+        });
+    }
+
+    public function getIncrementing(): bool
+    {
+        return false;
+    }
+
+    public function getKeyType(): string
+    {
+        return 'string';
+    }
+}
+```
+
+#### 3. Model Implementation
+Models should conditionally use the HasUuid trait:
+```php
+class Account extends Model
+{
+    use HasTablePrefix, MultiTenant;
+
+    public function __construct(array $attributes = [])
+    {
+        if (config('laravel_accounting.use_uuid', false)) {
+            $this->usesUuid();
+        }
+        parent::__construct($attributes);
+    }
+
+    protected function usesUuid(): void
+    {
+        $this->incrementing = false;
+        $this->keyType = 'string';
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        
+        if (config('laravel_accounting.use_uuid', false)) {
+            static::creating(function ($model) {
+                if (empty($model->{$model->getKeyName()})) {
+                    $model->{$model->getKeyName()} = (string) \Illuminate\Support\Str::uuid();
+                }
+            });
+        }
+    }
+}
+```
+
+#### 4. Migration Example
+```php
+public function up()
+{
+    Schema::create(config('laravel_accounting.table_prefix', 'la').'_accounts', function (Blueprint $table) {
+        // Primary key - dynamic based on config
+        if (config('laravel_accounting.use_uuid', false)) {
+            $table->uuid('id')->primary();
+        } else {
+            $table->id();
+        }
+
+        $table->string('code')->unique();
+        $table->string('name');
+        
+        // Foreign key - dynamic based on config
+        if (config('laravel_accounting.use_uuid', false)) {
+            $table->uuid('account_type_id')->nullable();
+            $table->uuid('parent_id')->nullable();
+        } else {
+            $table->unsignedBigInteger('account_type_id')->nullable();
+            $table->unsignedBigInteger('parent_id')->nullable();
+        }
+        
+        $table->foreign('account_type_id')->references('id')->on(config('laravel_accounting.table_prefix', 'la').'_account_types');
+        $table->foreign('parent_id')->references('id')->on(config('laravel_accounting.table_prefix', 'la').'_accounts');
+        
+        $table->timestamps();
+    });
+}
+```
+
+### Important Considerations
+
+1. **One-Time Choice**: The UUID vs ID choice should be made during initial installation. Switching between them after data exists requires complex migrations.
+
+2. **Performance**: 
+   - Auto-increment IDs: Faster inserts, smaller index size, better for high-volume transactions
+   - UUIDs: Better for distributed systems, no collision risk, can be generated client-side
+
+3. **Foreign Keys**: All foreign key columns must match the primary key type (UUID or bigInteger).
+
+4. **Polymorphic Relations**: The `postable_id` in journal_entries must be a string when using UUIDs to accommodate both UUID and integer foreign models.
+
+5. **Testing**: Ensure all tests work with both UUID and auto-increment configurations.
+
+### Checklist for UUID Support
+- [x] Add `use_uuid` config option
+- [x] Update InstallCommand with UUID prompt
+- [x] Update InstallCommand to modify config based on user choice
+- [ ] Create HasUuid trait
+- [ ] Create migration helper methods for dynamic ID types
+- [ ] Update all migration files to support both ID types
+- [ ] Update all models to conditionally use UUID trait
+- [ ] Test all functionality with UUIDs enabled
+- [ ] Test all functionality with auto-increment IDs (default)
+- [ ] Document UUID vs ID trade-offs in README
+- [ ] Add migration guide for switching between types (advanced)
 
 ---
 

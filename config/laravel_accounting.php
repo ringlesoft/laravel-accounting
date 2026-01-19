@@ -15,4 +15,10 @@ return [
     'default_currency_code' => 'USD',
     'date_format' => 'Y-m-d',
 
+    /*
+     * Use UUIDs instead of auto-incrementing IDs for primary keys
+     * This can be set during installation via the laravel-accounting:install command
+     */
+    'use_uuid' => false,
+
 ];

@@ -159,64 +159,64 @@ Developers may extend or override templates to match custom accounting structure
 
 ## MVP Checklist - Path to Production Ready v1.0
 
-### 1. Core Database Schema & Migrations ✓ (In Progress)
-- [ ] **Implement UUID/ID Dynamic Support**
-  - [ ] Create helper method in migrations to use `$table->id()` or `$table->uuid('id')->primary()` based on config
+### 1. Core Database Schema & Migrations ✓ (Completed)
+- [x] **Implement UUID/ID Dynamic Support**
+  - [x] Create helper method in migrations to use `$table->id()` or `$table->uuid('id')->primary()` based on config
   - [ ] Add `HasUuid` trait for models when UUID is enabled
-  - [ ] Update all migration files to use dynamic ID method
-  - [ ] Ensure foreign keys work with both UUID and integer IDs
+  - [x] Update all migration files to use dynamic ID method
+  - [x] Ensure foreign keys work with both UUID and integer IDs
 
-- [ ] **Complete `accounts` table migration**
-  - [ ] Add all fields: code, name, account_type_id, category, sub_category, report_section, parent_id, currency_id, is_active, is_system_account, allows_manual_entries, tenant_id
-  - [ ] Add proper indexes (code, parent_id, tenant_id, is_active)
-  - [ ] Add foreign key constraints
-  - [ ] Add unique constraint on (code, tenant_id)
-  - [ ] Use dynamic ID type based on config('laravel_accounting.use_uuid')
+- [x] **Complete `accounts` table migration**
+  - [x] Add all fields: code, name, account_type_id, category, sub_category, report_section, parent_id, currency_id, is_active, is_system_account, allows_manual_entries, tenant_id
+  - [x] Add proper indexes (code, parent_id, tenant_id, is_active)
+  - [x] Add foreign key constraints
+  - [x] Add unique constraint on (code, tenant_id)
+  - [x] Use dynamic ID type based on config('laravel_accounting.use_uuid')
 
-- [ ] **Complete `journal_entries` table migration**
-  - [ ] Add all fields: transaction_number, transaction_date, posted_at, description, postable_id, postable_type, reference, currency_code, exchange_rate, fiscal_period_id, created_by_user_id, posted_by_user_id, is_voided, voided_at, voided_by_user_id, is_posted, is_reversed, reversal_of_id, tenant_id
-  - [ ] Add indexes (transaction_number, transaction_date, fiscal_period_id, postable_type/id, tenant_id)
-  - [ ] Add foreign key constraints
-  - [ ] Implement auto-incrementing transaction_number logic
+- [x] **Complete `journal_entries` table migration**
+  - [x] Add all fields: transaction_number, transaction_date, posted_at, description, postable_id, postable_type, reference, currency_code, exchange_rate, fiscal_period_id, created_by_user_id, posted_by_user_id, is_voided, voided_at, voided_by_user_id, is_posted, is_reversed, reversal_of_id, tenant_id
+  - [x] Add indexes (transaction_number, transaction_date, fiscal_period_id, postable_type/id, tenant_id)
+  - [x] Add foreign key constraints
+  - [ ] Implement auto-incrementing transaction_number logic (to be done in model/service)
 
-- [ ] **Complete `journal_entry_items` table migration**
-  - [ ] Add all fields: journal_entry_id, account_id, description, debit_amount, credit_amount, currency_code, exchange_rate, dimension_id, dimension_type, tenant_id
-  - [ ] Add indexes (journal_entry_id, account_id, tenant_id)
-  - [ ] Add foreign key constraints with cascade rules
-  - [ ] Add check constraint (debit_amount >= 0 AND credit_amount >= 0)
+- [x] **Complete `journal_entry_items` table migration**
+  - [x] Add all fields: journal_entry_id, account_id, description, debit_amount, credit_amount, currency_code, exchange_rate, dimension_id, dimension_type, tenant_id
+  - [x] Add indexes (journal_entry_id, account_id, tenant_id)
+  - [x] Add foreign key constraints with cascade rules
+  - [x] Add check constraint (debit_amount >= 0 AND credit_amount >= 0)
 
-- [ ] **Complete `fiscal_periods` table migration**
-  - [ ] Add all fields: fiscal_year_id, name, start_date, end_date, is_closed, is_locked, closed_at, closed_by_user_id, tenant_id
-  - [ ] Add indexes (start_date, end_date, is_closed, tenant_id)
-  - [ ] Add unique constraint on date ranges per tenant
-  - [ ] Add validation to prevent overlapping periods
+- [x] **Complete `fiscal_periods` table migration**
+  - [x] Add all fields: fiscal_year_id, name, start_date, end_date, is_closed, is_locked, closed_at, closed_by_user_id, tenant_id
+  - [x] Add indexes (start_date, end_date, is_closed, tenant_id)
+  - [ ] Add unique constraint on date ranges per tenant (to be implemented via validation)
+  - [ ] Add validation to prevent overlapping periods (to be done in model/service)
 
-- [ ] **Complete `currencies` table migration**
-  - [ ] Add fields: code (ISO 4217), name, symbol, decimal_places, is_active
-  - [ ] Seed with common currencies
-  - [ ] Add unique constraint on code
+- [x] **Complete `exchange_rates` table migration**
+  - [x] Add fields: from_currency_code, to_currency_code, rate, effective_date
+  - [x] Add indexes (currency codes, effective_date)
+  - [x] Add unique constraint on (from_currency_code, to_currency_code, effective_date)
+  - [x] Use currency codes instead of foreign keys (no currencies table)
 
-- [ ] **Complete `exchange_rates` table migration**
-  - [ ] Verify fields: from_currency_code, to_currency_code, rate, effective_date
-  - [ ] Add indexes (from/to currency codes, effective_date)
-  - [ ] Add unique constraint on (from_currency, to_currency, effective_date)
+- [x] **Complete `account_balances` table migration** (Cache table)
+  - [x] Add fields: account_id, fiscal_period_id, opening_balance, debit_total, credit_total, closing_balance, currency_code, tenant_id
+  - [x] Add indexes (account_id, fiscal_period_id, tenant_id)
+  - [x] Add unique constraint on (account_id, fiscal_period_id, tenant_id)
 
-- [ ] **Complete `account_balances` table migration** (Cache table)
-  - [ ] Add fields: account_id, fiscal_period_id, opening_balance, debit_total, credit_total, closing_balance, currency_code, tenant_id
-  - [ ] Add indexes (account_id, fiscal_period_id, tenant_id)
-  - [ ] Add unique constraint on (account_id, fiscal_period_id, tenant_id)
+- [x] **Complete `tax_rates` table migration**
+  - [x] Add fields: name, code, rate, is_compound, is_active, effective_from, effective_to
+  - [x] Add indexes (code, is_active, effective_from/to)
 
-- [ ] **Complete `tax_rates` table migration**
-  - [ ] Verify fields: name, code, rate, is_compound, is_active, effective_from, effective_to
-  - [ ] Add indexes (code, is_active, effective_from/to)
+- [x] **Create `account_types` table migration**
+  - [x] Add fields: id, code, name, normal_balance, report_section, description, is_active
+  - [ ] Seed with standard account types (seeder to be created)
 
-- [ ] **Create `account_types` table migration**
-  - [ ] Add fields: id, code (ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE), name, normal_balance (DEBIT/CREDIT)
-  - [ ] Seed with standard account types
+- [x] **Create `fiscal_years` table migration**
+  - [x] Add fields: name, start_date, end_date, is_closed, closed_at, closed_by_user_id, tenant_id
+  - [x] Add indexes and constraints
 
-- [ ] **Create `fiscal_years` table migration**
-  - [ ] Add fields: name, start_date, end_date, is_closed, tenant_id
-  - [ ] Add indexes and constraints
+- [x] **Create `transactions` table migration** (Optional general transactions table)
+  - [x] Add fields: transaction_date, type, amount, description, status, reference, tenant_id
+  - [x] Add indexes
 
 ### 2. Core Models & Eloquent Relationships
 - [ ] **Account Model**

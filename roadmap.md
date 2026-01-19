@@ -218,43 +218,88 @@ Developers may extend or override templates to match custom accounting structure
   - [x] Add fields: transaction_date, type, amount, description, status, reference, tenant_id
   - [x] Add indexes
 
-### 2. Core Models & Eloquent Relationships
-- [ ] **Account Model**
-  - [ ] Add fillable/guarded properties
-  - [ ] Add casts (is_active => boolean, etc.)
-  - [ ] Implement relationships: parent(), children(), accountType(), journalEntryItems(), balances()
-  - [ ] Add scopes: active(), byType(), byTenant()
-  - [ ] Implement hierarchical methods: getFullCode(), getAncestors(), getDescendants()
-  - [ ] Add validation rules
+### 2. Core Models & Eloquent Relationships ✓ (Completed)
+- [x] **Account Model**
+  - [x] Add fillable/guarded properties
+  - [x] Add casts (is_active => boolean, etc.)
+  - [x] Implement relationships: parent(), children(), accountType(), journalEntryItems(), balances()
+  - [x] Add scopes: active(), byType(), byTenant(), systemAccounts(), manualEntryAllowed()
+  - [x] Implement hierarchical methods: getFullCode(), getAncestors(), getDescendants(), isParentOf(), isChildOf(), isDescendantOf()
+  - [x] Add validation rules
 
-- [ ] **JournalEntry Model**
-  - [ ] Extend Eloquent Model properly
-  - [ ] Add fillable/guarded properties
-  - [ ] Add casts (transaction_date => date, posted_at => datetime, is_posted => boolean, etc.)
-  - [ ] Implement relationships: items(), postable(), fiscalPeriod(), createdBy(), postedBy(), reversalOf(), reversals()
-  - [ ] Add scopes: posted(), unposted(), byPeriod(), byTenant()
-  - [ ] Implement isBalanced() method
-  - [ ] Add UUID or auto-increment for transaction_number
+- [x] **AccountType Model**
+  - [x] Add fillable/guarded properties
+  - [x] Add casts (is_active => boolean)
+  - [x] Implement relationships: accounts()
+  - [x] Add scopes: active(), byCode()
+  - [x] Add helper methods: isDebitType(), isCreditType()
+  - [x] Add validation rules
 
-- [ ] **JournalEntryItem Model**
-  - [ ] Extend Eloquent Model properly
-  - [ ] Add fillable/guarded properties
-  - [ ] Add casts (debit_amount => decimal, credit_amount => decimal)
-  - [ ] Implement relationships: journalEntry(), account(), dimension()
-  - [ ] Add scopes: debits(), credits(), byAccount()
-  - [ ] Implement getAmount() and getType() helper methods
+- [x] **JournalEntry Model**
+  - [x] Extend Eloquent Model properly
+  - [x] Add fillable/guarded properties
+  - [x] Add casts (transaction_date => date, posted_at => datetime, is_posted => boolean, etc.)
+  - [x] Implement relationships: items(), postable(), fiscalPeriod(), createdBy(), postedBy(), voidedBy(), reversalOf(), reversals()
+  - [x] Add scopes: posted(), unposted(), byPeriod(), byTenant(), notVoided(), notReversed(), byDateRange()
+  - [x] Implement isBalanced(), canBePosted(), canBeVoided(), canBeReversed() methods
+  - [x] Add auto-incrementing transaction_number generation in boot()
+  - [x] Add validation rules
 
-- [ ] **FiscalPeriod Model**
-  - [ ] Add fillable/guarded properties
-  - [ ] Add casts (start_date => date, end_date => date, is_closed => boolean, is_locked => boolean)
-  - [ ] Implement relationships: fiscalYear(), journalEntries(), accountBalances()
-  - [ ] Add scopes: open(), closed(), current(), byTenant()
-  - [ ] Implement validation: no overlapping periods, start < end
+- [x] **JournalEntryItem Model**
+  - [x] Extend Eloquent Model properly
+  - [x] Add fillable/guarded properties
+  - [x] Add casts (debit_amount => decimal, credit_amount => decimal)
+  - [x] Implement relationships: journalEntry(), account(), dimension()
+  - [x] Add scopes: debits(), credits(), byAccount(), byTenant()
+  - [x] Implement getAmount(), getType(), isDebit(), isCredit() helper methods
+  - [x] Add validation rules
 
-- [ ] **ExchangeRate Model**
-  - [ ] Add fillable/guarded properties
-  - [ ] Implement getRate($from, $to, $date) static method
-  - [ ] Add validation rules
+- [x] **FiscalYear Model**
+  - [x] Add fillable/guarded properties
+  - [x] Add casts (start_date => date, end_date => date, is_closed => boolean)
+  - [x] Implement relationships: fiscalPeriods(), closedBy()
+  - [x] Add scopes: open(), closed(), current(), byTenant()
+  - [x] Add helper methods: canBeClosed(), isActive(), getDurationInDays()
+  - [x] Add validation rules
+
+- [x] **FiscalPeriod Model**
+  - [x] Add fillable/guarded properties
+  - [x] Add casts (start_date => date, end_date => date, is_closed => boolean, is_locked => boolean)
+  - [x] Implement relationships: fiscalYear(), journalEntries(), accountBalances(), closedBy()
+  - [x] Add scopes: open(), closed(), locked(), unlocked(), current(), byTenant(), byYear()
+  - [x] Add helper methods: canBeClosed(), canBeLocked(), canBeReopened(), isActive(), getDurationInDays(), hasPostedEntries()
+  - [x] Add validation rules
+
+- [x] **ExchangeRate Model**
+  - [x] Add fillable/guarded properties
+  - [x] Implement getRate($from, $to, $date) static method
+  - [x] Implement convert($amount, $from, $to, $date) static method
+  - [x] Add scopes: forCurrencyPair(), effectiveOn()
+  - [x] Add helper methods: getInverseRate()
+  - [x] Add validation rules
+
+- [x] **AccountBalance Model**
+  - [x] Add fillable/guarded properties
+  - [x] Add casts (all amounts => decimal)
+  - [x] Implement relationships: account(), fiscalPeriod()
+  - [x] Add scopes: byAccount(), byPeriod(), byTenant()
+  - [x] Add helper methods: calculateClosingBalance(), getNetMovement(), hasActivity()
+  - [x] Add validation rules
+
+- [x] **TaxRate Model**
+  - [x] Add fillable/guarded properties
+  - [x] Add casts (rate => decimal, is_compound => boolean, is_active => boolean)
+  - [x] Implement relationships (none needed)
+  - [x] Add scopes: active(), byCode(), byTenant(), effectiveOn(), compound(), simple()
+  - [x] Add helper methods: isEffectiveOn(), calculateTax(), calculateGrossAmount(), calculateNetAmount()
+  - [x] Add validation rules
+
+- [x] **Transaction Model** (Optional)
+  - [x] Add fillable/guarded properties
+  - [x] Add casts (transaction_date => date, amount => decimal)
+  - [x] Add scopes: byType(), byStatus(), byTenant(), byDateRange(), pending(), completed()
+  - [x] Add helper methods: isPending(), isCompleted(), markAsCompleted()
+  - [x] Add validation rules
 
 ### 3. Core Services Implementation
 - [ ] **JournalService**

@@ -2,9 +2,9 @@
 
 namespace RingleSoft\LaravelAccounting\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 
 class AccountType extends Model

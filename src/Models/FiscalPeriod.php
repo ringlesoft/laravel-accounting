@@ -2,10 +2,10 @@
 
 namespace RingleSoft\LaravelAccounting\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
@@ -88,6 +88,7 @@ class FiscalPeriod extends Model
     public function scopeCurrent(Builder $query): Builder
     {
         $today = now()->toDateString();
+
         return $query->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today);
     }
@@ -106,22 +107,23 @@ class FiscalPeriod extends Model
 
     public function canBeClosed(): bool
     {
-        return !$this->is_closed && !$this->is_locked;
+        return ! $this->is_closed && ! $this->is_locked;
     }
 
     public function canBeLocked(): bool
     {
-        return $this->is_closed && !$this->is_locked;
+        return $this->is_closed && ! $this->is_locked;
     }
 
     public function canBeReopened(): bool
     {
-        return $this->is_closed && !$this->is_locked;
+        return $this->is_closed && ! $this->is_locked;
     }
 
     public function isActive(): bool
     {
         $today = now();
+
         return $today->between($this->start_date, $this->end_date);
     }
 

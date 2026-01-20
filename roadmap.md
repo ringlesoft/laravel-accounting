@@ -357,11 +357,11 @@ Developers may extend or override templates to match custom accounting structure
   - [x] Add fluent builder methods and toArray()
 
 ### 5. Traits Implementation
-- [ ] **HasUuid Trait**
-  - [ ] Create trait for UUID support
-  - [ ] Auto-generate UUIDs on model creation
-  - [ ] Set $incrementing = false and $keyType = 'string'
-  - [ ] Only apply when config('laravel_accounting.use_uuid') is true
+- [x] **HasUuid Trait**
+  - [x] Create trait for UUID support
+  - [x] Auto-generate UUIDs on model creation
+  - [x] Set $incrementing = false and $keyType = 'string'
+  - [x] Only apply when config('laravel_accounting.use_uuid') is true
 
 - [x] **Postable Trait**
   - [x] Implement toVoucher(): VoucherData (abstract/interface method)

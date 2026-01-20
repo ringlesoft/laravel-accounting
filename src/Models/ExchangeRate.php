@@ -2,9 +2,9 @@
 
 namespace RingleSoft\LaravelAccounting\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 
 class ExchangeRate extends Model

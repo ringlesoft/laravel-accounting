@@ -2,11 +2,11 @@
 
 namespace RingleSoft\LaravelAccounting\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Builder;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
@@ -172,20 +172,20 @@ class JournalEntry extends Model
 
     public function canBePosted(): bool
     {
-        return !$this->is_posted
-            && !$this->is_voided
+        return ! $this->is_posted
+            && ! $this->is_voided
             && $this->isBalanced()
             && $this->items()->count() > 0;
     }
 
     public function canBeVoided(): bool
     {
-        return $this->is_posted && !$this->is_voided && !$this->is_reversed;
+        return $this->is_posted && ! $this->is_voided && ! $this->is_reversed;
     }
 
     public function canBeReversed(): bool
     {
-        return $this->is_posted && !$this->is_voided && !$this->is_reversed;
+        return $this->is_posted && ! $this->is_voided && ! $this->is_reversed;
     }
 
     // Transaction Number Generation

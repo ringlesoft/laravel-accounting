@@ -32,14 +32,16 @@ trait Postable
     {
         $voucherData = $this->toVoucher();
         LaravelAccounting::journals()->create($voucherData);
+
         return true;
     }
 
     public function postJournal(): bool
     {
-        if($journal = $this->journalEntry()){
+        if ($journal = $this->journalEntry()) {
             return $journal->post();
         }
+
         return true;
     }
 

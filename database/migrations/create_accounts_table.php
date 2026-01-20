@@ -41,6 +41,8 @@ return new class extends Migration
 
             $table->string('currency_code', 3)->default('USD');
 
+            $table->string('preset', 100)->nullable()->index();
+
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_system_account')->default(false);

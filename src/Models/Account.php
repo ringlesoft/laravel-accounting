@@ -26,6 +26,7 @@ class Account extends Model
         'is_active',
         'is_system_account',
         'allows_manual_entries',
+        'preset',
         'tenant_id',
     ];
 

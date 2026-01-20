@@ -57,7 +57,7 @@ class LaravelAccounting
 
     public function chartsOfAccounts(): Collection
     {
-        return Account::all();
+        return $this->accounts()->getChartOfAccounts();
     }
 
     public function postModel(VoucherData $voucherData) {}

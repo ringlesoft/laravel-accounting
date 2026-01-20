@@ -20,7 +20,7 @@ interface PostableModel
 
     public function postWithTemplate(PostableTemplate $template): bool;
 
-    public function getTemplate(): PostableTemplate;
+    public function getTemplate(): ?PostableTemplate;
 
     public function createJournal(): bool;
 

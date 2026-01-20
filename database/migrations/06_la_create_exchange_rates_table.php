@@ -24,7 +24,7 @@ return new class extends Migration
             $table->date('effective_date');
             $table->timestamps();
 
-            $table->unique(['from_currency_code', 'to_currency_code', 'effective_date']);
+            $table->unique(['from_currency_code', 'to_currency_code', 'effective_date'], 'la_exchange_rates_unique');
             $table->index('effective_date');
         });
     }

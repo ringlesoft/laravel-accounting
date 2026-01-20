@@ -1,6 +1,6 @@
 <?php
 
-namespace RingleSoft\LaravelAccounting\Database\Seeders;
+namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;

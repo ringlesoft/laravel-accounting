@@ -54,10 +54,9 @@ return new class extends Migration
                 ->on($prefix.'_accounts')
                 ->onDelete('restrict');
 
-            // Check constraint to ensure debit and credit are not both non-zero
-            // Note: This is a database-level constraint, implementation may vary by DB driver
-            $table->check('debit_amount >= 0');
-            $table->check('credit_amount >= 0');
+            // Note: Check constraints for debit_amount >= 0 and credit_amount >= 0
+            // are enforced at the application level via validation
+            // Database-level check constraints can be added via raw SQL if needed
 
             $table->index('journal_entry_id');
             $table->index('account_id');

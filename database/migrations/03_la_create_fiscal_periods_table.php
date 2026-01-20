@@ -11,7 +11,7 @@ return new class extends Migration
         $prefix = config('laravel_accounting.table_prefix', 'la');
         $useUuid = config('laravel_accounting.use_uuid', false);
 
-        Schema::create($prefix.'_fiscal_periods', function (Blueprint $table) use ($useUuid) {
+        Schema::create($prefix.'_fiscal_periods', function (Blueprint $table) use ($useUuid, $prefix) {
             if ($useUuid) {
                 $table->uuid('id')->primary();
             } else {

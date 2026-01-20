@@ -4,6 +4,7 @@ namespace RingleSoft\LaravelAccounting\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Database\Seeders\DatabaseSeeder;
 
 class InstallCommand extends Command
 {
@@ -35,6 +36,12 @@ class InstallCommand extends Command
             '--force' => true,
         ]);
 
+        $this->info('Publishing seeders...');
+        $this->call('vendor:publish', [
+            '--tag' => 'accounting-seeders',
+            '--force' => true,
+        ]);
+
         if ($this->confirm('Do you want to run migrations now?', true)) {
             $this->info('Running migrations...');
             $this->call('migrate');
@@ -43,7 +50,10 @@ class InstallCommand extends Command
         if ($this->confirm('Do you want to seed default data (account types, currencies)?', true)) {
             $this->info('Seeding default data...');
             $this->call('db:seed', [
-                '--class' => 'RingleSoft\\LaravelAccounting\\Database\\Seeders\\AccountTypeSeeder',
+                '--class' => 'AccountTypeSeeder',
+            ]);
+            $this->call('db:seed', [
+                '--class' => 'ChartOfAccountsSeeder',
             ]);
         }
 

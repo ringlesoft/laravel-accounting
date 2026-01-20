@@ -21,7 +21,7 @@ class LaravelAccountingServiceProvider extends ServiceProvider
         $this->publishItems();
 
         $this->mergeConfigFrom(
-            __DIR__.'/../config/accounting.php', 'accounting'
+            __DIR__.'/../config/laravel_accounting.php', 'accounting'
         );
 
         if ($this->app->runningInConsole()) {
@@ -38,11 +38,15 @@ class LaravelAccountingServiceProvider extends ServiceProvider
         }
 
         $this->publishes([
-            __DIR__.'/../config/accounting.php' => config_path('accounting.php'),
+            __DIR__.'/../config/laravel_accounting.php' => config_path('laravel_accounting.php'),
         ], 'accounting-config');
 
         $this->publishes([
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'accounting-migrations');
+
+        $this->publishes([
+            __DIR__.'/../database/seeders' => database_path('seeders'),
+        ], 'accounting-seeders');
     }
 }

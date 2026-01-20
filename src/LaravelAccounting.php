@@ -60,7 +60,10 @@ class LaravelAccounting
         return $this->accounts()->getChartOfAccounts();
     }
 
-    public function postModel(VoucherData $voucherData) {}
+    public function postModel(PostableModel $model) {
+        $voucherData = $model->toVoucher();
+        return $this->journals()->create($voucherData);
+    }
 
     public function postRaw(VoucherData $voucher) {}
 

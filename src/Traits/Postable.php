@@ -10,6 +10,7 @@ use RingleSoft\LaravelAccounting\Attributes\DefaultAccountingTemplate;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Contracts\PostableTemplate;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
+use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Templates\AccountingTemplate;
 
@@ -29,13 +30,16 @@ trait Postable
 
     public function createJournal(): bool
     {
-        // Todo Implement
+        $voucherData = $this->toVoucher();
+        LaravelAccounting::journals()->create($voucherData);
         return true;
     }
 
     public function postJournal(): bool
     {
-        // Todo Implement
+        if($journal = $this->journalEntry()){
+            return $journal->post();
+        }
         return true;
     }
 

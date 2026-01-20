@@ -228,7 +228,8 @@ class AccountService
      */
     protected function buildAccountTree(Account $account): array
     {
-        $children = Account::where('parent_id', $account->id)
+        $children = Account::with('accountType')
+            ->where('parent_id', $account->id)
             ->orderBy('code')
             ->get()
             ->map(fn ($child) => $this->buildAccountTree($child));
@@ -239,6 +240,7 @@ class AccountService
             'name' => $account->name,
             'type' => $account->accountType->name,
             'category' => $account->category,
+            'preset' => $account->preset,
             'is_active' => $account->is_active,
             'is_system_account' => $account->is_system_account,
             'allows_manual_entries' => $account->allows_manual_entries,

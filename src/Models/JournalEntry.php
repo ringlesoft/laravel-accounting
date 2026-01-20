@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
@@ -215,6 +216,11 @@ class JournalEntry extends Model
         $sequence = $lastEntry ? (int) substr($lastEntry->transaction_number, -6) + 1 : 1;
 
         return sprintf('%s-%s-%06d', $prefix, $date, $sequence);
+    }
+
+    public function post(): bool
+    {
+        return LaravelAccounting::journals()->post($this, auth()?->user()?->id);
     }
 
     // Validation Rules

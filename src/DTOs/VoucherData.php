@@ -10,6 +10,9 @@ class VoucherData
     public ?string $currency_code = null;
 
     public function __construct(
+        /**
+         * @var VoucherDataItem[]
+         */
         public array $entries = [],
         public ?Carbon $date = null,
         public ?string $description = null,

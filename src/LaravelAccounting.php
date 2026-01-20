@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting;
 
 use Illuminate\Support\Collection;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
-use RingleSoft\LaravelAccounting\DTO\VoucherData;
+use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 

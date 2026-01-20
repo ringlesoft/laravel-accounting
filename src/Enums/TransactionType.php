@@ -2,7 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Enums;
 
-enum TransactionTypes: string
+enum TransactionType: string
 {
     case SALE = 'Sale';
     case PURCHASE = 'Purchase';

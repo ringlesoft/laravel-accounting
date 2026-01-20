@@ -2,7 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Enums;
 
-enum TaxCalculationMethods: string
+enum TaxCalculationMethod: string
 {
     case INCLUSIVE = 'Inclusive';
     case EXCLUSIVE = 'Exclusive';

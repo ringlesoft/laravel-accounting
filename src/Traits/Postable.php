@@ -20,4 +20,14 @@ trait Postable
     {
         return $this->createJournal() && $this->postJournal();
     }
+
+    public function isPosted(): bool
+    {
+        return $this->journalEntry?->is_posted ?? false;
+    }
+
+    public function getReference(): ?string
+    {
+       return null;
+    }
 }

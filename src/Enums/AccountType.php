@@ -2,7 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Enums;
 
-enum AccountTypes: string
+enum AccountType: string
 {
     case ASSET = 'Asset';
     case LIABILITY = 'Liability';

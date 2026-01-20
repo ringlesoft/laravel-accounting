@@ -341,17 +341,20 @@ Developers may extend or override templates to match custom accounting structure
 ### 4. DTOs & Value Objects
 - [x] **VoucherData DTO**
   - [x] Add properties: date, description, entries, reference, metadata, currency_code
-  - [ ] Implement constructor and validation
-  - [ ] Add fluent builder methods: on(), describe(), debit(), credit(), reference()
-  - [ ] Add toArray() method
+  - [x] Implement constructor and validation
+  - [x] Add fluent builder methods: on(), describe(), debit(), credit(), reference()
+  - [x] Add toArray() method
 
 - [x] **VoucherEntry DTO** (VoucherDataItem)
   - [x] Add properties: account_id, debit_amount, credit_amount, description, dimension
-  - [ ] Implement validation
+  - [x] Implement validation
+  - [x] Add helper methods: isDebit(), isCredit(), getDebitAmount(), getCreditAmount()
+  - [x] Add static factory methods: debit(), credit()
 
-- [ ] **BalanceData DTO**
-  - [ ] Add properties: opening, debits, credits, closing
-  - [ ] Add helper methods
+- [x] **BalanceData DTO**
+  - [x] Add properties: opening, debits, credits, closing
+  - [x] Add helper methods: calculateClosing(), getNetMovement(), getTotalActivity(), hasActivity()
+  - [x] Add fluent builder methods and toArray()
 
 ### 5. Traits Implementation
 - [ ] **HasUuid Trait**

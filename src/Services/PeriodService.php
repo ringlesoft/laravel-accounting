@@ -22,8 +22,8 @@ class PeriodService
      */
     public function openPeriod(FiscalPeriod $period, ?int $userId = null): bool
     {
-        return DB::transaction(function () use ($period, $userId) {
-            if (!$period->is_closed) {
+        return DB::transaction(function () use ($period) {
+            if (! $period->is_closed) {
                 return true;
             }
 
@@ -70,8 +70,8 @@ class PeriodService
      */
     public function lockPeriod(FiscalPeriod $period, ?int $userId = null): bool
     {
-        return DB::transaction(function () use ($period, $userId) {
-            if (!$period->is_closed) {
+        return DB::transaction(function () use ($period) {
+            if (! $period->is_closed) {
                 throw new PeriodClosedException('Cannot lock a period that is not closed');
             }
 
@@ -92,8 +92,8 @@ class PeriodService
      */
     public function unlockPeriod(FiscalPeriod $period, ?int $userId = null): bool
     {
-        return DB::transaction(function () use ($period, $userId) {
-            if (!$period->is_locked) {
+        return DB::transaction(function () use ($period) {
+            if (! $period->is_locked) {
                 return true;
             }
 
@@ -111,7 +111,7 @@ class PeriodService
     public function rollForwardBalances(FiscalPeriod $from, FiscalPeriod $to): void
     {
         DB::transaction(function () use ($from, $to) {
-            if (!$from->is_closed) {
+            if (! $from->is_closed) {
                 throw new \InvalidArgumentException('Source period must be closed before rolling forward balances');
             }
 
@@ -186,7 +186,7 @@ class PeriodService
 
         $trialBalance = $this->balanceService->verifyTrialBalance($period);
 
-        if (!$trialBalance['is_balanced']) {
+        if (! $trialBalance['is_balanced']) {
             throw new \InvalidArgumentException(
                 "Cannot close period with unbalanced trial balance. Difference: {$trialBalance['difference']}"
             );
@@ -226,6 +226,6 @@ class PeriodService
             ->where('end_date', '>=', $date)
             ->first();
 
-        return $period && !$period->is_closed && !$period->is_locked;
+        return $period && ! $period->is_closed && ! $period->is_locked;
     }
 }

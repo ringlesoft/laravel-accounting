@@ -21,7 +21,7 @@ class AccountService
             if (isset($data['parent_id'])) {
                 $parent = Account::findOrFail($data['parent_id']);
 
-                if (!$parent->allows_manual_entries) {
+                if (! $parent->allows_manual_entries) {
                     $data['allows_manual_entries'] = $data['allows_manual_entries'] ?? true;
                 }
             }
@@ -199,7 +199,7 @@ class AccountService
         }
 
         $accountType = AccountType::find($data['account_type_id']);
-        if (!$accountType) {
+        if (! $accountType) {
             throw new InvalidArgumentException('Invalid account type');
         }
 
@@ -231,7 +231,7 @@ class AccountService
         $children = Account::where('parent_id', $account->id)
             ->orderBy('code')
             ->get()
-            ->map(fn($child) => $this->buildAccountTree($child));
+            ->map(fn ($child) => $this->buildAccountTree($child));
 
         return [
             'id' => $account->id,

@@ -12,6 +12,7 @@ use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
 /**
  * @mixin  Builder
+ *
  * @property int $id
  * @property HasMany $items
  * @property ?FiscalPeriod $fiscalPeriod

@@ -23,6 +23,7 @@ class PostingService
     public function saleTransaction(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('sale.credit');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -34,6 +35,7 @@ class PostingService
     public function cashSale(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('sale.cash');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -45,6 +47,7 @@ class PostingService
     public function receivingPayment(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('payment.receipt');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -56,6 +59,7 @@ class PostingService
     public function purchaseOnAccount(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('purchase.on_account');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -67,6 +71,7 @@ class PostingService
     public function cashPurchase(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('purchase.cash');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -78,6 +83,7 @@ class PostingService
     public function paymentToSupplier(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('payment.bill');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -90,6 +96,7 @@ class PostingService
     public function expensePayment(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('purchase.cash');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -101,6 +108,7 @@ class PostingService
     public function payroll(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('payroll.payment');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -112,6 +120,7 @@ class PostingService
     public function depreciation(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('asset.depreciation');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -123,6 +132,7 @@ class PostingService
     public function loanReceived(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('loan.receipt');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -134,6 +144,7 @@ class PostingService
     public function loanPayment(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('loan.payment');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -145,6 +156,7 @@ class PostingService
     public function ownerInvestment(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('equity.investment');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -156,6 +168,7 @@ class PostingService
     public function ownerWithdrawal(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('equity.dividend');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -168,6 +181,7 @@ class PostingService
     {
         $templateKey = $onAccount ? 'purchase.on_account' : 'purchase.cash';
         $template = TemplateRegistry::make($templateKey);
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -179,6 +193,7 @@ class PostingService
     public function costOfGoodsSold(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('inventory.adjustment');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -193,6 +208,7 @@ class PostingService
         $voucher = $model->toVoucher();
         $entry = $this->journalService->createDraft($voucher, $userId);
         $this->journalService->post($entry, $userId);
+
         return $entry;
     }
 
@@ -204,6 +220,7 @@ class PostingService
     public function accruedExpense(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('payroll.accrual');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -215,6 +232,7 @@ class PostingService
     public function prepaidExpense(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('expense.prepaid');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -226,6 +244,7 @@ class PostingService
     public function unearnedRevenue(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('revenue.accrued');
+
         return $this->postWithTemplate($model, $template, $userId);
     }
 
@@ -239,6 +258,7 @@ class PostingService
         $voucher = $model->toVoucher();
         $entry = $this->journalService->createDraft($voucher, $userId);
         $this->journalService->post($entry, $userId);
+
         return $entry;
     }
 
@@ -251,6 +271,7 @@ class PostingService
         $voucher = $template->make($model);
         $entry = $this->journalService->createDraft($voucher, $userId);
         $this->journalService->post($entry, $userId);
+
         return $entry;
     }
 }

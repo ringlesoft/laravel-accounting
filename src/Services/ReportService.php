@@ -68,6 +68,7 @@ class ReportService
     protected function getCacheKey(string $reportType, array $params): string
     {
         $paramsHash = md5(json_encode($params));
+
         return "laravel_accounting.report.{$reportType}.{$paramsHash}";
     }
 
@@ -139,18 +140,18 @@ class ReportService
         $csv = '';
 
         if (isset($data['title'])) {
-            $csv .= $data['title'] . "\n\n";
+            $csv .= $data['title']."\n\n";
         }
 
         if (isset($data['rows']) && is_array($data['rows'])) {
-            if (!empty($data['rows'])) {
+            if (! empty($data['rows'])) {
                 $headers = array_keys($data['rows'][0]);
-                $csv .= implode(',', $headers) . "\n";
+                $csv .= implode(',', $headers)."\n";
 
                 foreach ($data['rows'] as $row) {
                     $csv .= implode(',', array_map(function ($value) {
-                        return is_numeric($value) ? $value : '"' . str_replace('"', '""', $value) . '"';
-                    }, array_values($row))) . "\n";
+                        return is_numeric($value) ? $value : '"'.str_replace('"', '""', $value).'"';
+                    }, array_values($row)))."\n";
                 }
             }
         }

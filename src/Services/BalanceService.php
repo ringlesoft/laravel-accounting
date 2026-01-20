@@ -109,6 +109,7 @@ class BalanceService
 
     /**
      * Update cached balances for a fiscal period
+     *
      * @throws Throwable
      */
     public function updateCachedBalances(FiscalPeriod $period): void

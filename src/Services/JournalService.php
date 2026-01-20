@@ -17,6 +17,7 @@ class JournalService
 {
     /**
      * Create a draft journal entry from voucher data
+     *
      * @throws Throwable
      */
     public function createDraft(VoucherData $voucher, ?int $userId = null): JournalEntry
@@ -75,11 +76,12 @@ class JournalService
 
     /**
      * Validate that the fiscal period is open
+     *
      * @throws PeriodClosedException
      */
     public function validatePeriod(JournalEntry $entry): bool
     {
-        if (!$entry->fiscalPeriod) {
+        if (! $entry->fiscalPeriod) {
             throw new PeriodClosedException('No fiscal period found for this transaction date');
         }
 
@@ -94,11 +96,13 @@ class JournalService
                 "Fiscal period '{$entry->fiscalPeriod->name}' is locked"
             );
         }
+
         return true;
     }
 
     /**
      * Post a journal entry
+     *
      * @throws Throwable
      */
     public function post(JournalEntry $entry, ?int $userId = null): bool
@@ -123,12 +127,13 @@ class JournalService
 
     /**
      * Reverse a journal entry
+     *
      * @throws Throwable
      */
     public function reverse(JournalEntry $entry, ?string $reason = null, ?int $userId = null): JournalEntry
     {
         return DB::transaction(function () use ($entry, $reason, $userId) {
-            if (!$entry->is_posted) {
+            if (! $entry->is_posted) {
                 throw new InvalidArgumentException('Cannot reverse an unposted journal entry');
             }
 
@@ -138,7 +143,7 @@ class JournalService
 
             $reversalEntry = JournalEntry::create([
                 'transaction_date' => now(),
-                'description' => "Reversal: {$entry->description}" . ($reason ? " - {$reason}" : ''),
+                'description' => "Reversal: {$entry->description}".($reason ? " - {$reason}" : ''),
                 'reference' => "REV-{$entry->reference}",
                 'currency_code' => $entry->currency_code,
                 'fiscal_period_id' => $this->findFiscalPeriod(now())?->id,
@@ -172,6 +177,7 @@ class JournalService
 
     /**
      * Void a journal entry
+     *
      * @throws Throwable
      */
     public function void(JournalEntry $entry, ?string $reason = null, int|string|null $userId = null): bool

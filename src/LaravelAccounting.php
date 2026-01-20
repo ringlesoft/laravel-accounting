@@ -2,13 +2,10 @@
 
 namespace RingleSoft\LaravelAccounting;
 
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
-use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
-use RingleSoft\LaravelAccounting\Reports\Reports;
 use RingleSoft\LaravelAccounting\Services\AccountService;
 use RingleSoft\LaravelAccounting\Services\BalanceService;
 use RingleSoft\LaravelAccounting\Services\JournalService;
@@ -19,35 +16,24 @@ use Throwable;
 
 class LaravelAccounting
 {
-
     /**
      * Account Service
-     * @return AccountService
      */
     public function accounts(): AccountService
     {
         return app(AccountService::class);
     }
 
-    /**
-     * @return BalanceService
-     */
     public function balances(): BalanceService
     {
         return app(BalanceService::class);
     }
 
-    /**
-     * @return JournalService
-     */
     public function journals(): JournalService
     {
         return app(JournalService::class);
     }
 
-    /**
-     * @return ReportService
-     */
     public function reports(): ReportService
     {
         return app(ReportService::class);
@@ -60,10 +46,8 @@ class LaravelAccounting
 
     public function templates()
     {
-      return app(TemplateRegistry::class);
+        return app(TemplateRegistry::class);
     }
-
-
 
     // - Journal creation and posting
     // - Reversals and adjustments
@@ -76,21 +60,15 @@ class LaravelAccounting
         return Account::all();
     }
 
-    public function postModel(VoucherData $voucherData) {
-
-    }
+    public function postModel(VoucherData $voucherData) {}
 
     public function postRaw(VoucherData $voucher) {}
 
     /**
-     * @param JournalEntry $journalEntry
-     * @return JournalEntry
      * @throws Throwable
      */
     public function reverse(JournalEntry $journalEntry): JournalEntry
     {
         return $this->journals()->reverse($journalEntry);
     }
-
-
 }

@@ -5,7 +5,7 @@ namespace RingleSoft\LaravelAccounting\Templates;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 /**
- * @inheritDoc
+ * {@inheritDoc}
  */
 class AccruedRevenueTemplate extends AccountingTemplate
 {

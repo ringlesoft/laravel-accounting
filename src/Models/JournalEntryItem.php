@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
+/**
+ * @mixin Builder<JournalEntryItem>
+ */
 class JournalEntryItem extends Model
 {
     use HasTablePrefix, MultiTenant;

@@ -2,6 +2,8 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Exceptions\TemplateNotFoundException;
+
 class TemplateRegistry
 {
     protected static array $templates = [
@@ -27,6 +29,9 @@ class TemplateRegistry
         'debt.writeoff' => BadDebtTemplate::class,
     ];
 
+    /**
+     * @throws TemplateNotFoundException
+     */
     public static function make(string $template, array $config = []): AccountingTemplate
     {
         if (! isset(self::$templates[$template])) {

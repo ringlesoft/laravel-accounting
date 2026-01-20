@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Models;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +10,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
+/**
+ * @property string|int $id
+ * @property DateTimeInterface $start_date
+ * @property DateTimeInterface $end_date
+ * @property bool $is_closed
+ * @property bool $is_locked
+ * @property DateTimeInterface $closed_at
+ */
 class FiscalPeriod extends Model
 {
     use HasTablePrefix, MultiTenant;

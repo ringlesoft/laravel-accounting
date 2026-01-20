@@ -10,6 +10,18 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
+/**
+ * @mixin  Builder
+ * @property int $id
+ * @property HasMany $items
+ * @property ?FiscalPeriod $fiscalPeriod
+ * @property bool $is_posted
+ * @property bool $is_voided
+ * @property bool $is_reversed
+ * @property ?string $description
+ * @property ?string $reference
+ * @property ?string $currency_code
+ */
 class JournalEntry extends Model
 {
     use HasTablePrefix, MultiTenant;

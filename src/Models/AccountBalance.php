@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
+/**
+ * @mixin Builder<AccountBalance>
+ */
 class AccountBalance extends Model
 {
     use HasTablePrefix, MultiTenant;

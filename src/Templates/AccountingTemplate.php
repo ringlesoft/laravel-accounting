@@ -13,6 +13,9 @@ use RingleSoft\LaravelAccounting\DTOs\VoucherDataItem;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Models\Account;
 
+/**
+ * @uses PostableTemplate
+ */
 abstract class AccountingTemplate implements PostableTemplate
 {
     /**

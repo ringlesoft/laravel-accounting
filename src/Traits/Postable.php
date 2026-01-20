@@ -17,15 +17,16 @@ use RingleSoft\LaravelAccounting\Templates\AccountingTemplate;
  * @mixin Builder
  * @mixin Model
  * @mixin PostableModel
+ *
  * @phpstan-require-implements PostableModel
  */
 trait Postable
 {
-
     public function journalEntry(): MorphOne
     {
         return $this->morphOne(JournalEntry::class, 'postable');
     }
+
     public function createJournal(): bool
     {
         // Todo Implement
@@ -68,15 +69,17 @@ trait Postable
         if (count($attributes) > 0) {
             return $attributes[0]->newInstance()->getTemplate();
         }
+
         return null;
     }
 
     public function toVoucher(): VoucherData
     {
         $template = $this->getTemplate();
-        if(!$template){
-            throw new \Exception('No template found for ' . get_class($this));
+        if (! $template) {
+            throw new \Exception('No template found for '.get_class($this));
         }
+
         return $template->make($this);
     }
 }

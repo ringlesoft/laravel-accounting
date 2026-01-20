@@ -113,6 +113,7 @@ class BalanceData
     public function addDebit(float $amount): self
     {
         $this->debits += abs($amount);
+
         return $this;
     }
 
@@ -122,6 +123,7 @@ class BalanceData
     public function addCredit(float $amount): self
     {
         $this->credits += abs($amount);
+
         return $this;
     }
 
@@ -131,6 +133,7 @@ class BalanceData
     public function setOpening(float $opening): self
     {
         $this->opening = $opening;
+
         return $this;
     }
 
@@ -140,6 +143,7 @@ class BalanceData
     public function setClosing(float $closing): self
     {
         $this->closing = $closing;
+
         return $this;
     }
 }

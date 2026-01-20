@@ -4,7 +4,6 @@ namespace RingleSoft\LaravelAccounting\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Database\Seeders\DatabaseSeeder;
 
 class InstallCommand extends Command
 {

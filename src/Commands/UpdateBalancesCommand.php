@@ -2,7 +2,4 @@
 
 namespace RingleSoft\LaravelAccounting\Commands;
 
-class UpdateBalancesCommand
-{
-
-}
+class UpdateBalancesCommand {}

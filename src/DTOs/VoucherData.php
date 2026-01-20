@@ -29,6 +29,7 @@ class VoucherData
     public function on(Carbon $date): self
     {
         $this->date = $date;
+
         return $this;
     }
 
@@ -38,6 +39,7 @@ class VoucherData
     public function describe(string $description): self
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -47,6 +49,7 @@ class VoucherData
     public function debit(int|string $accountId, float $amount, ?string $memo = null): self
     {
         $this->entries[] = new VoucherDataItem($accountId, abs($amount), $memo);
+
         return $this;
     }
 
@@ -56,6 +59,7 @@ class VoucherData
     public function credit(int|string $accountId, float $amount, ?string $memo = null): self
     {
         $this->entries[] = new VoucherDataItem($accountId, -abs($amount), $memo);
+
         return $this;
     }
 
@@ -65,6 +69,7 @@ class VoucherData
     public function reference(string $reference): self
     {
         $this->reference = $reference;
+
         return $this;
     }
 
@@ -74,6 +79,7 @@ class VoucherData
     public function currency(string $currencyCode): self
     {
         $this->currency_code = $currencyCode;
+
         return $this;
     }
 
@@ -83,6 +89,7 @@ class VoucherData
     public function withMetadata(array $metadata): self
     {
         $this->metadata = array_merge($this->metadata, $metadata);
+
         return $this;
     }
 
@@ -121,7 +128,7 @@ class VoucherData
             'reference' => $this->reference,
             'currency_code' => $this->currency_code,
             'metadata' => $this->metadata,
-            'entries' => array_map(fn($entry) => $entry->toArray(), $this->entries),
+            'entries' => array_map(fn ($entry) => $entry->toArray(), $this->entries),
         ];
     }
 
@@ -130,6 +137,6 @@ class VoucherData
      */
     public static function make(): self
     {
-        return new self();
+        return new self;
     }
 }

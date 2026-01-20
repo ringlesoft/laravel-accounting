@@ -12,7 +12,7 @@ trait HasUuid
      */
     protected static function bootHasUuid(): void
     {
-        if (!config('laravel_accounting.use_uuid', false)) {
+        if (! config('laravel_accounting.use_uuid', false)) {
             return;
         }
 
@@ -28,7 +28,7 @@ trait HasUuid
      */
     public function initializeHasUuid(): void
     {
-        if (!config('laravel_accounting.use_uuid', false)) {
+        if (! config('laravel_accounting.use_uuid', false)) {
             return;
         }
 

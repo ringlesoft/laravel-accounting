@@ -35,11 +35,11 @@ class ChartOfAccountsSeeder extends Seeder
     protected function getAccountTypes(): array
     {
         return [
-            'Asset' => AccountTypeModel::where('code', 'ASSET')->first(),
-            'Liability' => AccountTypeModel::where('code', 'LIABILITY')->first(),
-            'Equity' => AccountTypeModel::where('code', 'EQUITY')->first(),
-            'Income' => AccountTypeModel::where('code', 'INCOME')->first(),
-            'Expense' => AccountTypeModel::where('code', 'EXPENSE')->first(),
+            'Asset' => AccountTypeModel::where('name', 'ASSET')->first(),
+            'Liability' => AccountTypeModel::where('name', 'LIABILITY')->first(),
+            'Equity' => AccountTypeModel::where('name', 'EQUITY')->first(),
+            'Income' => AccountTypeModel::where('name', 'INCOME')->first(),
+            'Expense' => AccountTypeModel::where('name', 'EXPENSE')->first(),
         ];
     }
 
@@ -49,10 +49,11 @@ class ChartOfAccountsSeeder extends Seeder
     protected function seedAssets(array $accountTypes): void
     {
         $assetType = $accountTypes['Asset'];
+        $assetCode = $assetType->code;
 
         // 1000 - Current Assets (Parent)
         $currentAssets = $this->createAccount([
-            'code' => '1000',
+            'code' => $assetCode,
             'name' => 'Current Assets',
             'account_type_id' => $assetType->id,
             'category' => 'Current Assets',

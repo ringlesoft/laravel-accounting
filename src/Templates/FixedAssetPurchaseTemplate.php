@@ -17,7 +17,7 @@ class FixedAssetPurchaseTemplate extends AccountingTemplate
     {
         // Fixed Asset → Cash/AP
         $this->debit($this->fixedAssetAccount);
-        
+
         if ($this->isCashPurchase) {
             $this->credit($this->cashAccount);
         } else {

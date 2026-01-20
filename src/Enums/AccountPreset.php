@@ -296,7 +296,7 @@ enum AccountPreset: string
      */
     public function type(): AccountType
     {
-        return match($this) {
+        return match ($this) {
             // Assets (1000-2999)
             self::CASH, self::ACCOUNTS_RECEIVABLE, self::INVENTORY,
             self::PREPAID_EXPENSES, self::LAND, self::BUILDINGS,
@@ -378,7 +378,7 @@ enum AccountPreset: string
      */
     public function normalBalance(): NormalBalance
     {
-        return match($this->type()) {
+        return match ($this->type()) {
             AccountType::ASSET, AccountType::EXPENSE => NormalBalance::DEBIT,
             AccountType::LIABILITY, AccountType::EQUITY, AccountType::INCOME => NormalBalance::CREDIT,
         };
@@ -391,7 +391,7 @@ enum AccountPreset: string
     {
         return array_filter(
             self::cases(),
-            fn($preset) => $preset->type() === $type
+            fn ($preset) => $preset->type() === $type
         );
     }
 

@@ -3,7 +3,6 @@
 namespace RingleSoft\LaravelAccounting\Templates;
 
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
-use RingleSoft\LaravelAccounting\Enums\AccountType;
 
 class CreditSaleTemplate extends AccountingTemplate
 {

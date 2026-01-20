@@ -23,9 +23,11 @@ trait Postable
         return $this->createJournal() && $this->postJournal();
     }
 
-    public function postWithTemplate(PostableTemplate $template): bool {
+    public function postWithTemplate(PostableTemplate $template): bool
+    {
         // TODO: implement
         $this->template = $template;
+
         return $this->post();
     }
 
@@ -36,6 +38,6 @@ trait Postable
 
     public function getReference(): ?string
     {
-       return null;
+        return null;
     }
 }

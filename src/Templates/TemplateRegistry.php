@@ -29,7 +29,7 @@ class TemplateRegistry
 
     public static function make(string $template, array $config = []): AccountingTemplate
     {
-        if (!isset(self::$templates[$template])) {
+        if (! isset(self::$templates[$template])) {
             throw new TemplateNotFoundException("Template {$template} not found");
         }
 

@@ -17,7 +17,7 @@ class SalesReturnTemplate extends AccountingTemplate
     {
         // Sales Returns → AR/Cash
         $this->debit($this->salesReturnsAccount);
-        
+
         if ($this->isCashReturn) {
             $this->credit($this->cashAccount);
         } else {

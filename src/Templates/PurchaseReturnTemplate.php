@@ -21,7 +21,7 @@ class PurchaseReturnTemplate extends AccountingTemplate
         } else {
             $this->debit($this->payableAccount);
         }
-        
+
         $this->credit($this->inventoryAccount);
     }
 }

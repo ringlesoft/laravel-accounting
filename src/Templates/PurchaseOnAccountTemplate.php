@@ -16,12 +16,12 @@ class PurchaseOnAccountTemplate extends AccountingTemplate
     public function configure(): void
     {
         // Inventory/Expense + Input VAT → AP
-        $this->debit($this->expenseAccount, fn($amount) => $amount / (1 + $this->taxRate));
-        
+        $this->debit($this->expenseAccount, fn ($amount) => $amount / (1 + $this->taxRate));
+
         if ($this->taxRate > 0 && $this->inputTaxAccount) {
-            $this->debit($this->inputTaxAccount, fn($amount) => $amount * $this->taxRate / (1 + $this->taxRate));
+            $this->debit($this->inputTaxAccount, fn ($amount) => $amount * $this->taxRate / (1 + $this->taxRate));
         }
-        
+
         $this->credit($this->payableAccount);
     }
 }

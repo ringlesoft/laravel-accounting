@@ -17,10 +17,10 @@ class PayrollAccrualTemplate extends AccountingTemplate
     {
         // Salary Expense → Wages Payable + Tax Payable
         $this->debit($this->salaryExpenseAccount);
-        $this->credit($this->wagesPayableAccount, fn($amount) => $amount * (1 - $this->taxWithholdingRate));
+        $this->credit($this->wagesPayableAccount, fn ($amount) => $amount * (1 - $this->taxWithholdingRate));
 
         if ($this->taxWithholdingRate > 0 && $this->taxPayableAccount) {
-            $this->credit($this->taxPayableAccount, fn($amount) => $amount * $this->taxWithholdingRate);
+            $this->credit($this->taxPayableAccount, fn ($amount) => $amount * $this->taxWithholdingRate);
         }
     }
 }

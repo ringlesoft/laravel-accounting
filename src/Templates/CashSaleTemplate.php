@@ -17,10 +17,10 @@ class CashSaleTemplate extends AccountingTemplate
     {
         // Cash → Sales Revenue (+ Tax Payable)
         $this->debit($this->cashAccount);
-        $this->credit($this->revenueAccount, fn($amount) => $amount / (1 + $this->taxRate));
+        $this->credit($this->revenueAccount, fn ($amount) => $amount / (1 + $this->taxRate));
 
         if ($this->taxRate > 0 && $this->taxAccount) {
-            $this->credit($this->taxAccount, fn($amount) => $amount * $this->taxRate / (1 + $this->taxRate));
+            $this->credit($this->taxAccount, fn ($amount) => $amount * $this->taxRate / (1 + $this->taxRate));
         }
     }
 }

@@ -7,7 +7,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 class AccruedRevenueTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $accruedRevenueAccount = AccountPreset::UNEARNED_REVENUE, //Accrued Revenue
+        protected AccountPreset $accruedRevenueAccount = AccountPreset::UNEARNED_REVENUE, // Accrued Revenue
         protected AccountPreset $revenueAccount = AccountPreset::SALES_REVENUE
     ) {}
 

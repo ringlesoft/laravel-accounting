@@ -28,6 +28,15 @@ interface PostableModel
     public function post(): bool;
 
     /**
+     * @param PostableTemplate $template
+     * @return bool
+     */
+    public function postWithTemplate(PostableTemplate $template): bool;
+
+    public function getTemplate(): PostableTemplate;
+
+
+    /**
      * @return bool
      */
     public function createJournal(): bool;

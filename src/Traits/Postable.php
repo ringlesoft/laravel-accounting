@@ -2,6 +2,8 @@
 
 namespace RingleSoft\LaravelAccounting\Traits;
 
+use RingleSoft\LaravelAccounting\Contracts\PostableTemplate;
+
 trait Postable
 {
     public function createJournal(): bool
@@ -19,6 +21,12 @@ trait Postable
     public function post(): bool
     {
         return $this->createJournal() && $this->postJournal();
+    }
+
+    public function postWithTemplate(PostableTemplate $template): bool {
+        // TODO: implement
+        $this->template = $template;
+        return $this->post();
     }
 
     public function isPosted(): bool

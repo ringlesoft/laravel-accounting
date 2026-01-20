@@ -46,13 +46,13 @@ abstract class AccountingTemplate implements PostableTemplate
         // Is this method even needed?
     }
 
-    public function debit(AccountPreset $account, ?Closure $amount, Closure|string|null $memo = null): self
+    public function debit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
     {
         $this->addEntry(AccountTemplateEntry::debit($account, $amount, $memo));
         return $this;
     }
 
-    public function ccredit(AccountPreset $account, ?Closure $amount, Closure|string|null $memo = null): self
+    public function credit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
     {
         $this->addEntry(AccountTemplateEntry::credit($account, $amount, $memo));
         return $this;

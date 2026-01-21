@@ -406,15 +406,15 @@ Developers may extend or override templates to match custom accounting structure
   - [x] Integrate events in BalanceService
 
 ### 8. Exceptions
-- [ ] **Create Custom Exceptions**
-  - [ ] PeriodClosedException
-  - [ ] PeriodLockedException
-  - [ ] JournalNotBalancedException
-  - [ ] AccountInactiveException
-  - [ ] CurrencyMismatchException
-  - [ ] InvalidAccountTypeException
-  - [ ] DuplicatePostingException
-  - [ ] InsufficientPermissionException
+- [x] **Create Custom Exceptions**
+  - [x] PeriodClosedException
+  - [x] PeriodLockedException
+  - [x] JournalNotBalancedException
+  - [x] AccountInactiveException
+  - [x] CurrencyMismatchException
+  - [x] InvalidAccountTypeException
+  - [x] DuplicatePostingException
+  - [x] InsufficientPermissionException
 
 - [ ] **Implement Exception Handling**
   - [ ] Add try-catch blocks in services
@@ -424,42 +424,42 @@ Developers may extend or override templates to match custom accounting structure
 ### 9. Reports Implementation
 - [x] **BalanceSheet Report**
   - [x] Create report class (stub exists)
-  - [ ] Implement generate() method
-  - [ ] Group accounts by type (Assets, Liabilities, Equity)
-  - [ ] Calculate totals and subtotals
-  - [ ] Support as-of-date parameter
-  - [ ] Return structured data array
+  - [x] Implement generate() method
+  - [x] Group accounts by type (Assets, Liabilities, Equity)
+  - [x] Calculate totals and subtotals
+  - [x] Support as-of-date parameter
+  - [x] Return structured data array
 
 - [x] **IncomeStatement Report**
   - [x] Create report class (stub exists)
-  - [ ] Implement generate() method
-  - [ ] Group accounts (Revenue, Expenses)
-  - [ ] Calculate net income
-  - [ ] Support date range parameter
-  - [ ] Return structured data array
+  - [x] Implement generate() method
+  - [x] Group accounts (Revenue, Expenses)
+  - [x] Calculate net income
+  - [x] Support date range parameter
+  - [x] Return structured data array
 
-- [ ] **CashFlowStatement Report**
-  - [ ] Implement generate() method (indirect method minimum)
-  - [ ] Categorize: Operating, Investing, Financing activities
-  - [ ] Support date range parameter
+- [x] **CashFlowStatement Report**
+  - [x] Implement generate() method (indirect method minimum)
+  - [x] Categorize: Operating, Investing, Financing activities
+  - [x] Support date range parameter
 
-- [ ] **TrialBalance Report**
-  - [ ] Implement generate() method
-  - [ ] List all accounts with debit/credit balances
-  - [ ] Verify debits = credits
-  - [ ] Support as-of-date parameter
+- [x] **TrialBalance Report**
+  - [x] Implement generate() method
+  - [x] List all accounts with debit/credit balances
+  - [x] Verify debits = credits
+  - [x] Support as-of-date parameter
 
-- [ ] **GeneralLedger Report**
-  - [ ] Implement generate() method
-  - [ ] Show all journal entries chronologically
-  - [ ] Support date range and account filters
-  - [ ] Include running balances
+- [x] **GeneralLedger Report**
+  - [x] Implement generate() method
+  - [x] Show all journal entries chronologically
+  - [x] Support date range and account filters
+  - [x] Include running balances
 
-- [ ] **AccountLedger Report**
-  - [ ] Implement generate() method
-  - [ ] Show transactions for specific account
-  - [ ] Include running balance
-  - [ ] Support date range parameter
+- [x] **AccountLedger Report**
+  - [x] Implement generate() method
+  - [x] Show transactions for specific account
+  - [x] Include running balance
+  - [x] Support date range parameter
 
 ### 10. Postable Templates ✓ (Completed)
 - [x] **Create Template Base Class**

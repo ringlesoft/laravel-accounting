@@ -2,23 +2,58 @@
 
 namespace RingleSoft\LaravelAccounting\Models;
 
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
+use RingleSoft\LaravelAccounting\Services\BalanceService;
 
-class Report
+abstract class Report
 {
-    protected string $name;
+    protected string $title;
+    protected array $parameters = [];
+    protected array $data = [];
+    protected BalanceService $balanceService;
 
-    protected Carbon $startDate;
+    public function __construct(BalanceService $balanceService)
+    {
+        $this->balanceService = $balanceService;
+    }
 
-    protected Carbon $endDate;
+    public function setParameters(array $parameters): self
+    {
+        $this->parameters = $parameters;
+        return $this;
+    }
 
-    protected string $currencyCode;
+    public function getParameter(string $key, $default = null)
+    {
+        return $this->parameters[$key] ?? $default;
+    }
 
-    // ->asOf('2024-01-20')
-    // ->from('2024-01-01')
-    // ->to('2024-12-31')
-    // ->inCurrency('USD')
-    // ->generate();
-    // ->compare();
+    abstract public function generate(): self;
 
+    public function toArray(): array
+    {
+        return [
+            'title' => $this->title ?? 'Report',
+            'generated_at' => now()->toDateTimeString(),
+            'parameters' => $this->parameters,
+            'data' => $this->data,
+        ];
+    }
+
+    public function toJson(): string
+    {
+        return json_encode($this->toArray(), JSON_PRETTY_PRINT);
+    }
+
+    protected function setData(array $data): self
+    {
+        $this->data = $data;
+        return $this;
+    }
+
+    protected function setTitle(string $title): self
+    {
+        $this->title = $title;
+        return $this;
+    }
 }

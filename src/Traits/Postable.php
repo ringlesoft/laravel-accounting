@@ -22,7 +22,7 @@ use Throwable;
  * @mixin Builder
  * @mixin Model
  * @mixin PostableModel
- * @property JournalEntry @journalEntry
+ * @property JournalEntry $journalEntry
  *
  * @phpstan-require-implements PostableModel
  */

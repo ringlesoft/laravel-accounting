@@ -11,6 +11,7 @@ use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
 /**
+ * @mixin Builder
  * @property string|int $id
  * @property DateTimeInterface $start_date
  * @property DateTimeInterface $end_date

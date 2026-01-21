@@ -525,11 +525,11 @@ Developers may extend or override templates to match custom accounting structure
   - [ ] Mark period as closed
   - [ ] Add confirmation prompt
 
-- [ ] **UpdateBalancesCommand**
-  - [ ] Accept period or account parameters
-  - [ ] Recalculate balances from journal entries
-  - [ ] Update account_balances cache table
-  - [ ] Add progress bar for large datasets
+- [x] **UpdateBalancesCommand**
+  - [x] Accept period or account parameters
+  - [x] Recalculate balances from journal entries
+  - [x] Update account_balances cache table
+  - [x] Add progress bar for large datasets
 
 - [ ] **CreateFiscalPeriodCommand**
   - [ ] Accept year and period type (monthly/quarterly/yearly)

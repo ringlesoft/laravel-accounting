@@ -216,4 +216,25 @@ class BalanceService
             return abs($item['balance']) > 0.01;
         })->values();
     }
+
+    /**
+     * Update cached balance for a specific account and period
+     */
+    public function updateAccountBalance(Account $account, FiscalPeriod $period): void
+    {
+        $movement = $this->getPeriodMovement($account, $period);
+
+        AccountBalance::updateOrCreate(
+            [
+                'account_id' => $account->id,
+                'fiscal_period_id' => $period->id,
+            ],
+            [
+                'opening_balance' => $movement['opening_balance'],
+                'debit_total' => $movement['total_debits'],
+                'credit_total' => $movement['total_credits'],
+                'closing_balance' => $movement['closing_balance'],
+            ]
+        );
+    }
 }

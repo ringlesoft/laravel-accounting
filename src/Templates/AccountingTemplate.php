@@ -131,6 +131,7 @@ abstract class AccountingTemplate implements PostableTemplate
         $currency = $this->currency instanceof Closure ? ($this->currency)($model) : $this->currency;
         $reference = $this->reference instanceof Closure ? ($this->reference)($model) : $this->reference;
         $voucher = new VoucherData($voucherEntries, $date, $description, $reference, $currency, $metadata);
+        $voucher->setSource($model);
         $voucher->validate();
         return $voucher;
     }

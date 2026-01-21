@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
+use RingleSoft\LaravelAccounting\Traits\HasUuid;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
+use Throwable;
 
 /**
  * @mixin  Builder
@@ -23,10 +25,11 @@ use RingleSoft\LaravelAccounting\Traits\MultiTenant;
  * @property ?string $description
  * @property ?string $reference
  * @property ?string $currency_code
+ * @property ?string $transaction_number
  */
 class JournalEntry extends Model
 {
-    use HasTablePrefix, MultiTenant;
+    use HasTablePrefix, MultiTenant, HasUuid;
 
     protected $fillable = [
         'transaction_number',
@@ -65,7 +68,7 @@ class JournalEntry extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = config('laravel_accounting.table_prefix', 'la').'_journal_entries';
+        $this->table = config('laravel_accounting.table_prefix', 'la') . '_journal_entries';
     }
 
     protected static function boot()
@@ -171,35 +174,35 @@ class JournalEntry extends Model
         $totalDebits = $this->items()->sum('debit_amount');
         $totalCredits = $this->items()->sum('credit_amount');
 
-        return bccomp((string) $totalDebits, (string) $totalCredits, 2) === 0;
+        return bccomp((string)$totalDebits, (string)$totalCredits, 2) === 0;
     }
 
     public function getTotalDebits(): float
     {
-        return (float) $this->items()->sum('debit_amount');
+        return (float)$this->items()->sum('debit_amount');
     }
 
     public function getTotalCredits(): float
     {
-        return (float) $this->items()->sum('credit_amount');
+        return (float)$this->items()->sum('credit_amount');
     }
 
     public function canBePosted(): bool
     {
-        return ! $this->is_posted
-            && ! $this->is_voided
+        return !$this->is_posted
+            && !$this->is_voided
             && $this->isBalanced()
             && $this->items()->count() > 0;
     }
 
     public function canBeVoided(): bool
     {
-        return $this->is_posted && ! $this->is_voided && ! $this->is_reversed;
+        return $this->is_posted && !$this->is_voided && !$this->is_reversed;
     }
 
     public function canBeReversed(): bool
     {
-        return $this->is_posted && ! $this->is_voided && ! $this->is_reversed;
+        return $this->is_posted && !$this->is_voided && !$this->is_reversed;
     }
 
     // Transaction Number Generation
@@ -212,15 +215,19 @@ class JournalEntry extends Model
         $lastEntry = static::whereDate('created_at', now())
             ->orderBy('id', 'desc')
             ->first();
-
-        $sequence = $lastEntry ? (int) substr($lastEntry->transaction_number, -6) + 1 : 1;
-
+        $sequence = $lastEntry ? (int)substr($lastEntry->transaction_number, -6) + 1 : 1;
         return sprintf('%s-%s-%06d', $prefix, $date, $sequence);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function post(): bool
     {
-        return LaravelAccounting::journals()->post($this, auth()?->user()?->id);
+        if ($this->canBePosted()) {
+            return LaravelAccounting::journals()->post($this, auth()->id());
+        }
+        return false;
     }
 
     // Validation Rules
@@ -228,13 +235,13 @@ class JournalEntry extends Model
     public static function validationRules(): array
     {
         return [
-            'transaction_number' => 'nullable|string|max:50|unique:'.config('laravel_accounting.table_prefix', 'la').'_journal_entries,transaction_number',
+            'transaction_number' => 'nullable|string|max:50|unique:' . config('laravel_accounting.table_prefix', 'la') . '_journal_entries,transaction_number',
             'transaction_date' => 'required|date',
             'description' => 'nullable|string',
             'reference' => 'nullable|string|max:100',
             'currency_code' => 'required|string|size:3',
             'exchange_rate' => 'required|numeric|min:0',
-            'fiscal_period_id' => 'required|exists:'.config('laravel_accounting.table_prefix', 'la').'_fiscal_periods,id',
+            'fiscal_period_id' => 'required|exists:' . config('laravel_accounting.table_prefix', 'la') . '_fiscal_periods,id',
         ];
     }
 }

@@ -2,9 +2,14 @@
 
 namespace RingleSoft\LaravelAccounting\Contracts;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
+use RingleSoft\LaravelAccounting\Templates\AccountingTemplate;
 
+/**
+ * @phpstan-extends Model
+ */
 interface PostableModel
 {
     /**
@@ -18,9 +23,9 @@ interface PostableModel
 
     public function post(): bool;
 
-    public function postWithTemplate(PostableTemplate $template): bool;
+    public function postWithTemplate(AccountingTemplate $template): bool;
 
-    public function getTemplate(): ?PostableTemplate;
+    public function getTemplate(): ?AccountingTemplate;
 
     public function createJournal(): bool;
 

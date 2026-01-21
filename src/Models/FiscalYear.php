@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
+/**
+ * @mixin Builder<FiscalYear>
+ */
 class FiscalYear extends Model
 {
     use HasTablePrefix, MultiTenant;

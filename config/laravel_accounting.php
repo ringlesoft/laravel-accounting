@@ -30,6 +30,12 @@ return [
         'day' => 1,
     ],
 
+    /**
+     * The number of fiscal periods within a fiscal year
+     * Common values: 12 (monthly), 4 (quarterly), 2 (semi-annual), 1 (annual)
+     */
+    'fiscal_periods_count' => 2,
+
     /*
      * Automatically post journal entries when created
      * If false, entries will be created in draft status and require manual posting

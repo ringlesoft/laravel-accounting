@@ -139,12 +139,12 @@ class PeriodService
             $periods = [];
             $startDate = $year->start_date->copy();
             $endDate = $year->end_date;
-            $periodLength = config('laravel_accounting.fiscal_period_length', 12);
-            $monthsPerPeriod = 12 / $periodLength;
+            $periodsCount = config('laravel_accounting.fiscal_periods_count', 12);
+            $monthsPerPeriod = 12 / $periodsCount;
 
             $periodNumber = 1;
 
-            for ($i = 1; $i <= $periodLength; $i++) {
+            for ($i = 1; $i <= $periodsCount; $i++) {
                 $periodEndDate = $startDate->copy()->addMonths($monthsPerPeriod)->subDay();
 
                 if ($periodEndDate->gt($endDate)) {
@@ -197,13 +197,13 @@ class PeriodService
     }
 
     /**
-     * Map fiscal_period_length config to frequency
+     * Map fiscal_periods_count config to frequency
      */
     public function getFrequencyFromConfig(): string
     {
-        $periodLength = config('laravel_accounting.fiscal_period_length', 12);
+        $periodsCount = config('laravel_accounting.fiscal_periods_count', 12);
 
-        return match ($periodLength) {
+        return match ($periodsCount) {
             12 => 'monthly',
             4 => 'quarterly',
             2 => 'semi-annual',
@@ -217,9 +217,9 @@ class PeriodService
      */
     public function getMonthsPerPeriod(): int
     {
-        $periodLength = config('laravel_accounting.fiscal_period_length', 12);
+        $periodsCount = config('laravel_accounting.fiscal_periods_count', 12);
 
-        return (int) (12 / $periodLength);
+        return (int) (12 / $periodsCount);
     }
 
     /**
@@ -242,6 +242,7 @@ class PeriodService
     /**
      * Ensure periods exist for current and upcoming fiscal years
      * This method can be called from a cron job to automatically create periods
+     * @throws Throwable
      */
     public function ensurePeriodsExist(int $yearsAhead = 1): array
     {
@@ -251,6 +252,7 @@ class PeriodService
                 'month' => 1,
                 'day' => 1,
             ]);
+            $fiscalPeriodsCount = config('laravel_accounting.fiscal_periods_count', 1);
 
             $currentYear = now()->year;
             $startMonth = $fiscalYearStart['month'];
@@ -278,7 +280,7 @@ class PeriodService
                 ]);
 
                 $existingPeriodsCount = $fiscalYear->fiscalPeriods()->count();
-                $expectedPeriodsCount = config('laravel_accounting.fiscal_period_length', 12);
+                $expectedPeriodsCount = $fiscalPeriodsCount;
 
                 if ($existingPeriodsCount < $expectedPeriodsCount) {
                     $periods = $this->createPeriodsForYear($fiscalYear);

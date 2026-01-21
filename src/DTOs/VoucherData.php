@@ -3,10 +3,14 @@
 namespace RingleSoft\LaravelAccounting\DTOs;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 use RingleSoft\LaravelAccounting\Enums\EntryType;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
+use RingleSoft\LaravelAccounting\Services\JournalService;
 
 class VoucherData
 {
@@ -20,6 +24,7 @@ class VoucherData
         public ?string $reference = null,
         public ?CurrencyCode $currency = null,
         public array $metadata = [],
+        public Model|PostableModel|null $sourceModel = null,
     ) {
         $this->date = $this->date ?? now();
     }
@@ -88,30 +93,23 @@ class VoucherData
     }
 
     /**
+     * @param Model|PostableModel $modal
+     * @return $this
+     */
+    public function setSource(Model|PostableModel $modal): self
+    {
+        $this->sourceModel = $modal;
+        return $this;
+    }
+
+    /**
      * Validate the voucher data
      * @throws InvalidVoucherException
+     * @throws JournalNotBalancedException
      */
     public function validate(): void
     {
-        if (empty($this->entries)) {
-            throw new InvalidVoucherException('Voucher must have at least two entries');
-        }
-
-        if (count($this->entries) < 2) {
-            throw new InvalidVoucherException('Voucher must have at least two entries (debit and credit)');
-        }
-        $totalCredit = array_reduce($this->entries, static function ($carry, $entry) {
-            return $carry +  ($entry->isCredit() ?  $entry->amount : 0);
-        }, 0);
-        $totalDebit = array_reduce($this->entries, static function ($carry, $entry) {
-            return $carry +  ($entry->isDebit() ?  $entry->amount : 0);
-        }, 0);
-        $totalAmount = $totalCredit - $totalDebit;
-        if (abs($totalAmount) > 0.01) {
-            throw new InvalidVoucherException(
-                sprintf('Voucher is not balanced. Debit:  %.2f, Credit: %.2f', $totalCredit, $totalDebit)
-            );
-        }
+        (app(JournalService::class))->validateVoucher($this);
     }
 
     /**
@@ -135,5 +133,15 @@ class VoucherData
     public static function make(): self
     {
         return new self;
+    }
+
+
+    /**
+     * Create instance for a PostableModal
+     */
+    public static function for(Model|PostableModel $sourceModel): self {
+        $voucher = new self;
+        $voucher->sourceModel = $sourceModel;
+        return $voucher;
     }
 }

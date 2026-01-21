@@ -3,9 +3,13 @@
 namespace RingleSoft\LaravelAccounting\Services;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
+use RingleSoft\LaravelAccounting\Enums\EntryType;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
 use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
@@ -20,23 +24,31 @@ class JournalService
      *
      * @throws Throwable
      */
-    public function createDraft(VoucherData $voucher, ?int $userId = null): JournalEntry
+    public function createDraft(VoucherData $voucher, int|string|null $userId = null): JournalEntry
     {
         return DB::transaction(function () use ($voucher, $userId) {
             $this->validateVoucher($voucher);
 
             $fiscalPeriod = $this->findFiscalPeriod($voucher->date);
 
-            $journalEntry = JournalEntry::create([
+            $journalData = [
                 'transaction_date' => $voucher->date,
                 'description' => $voucher->description,
                 'reference' => $voucher->reference,
                 'currency_code' => $voucher->currency_code ?? config('laravel_accounting.default_currency_code'),
                 'fiscal_period_id' => $fiscalPeriod?->id,
-                'created_by_user_id' => $userId,
+                'posted_at' => now(),
+                'posted_by_user_id' => $userId ?? auth()->id(),
+                'created_by_user_id' => $userId ?? auth()->id(),
                 'is_posted' => false,
-                'metadata' => $voucher->metadata,
-            ]);
+                'metadata' => $voucher->metadata ?? [],
+            ];
+            if(isset($voucher->sourceModel) && ($keyName = $voucher->sourceModel->getKeyName()) && ($modalId = $voucher->sourceModel->$keyName)) {
+                $journalData['postable_id'] = $modalId;
+                $journalData['postable_type'] = get_class($voucher->sourceModel);
+
+            }
+            $journalEntry = JournalEntry::create($journalData);
 
             foreach ($voucher->entries as $entry) {
                 JournalEntryItem::create([
@@ -218,24 +230,27 @@ class JournalService
 
     /**
      * Validate voucher data
+     * @throws JournalNotBalancedException|InvalidArgumentException
+     * @throws InvalidVoucherException
      */
-    protected function validateVoucher(VoucherData $voucher): void
+    public function validateVoucher(VoucherData $voucher): void
     {
         if (empty($voucher->entries)) {
-            throw new InvalidArgumentException('Voucher must have at least one entry');
+            throw new InvalidVoucherException('Voucher must have at least one entry');
         }
 
         if (count($voucher->entries) < 2) {
-            throw new InvalidArgumentException('Voucher must have at least two entries (debit and credit)');
+            throw new InvalidVoucherException('Voucher must have at least two entries (debit and credit)');
         }
 
-        $totalAmount = array_reduce($voucher->entries, function ($carry, $entry) {
-            return $carry + $entry->amount;
+        $totalAmount = array_reduce($voucher->entries, static function ($carry, $entry) {
+            return $carry + ($entry->type === EntryType::CREDIT ? $entry->amount : -$entry->amount );
         }, 0);
 
         if (abs($totalAmount) > 0.01) {
             throw new JournalNotBalancedException('Voucher entries are not balanced');
         }
+
     }
 
     /**

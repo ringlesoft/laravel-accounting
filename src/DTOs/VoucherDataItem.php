@@ -3,10 +3,12 @@
 namespace RingleSoft\LaravelAccounting\DTOs;
 
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Enums\EntryType;
 
 class VoucherDataItem
 {
     public function __construct(
+        public EntryType $type,
         public int|string $accountId,
         public float $amount,
         public ?string $memo = null,
@@ -24,8 +26,8 @@ class VoucherDataItem
             throw new InvalidArgumentException('Account ID is required');
         }
 
-        if ($this->amount === 0.0) {
-            throw new InvalidArgumentException('Amount cannot be zero');
+        if ($this->amount <= 0.0) {
+            throw new InvalidArgumentException('Amount cannot be zero or less');
         }
     }
 
@@ -34,7 +36,7 @@ class VoucherDataItem
      */
     public function isDebit(): bool
     {
-        return $this->amount > 0;
+        return $this->type === EntryType::DEBIT;
     }
 
     /**
@@ -42,7 +44,7 @@ class VoucherDataItem
      */
     public function isCredit(): bool
     {
-        return $this->amount < 0;
+        return $this->type === EntryType::CREDIT;
     }
 
     /**
@@ -50,7 +52,7 @@ class VoucherDataItem
      */
     public function getDebitAmount(): float
     {
-        return $this->amount > 0 ? abs($this->amount) : 0;
+        return $this->isDebit() ? $this->amount : 0;
     }
 
     /**
@@ -58,7 +60,7 @@ class VoucherDataItem
      */
     public function getCreditAmount(): float
     {
-        return $this->amount < 0 ? abs($this->amount) : 0;
+        return $this->isCredit() ? $this->amount : 0;
     }
 
     /**
@@ -81,7 +83,7 @@ class VoucherDataItem
      */
     public static function debit(int|string $accountId, float $amount, ?string $memo = null): self
     {
-        return new self($accountId, abs($amount), $memo);
+        return new self(EntryType::DEBIT, $accountId, abs($amount), $memo);
     }
 
     /**
@@ -89,6 +91,6 @@ class VoucherDataItem
      */
     public static function credit(int|string $accountId, float $amount, ?string $memo = null): self
     {
-        return new self($accountId, -abs($amount), $memo);
+        return new self(EntryType::CREDIT, $accountId, -abs($amount), $memo);
     }
 }

@@ -4,11 +4,12 @@ namespace RingleSoft\LaravelAccounting\DTOs;
 
 use Carbon\Carbon;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
+use RingleSoft\LaravelAccounting\Enums\EntryType;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 
 class VoucherData
 {
-    public ?string $currency_code = null;
-
     public function __construct(
         /**
          * @var VoucherDataItem[]
@@ -17,10 +18,10 @@ class VoucherData
         public ?Carbon $date = null,
         public ?string $description = null,
         public ?string $reference = null,
-        public array $metadata = []
+        public ?CurrencyCode $currency = null,
+        public array $metadata = [],
     ) {
         $this->date = $this->date ?? now();
-        $this->validate();
     }
 
     /**
@@ -29,7 +30,6 @@ class VoucherData
     public function on(Carbon $date): self
     {
         $this->date = $date;
-
         return $this;
     }
 
@@ -39,7 +39,6 @@ class VoucherData
     public function describe(string $description): self
     {
         $this->description = $description;
-
         return $this;
     }
 
@@ -48,8 +47,7 @@ class VoucherData
      */
     public function debit(int|string $accountId, float $amount, ?string $memo = null): self
     {
-        $this->entries[] = new VoucherDataItem($accountId, abs($amount), $memo);
-
+        $this->entries[] = new VoucherDataItem(EntryType::DEBIT, $accountId, $amount, $memo);
         return $this;
     }
 
@@ -58,8 +56,7 @@ class VoucherData
      */
     public function credit(int|string $accountId, float $amount, ?string $memo = null): self
     {
-        $this->entries[] = new VoucherDataItem($accountId, -abs($amount), $memo);
-
+        $this->entries[] = new VoucherDataItem(EntryType::CREDIT, $accountId, $amount, $memo);
         return $this;
     }
 
@@ -69,17 +66,15 @@ class VoucherData
     public function reference(string $reference): self
     {
         $this->reference = $reference;
-
         return $this;
     }
 
     /**
      * Set currency code
      */
-    public function currency(string $currencyCode): self
+    public function currency(string|CurrencyCode $currencyCode): self
     {
-        $this->currency_code = $currencyCode;
-
+        $this->currency = is_string($currencyCode) ? CurrencyCode::from($currencyCode) : $currencyCode;
         return $this;
     }
 
@@ -89,30 +84,32 @@ class VoucherData
     public function withMetadata(array $metadata): self
     {
         $this->metadata = array_merge($this->metadata, $metadata);
-
         return $this;
     }
 
     /**
      * Validate the voucher data
+     * @throws InvalidVoucherException
      */
     public function validate(): void
     {
         if (empty($this->entries)) {
-            return;
+            throw new InvalidVoucherException('Voucher must have at least two entries');
         }
 
         if (count($this->entries) < 2) {
-            throw new InvalidArgumentException('Voucher must have at least two entries (debit and credit)');
+            throw new InvalidVoucherException('Voucher must have at least two entries (debit and credit)');
         }
-
-        $totalAmount = array_reduce($this->entries, function ($carry, $entry) {
-            return $carry + $entry->amount;
+        $totalCredit = array_reduce($this->entries, static function ($carry, $entry) {
+            return $carry +  ($entry->isCredit() ?  $entry->amount : 0);
         }, 0);
-
+        $totalDebit = array_reduce($this->entries, static function ($carry, $entry) {
+            return $carry +  ($entry->isDebit() ?  $entry->amount : 0);
+        }, 0);
+        $totalAmount = $totalCredit - $totalDebit;
         if (abs($totalAmount) > 0.01) {
-            throw new InvalidArgumentException(
-                sprintf('Voucher is not balanced. Total amount: %.2f', $totalAmount)
+            throw new InvalidVoucherException(
+                sprintf('Voucher is not balanced. Debit:  %.2f, Credit: %.2f', $totalCredit, $totalDebit)
             );
         }
     }
@@ -126,9 +123,9 @@ class VoucherData
             'date' => $this->date?->toDateString(),
             'description' => $this->description,
             'reference' => $this->reference,
-            'currency_code' => $this->currency_code,
+            'currency_code' => $this->currency->value,
             'metadata' => $this->metadata,
-            'entries' => array_map(fn ($entry) => $entry->toArray(), $this->entries),
+            'entries' => array_map(static fn ($entry) => $entry->toArray(), $this->entries),
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace RingleSoft\LaravelAccounting\Templates;
 
 use Closure;
+use Exception;
 use Illuminate\Support\Carbon;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Contracts\PostableTemplate;
@@ -11,10 +12,13 @@ use RingleSoft\LaravelAccounting\DTOs\TaxData;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\DTOs\VoucherDataItem;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
+use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Models\Account;
 
 /**
- * @uses PostableTemplate
+ * @mixin PostableTemplate
  */
 abstract class AccountingTemplate implements PostableTemplate
 {
@@ -24,15 +28,31 @@ abstract class AccountingTemplate implements PostableTemplate
     protected array $entries = [];
 
     /**
-     * @var TaxData[] List of tax data in the template
+     * @var Closure(PostableModel $model): string|string|null
      */
-    protected array $taxes = [];
+    protected Closure|string|null $description = null;
 
-    protected string $description;
+    /**
+     * @var Closure(PostableModel $model): Carbon|Carbon|null
+     */
+    protected Closure|Carbon|null $date = null;
 
-    protected ?Carbon $date = null;
+    /**
+     * @var Closure(PostableModel $model): array|array
+     */
+    protected Closure|array $metadata = [];
 
-    protected array $metadata = [];
+    /**
+     * @var Closure(PostableModel $model): string|string|null
+     */
+    protected Closure|string|null $reference = null;
+
+    /**
+     * @var Closure(PostableModel $model): CurrencyCode|CurrencyCOde
+     */
+    protected Closure|CurrencyCode $currency = CurrencyCode::USD;
+
+
 
     protected function addEntry(AccountTemplateEntry $entry): void
     {
@@ -40,55 +60,78 @@ abstract class AccountingTemplate implements PostableTemplate
         $this->entries[] = $entry;
     }
 
-    protected function addTax(TaxData $entry): void
-    {
-        // TODO: ensure no duplicate entries, or merge them
-        $this->taxes[] = $entry;
-    }
-
-    public function configure(): void
-    {
-        // Is this method even needed?
-    }
-
+    /**
+     * @param AccountPreset $account
+     * @param Closure(float): float|null $amount
+     * @param Closure|string|null $memo
+     * @return $this
+     */
     public function debit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
     {
         $this->addEntry(AccountTemplateEntry::debit($account, $amount, $memo));
-
         return $this;
     }
 
+    /**
+     * @param AccountPreset $account
+     * @param Closure(float): float|null $amount
+     * @param Closure|string|null $memo
+     * @return $this
+     */
     public function credit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
     {
         $this->addEntry(AccountTemplateEntry::credit($account, $amount, $memo));
-
         return $this;
     }
 
-    /** USELESS **/
-    public function tax(AccountPreset $taxAccount, float $rate, ?Closure $amount, ?AccountPreset $baseAccount): self
-    {
-        $this->addTax(new TaxData($taxAccount, $rate, $amount, $baseAccount));
-
+    /**
+     * Set the description of the voucher
+     * @param Closure(PostableModel $model): string|string $description
+     * @return self
+     */
+    public function describe(Closure|string $description): self {
+        $this->description = $description;
         return $this;
     }
 
+    /**
+     * Set the date of the voucher
+     * @param Closure(PostableModel $model): Carbon|Carbon $date
+     * @return self
+     */
+    public function date(Closure|Carbon $date): self {
+       $this->date = $date;
+       return $this;
+    }
+
+    /**
+     * @param PostableModel $model
+     * @return VoucherData
+     * @throws AccountNotFoundException|InvalidVoucherException
+     */
     public function make(PostableModel $model): VoucherData
     {
         $amount = $model->getAmount();
-        $voucherEntries = [];
-        $journalPresets = array_map(fn (AccountPreset $preset) => $preset->value, $this->entries) ?? [];
-        $taxPresets = array_map(fn (TaxData $tax) => $tax->account->value, $this->taxes) ?? [];
-        $accounts = Account::query()->whereIn('preset', $journalPresets)->get()->pluck('id', 'preset');
-        $taxAccounts = Account::query()->whereIn('preset', $taxPresets)->get()->pluck('id', 'preset');
-        $accounts->merge($taxAccounts);
-        // TODO: if any is missing, throw an exception
-        foreach ($this->entries as $entry) {
-            $account = $accounts->get($entry->account->value);
-            $amount = is_callable($entry->amount) ? ($entry->amount($amount)) : (float) ($amount ?? 0);
-            $voucherEntries[] = new VoucherDataItem($account, $amount, $entry->memo);
-        }
+        $this->configure(); // Configure the template first
 
-        return new VoucherData($voucherEntries, $this->date, $this->description, null, $this->metadata);
+        $voucherEntries = [];
+        $journalPresets = array_map(static fn(AccountTemplateEntry $entry) => $entry->account->value, $this->entries);
+        $accounts = Account::whereIn('preset', $journalPresets)->get()->pluck('id', 'preset');
+        foreach ($this->entries as $entry) {
+            $accountId = $accounts->get($entry->account->value);
+            if(!$accountId) {
+                throw new AccountNotFoundException('Account not found for preset: '.$entry->account->value);
+            }
+            $entryAmount = $entry->getAmount($amount);
+            $voucherEntries[] = new VoucherDataItem($entry->type, $accountId, $entryAmount, $entry->memo);
+        }
+        $date = $this->date instanceof Closure ? ($this->date)($model) : ($this->date ?? now());
+        $description = $this->description instanceof Closure ? ($this->description)($model) : $this->description;
+        $metadata = $this->metadata instanceof Closure ? ($this->metadata)($model) : $this->metadata;
+        $currency = $this->currency instanceof Closure ? ($this->currency)($model) : $this->currency;
+        $reference = $this->reference instanceof Closure ? ($this->reference)($model) : $this->reference;
+        $voucher = new VoucherData($voucherEntries, $date, $description, $reference, $currency, $metadata);
+        $voucher->validate();
+        return $voucher;
     }
 }

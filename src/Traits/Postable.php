@@ -23,6 +23,8 @@ use RingleSoft\LaravelAccounting\Templates\AccountingTemplate;
  */
 trait Postable
 {
+    private ?AccountingTemplate $template = null;
+
     public function journalEntry(): MorphOne
     {
         return $this->morphOne(JournalEntry::class, 'postable');
@@ -70,12 +72,17 @@ trait Postable
 
     public function getTemplate(): ?AccountingTemplate
     {
+        // Firstly, check if template is assigned
+        if(!empty($this->template)){
+            return $this->template;
+        }
+
+        // Check if template is assigned by attribute
         $reflector = new ReflectionClass($this);
         $attributes = $reflector->getAttributes(DefaultAccountingTemplate::class);
         if (count($attributes) > 0) {
             return $attributes[0]->newInstance()->getTemplate();
         }
-
         return null;
     }
 

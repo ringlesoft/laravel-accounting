@@ -11,7 +11,8 @@ class TaxData
         public AccountPreset $account,
         public float $rate,
         public ?Closure $amount = null,
-        public ?AccountPreset $baseAccount = null
+        public ?AccountPreset $baseAccount = null,
+        public ?string $memo = null
     ) {}
 
 }

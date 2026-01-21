@@ -9,23 +9,36 @@ use RingleSoft\LaravelAccounting\Enums\EntryType;
 class AccountTemplateEntry
 {
     /**
-     * @param  Closure|null  $amount  function that manipulates the amount fetched from the model's `getAmount()` method
-     * @param  Closure|string|null  $memo  the memo for the specific entry
+     * @param  Closure(float $amount): float|float|null  $amount  function that manipulates the amount fetched from the model's `getAmount()` method
+     * @param  Closure(): string|string|null  $memo  the memo for the specific entry
      */
     public function __construct(
         public EntryType $type,
         public AccountPreset $account,
-        public ?Closure $amount = null,
+        public Closure|float|null $amount = null,
         public Closure|string|null $memo = null
     ) {}
 
-    public static function credit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
+    public static function credit(AccountPreset $account, Closure|float|null $amount = null, Closure|string|null $memo = null): self
     {
         return new self(EntryType::CREDIT, $account, $amount, $memo);
     }
 
-    public static function debit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
+    public static function debit(AccountPreset $account, Closure|float|null $amount = null, Closure|string|null $memo = null): self
     {
         return new self(EntryType::DEBIT, $account, $amount, $memo);
+    }
+
+    /**
+     * Resolve the amount from the closure
+     * @param float $amount the amount fetched from the model's `getAmount()` method
+     * @return float
+     */
+    public function getAmount(float $amount): float
+    {
+        if(is_callable($this->amount)) {
+            return (float) ($this->amount)($amount);
+        }
+        return $this->amount ?? $amount;
     }
 }

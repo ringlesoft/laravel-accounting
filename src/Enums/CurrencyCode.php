@@ -8,7 +8,7 @@ namespace RingleSoft\LaravelAccounting\Enums;
  * Contains all active and some historical currency codes
  * Values are the 3-letter ISO currency codes
  */
-enum CurrencyCodes: string
+enum CurrencyCode: string
 {
     // Major Global Currencies
     case USD = 'USD'; // US Dollar

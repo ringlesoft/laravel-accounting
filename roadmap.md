@@ -400,10 +400,10 @@ Developers may extend or override templates to match custom accounting structure
   - [x] PeriodLocked
   - [x] BalanceRecalculated
 
-- [ ] **Dispatch Events**
-  - [ ] Integrate events in JournalService
-  - [ ] Integrate events in PeriodService
-  - [ ] Add event listeners for audit trail
+- [x] **Dispatch Events**
+  - [x] Integrate events in JournalService
+  - [x] Integrate events in PeriodService
+  - [x] Integrate events in BalanceService
 
 ### 8. Exceptions
 - [ ] **Create Custom Exceptions**

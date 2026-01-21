@@ -9,6 +9,10 @@ use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\Enums\EntryType;
+use RingleSoft\LaravelAccounting\Events\JournalEntryCreated;
+use RingleSoft\LaravelAccounting\Events\JournalEntryPosted;
+use RingleSoft\LaravelAccounting\Events\JournalEntryReversed;
+use RingleSoft\LaravelAccounting\Events\JournalEntryVoided;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
 use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
@@ -62,6 +66,8 @@ class JournalService
             }
 
             $journalEntry->load('items');
+
+            event(new JournalEntryCreated($journalEntry, $userId));
 
             return $journalEntry;
         });
@@ -133,6 +139,8 @@ class JournalService
                 'posted_by_user_id' => $userId,
             ]);
 
+            event(new JournalEntryPosted($entry, $userId));
+
             return true;
         });
     }
@@ -166,7 +174,7 @@ class JournalService
                 'reversal_of_id' => $entry->id,
             ]);
 
-            foreach ($entry->items as $item) {
+            foreach ($entry->items  as $item) {
                 JournalEntryItem::create([
                     'journal_entry_id' => $reversalEntry->id,
                     'account_id' => $item->account_id,
@@ -182,6 +190,8 @@ class JournalService
             ]);
 
             $reversalEntry->load('items');
+
+            event(new JournalEntryReversed($entry, $reversalEntry, $reason, $userId));
 
             return $reversalEntry;
         });
@@ -209,6 +219,8 @@ class JournalService
                 'voided_by_user_id' => $userId,
                 'metadata' => array_merge($entry->metadata ?? [], ['void_reason' => $reason]),
             ]);
+
+            event(new JournalEntryVoided($entry, $reason, $userId));
 
             return true;
         });

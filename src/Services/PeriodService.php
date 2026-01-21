@@ -4,7 +4,11 @@ namespace RingleSoft\LaravelAccounting\Services;
 
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Events\PeriodClosed;
+use RingleSoft\LaravelAccounting\Events\PeriodLocked;
+use RingleSoft\LaravelAccounting\Events\PeriodOpened;
 use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
+use RingleSoft\LaravelAccounting\Exceptions\PreviousPeriodNotClosedException;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\FiscalYear;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
@@ -25,7 +29,7 @@ class PeriodService
      */
     public function openPeriod(FiscalPeriod $period, ?int $userId = null): bool
     {
-        return DB::transaction(function () use ($period) {
+        return DB::transaction(function () use ($period, $userId) {
             if (! $period->is_closed) {
                 return true;
             }
@@ -39,6 +43,8 @@ class PeriodService
                 'closed_at' => null,
                 'closed_by_user_id' => null,
             ]);
+
+            event(new PeriodOpened($period, $userId));
 
             return true;
         });
@@ -65,6 +71,8 @@ class PeriodService
                 'closed_by_user_id' => $userId,
             ]);
 
+            event(new PeriodClosed($period, $userId));
+
             return true;
         });
     }
@@ -75,7 +83,7 @@ class PeriodService
      */
     public function lockPeriod(FiscalPeriod $period, ?int $userId = null): bool
     {
-        return DB::transaction(function () use ($period) {
+        return DB::transaction(function () use ($period, $userId) {
             if (! $period->is_closed) {
                 throw new PeriodClosedException('Cannot lock a period that is not closed');
             }
@@ -87,6 +95,8 @@ class PeriodService
             $period->update([
                 'is_locked' => true,
             ]);
+
+            event(new PeriodLocked($period, $userId));
 
             return true;
         });

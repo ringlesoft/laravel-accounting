@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
+use RingleSoft\LaravelAccounting\Services\JournalService;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\HasUuid;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
@@ -228,6 +229,21 @@ class JournalEntry extends Model
             return LaravelAccounting::journals()->post($this, auth()->id());
         }
         return false;
+    }
+
+    /**
+     * Reverse Journal Entry
+     * @param string|null $reason
+     * @return JournalEntry returns the  newly created reversal entry
+     * @throws Throwable
+     */
+    public function reverse(?string $reason): self
+    {
+        if($this->canBeReversed()){
+            return (app(JournalService::class))->reverse($this, $reason);
+        } else {
+            throw new Exception("This entry cannot be reversed");
+        }
     }
 
     // Validation Rules

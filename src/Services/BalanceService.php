@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use RingleSoft\LaravelAccounting\Enums\NormalBalance;
+use RingleSoft\LaravelAccounting\Events\BalanceRecalculated;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\AccountBalance;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
@@ -112,10 +113,11 @@ class BalanceService
      *
      * @throws Throwable
      */
-    public function updateCachedBalances(FiscalPeriod $period): void
+    public function updateCachedBalances(FiscalPeriod $period, ?int $userId = null): void
     {
-        DB::transaction(function () use ($period) {
+        DB::transaction(function () use ($period, $userId) {
             $accounts = Account::where('is_active', true)->get();
+            $accountsUpdated = 0;
 
             foreach ($accounts as $account) {
                 $movement = $this->getPeriodMovement($account, $period);
@@ -132,7 +134,10 @@ class BalanceService
                         'closing_balance' => $movement['closing_balance'],
                     ]
                 );
+                $accountsUpdated++;
             }
+
+            event(new BalanceRecalculated($period, $accountsUpdated, $userId));
         });
     }
 

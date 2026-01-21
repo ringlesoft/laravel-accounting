@@ -46,13 +46,16 @@ class InstallCommand extends Command
             $this->call('migrate');
         }
 
-        if ($this->confirm('Do you want to seed default data (account types, currencies)?', true)) {
+        if ($this->confirm('Do you want to seed default data (account types, Chart of Accounts, Fiscal Periods)?', true)) {
             $this->info('Seeding default data...');
             $this->call('db:seed', [
                 '--class' => 'AccountTypeSeeder',
             ]);
             $this->call('db:seed', [
                 '--class' => 'ChartOfAccountsSeeder',
+            ]);
+            $this->call('db:seed', [
+                '--class' => 'FiscalPeriodSeeder',
             ]);
         }
 

@@ -3,10 +3,12 @@
 namespace RingleSoft\LaravelAccounting\Services;
 
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\FiscalYear;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
+use Throwable;
 
 class PeriodService
 {
@@ -19,6 +21,7 @@ class PeriodService
 
     /**
      * Open a fiscal period
+     * @throws Throwable
      */
     public function openPeriod(FiscalPeriod $period, ?int $userId = null): bool
     {
@@ -43,6 +46,7 @@ class PeriodService
 
     /**
      * Close a fiscal period
+     * @throws Throwable
      */
     public function closePeriod(FiscalPeriod $period, ?int $userId = null): bool
     {
@@ -67,6 +71,7 @@ class PeriodService
 
     /**
      * Lock a fiscal period
+     * @throws Throwable
      */
     public function lockPeriod(FiscalPeriod $period, ?int $userId = null): bool
     {
@@ -107,12 +112,13 @@ class PeriodService
 
     /**
      * Roll forward balances from one period to another
+     * @throws Throwable
      */
     public function rollForwardBalances(FiscalPeriod $from, FiscalPeriod $to): void
     {
         DB::transaction(function () use ($from, $to) {
             if (! $from->is_closed) {
-                throw new \InvalidArgumentException('Source period must be closed before rolling forward balances');
+                throw new PreviousPeriodNotClosedException('Source period must be closed before rolling forward balances');
             }
 
             $this->balanceService->updateCachedBalances($from);
@@ -123,22 +129,23 @@ class PeriodService
     /**
      * Create fiscal periods for a fiscal year
      */
-    public function createPeriodsForYear(FiscalYear $year, string $frequency = 'monthly'): array
+    public function createPeriodsForYear(FiscalYear $year, ?string $frequency = null): array
     {
+        if ($frequency === null) {
+            $frequency = $this->getFrequencyFromConfig();
+        }
+
         return DB::transaction(function () use ($year, $frequency) {
             $periods = [];
             $startDate = $year->start_date->copy();
             $endDate = $year->end_date;
+            $periodLength = config('laravel_accounting.fiscal_period_length', 12);
+            $monthsPerPeriod = 12 / $periodLength;
 
             $periodNumber = 1;
 
-            while ($startDate->lte($endDate)) {
-                $periodEndDate = match ($frequency) {
-                    'monthly' => $startDate->copy()->endOfMonth(),
-                    'quarterly' => $startDate->copy()->addMonths(3)->subDay(),
-                    'yearly' => $endDate->copy(),
-                    default => throw new \InvalidArgumentException("Invalid frequency: {$frequency}"),
-                };
+            for ($i = 1; $i <= $periodLength; $i++) {
+                $periodEndDate = $startDate->copy()->addMonths($monthsPerPeriod)->subDay();
 
                 if ($periodEndDate->gt($endDate)) {
                     $periodEndDate = $endDate->copy();
@@ -149,7 +156,7 @@ class PeriodService
                     'start_date' => $startDate->toDateString(),
                     'end_date' => $periodEndDate->toDateString(),
                 ], [
-                    'name' => $this->generatePeriodName($year, $periodNumber, $frequency),
+                    'name' => $this->generatePeriodName($year, $periodNumber, $frequency, $startDate, $periodEndDate),
                     'is_closed' => false,
                     'is_locked' => false,
                 ]);
@@ -158,10 +165,6 @@ class PeriodService
 
                 $startDate = $periodEndDate->copy()->addDay();
                 $periodNumber++;
-
-                if ($frequency === 'yearly') {
-                    break;
-                }
             }
 
             return $periods;
@@ -179,7 +182,7 @@ class PeriodService
             ->count();
 
         if ($unpostedEntries > 0) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Cannot close period with {$unpostedEntries} unposted journal entries"
             );
         }
@@ -187,23 +190,104 @@ class PeriodService
         $trialBalance = $this->balanceService->verifyTrialBalance($period);
 
         if (! $trialBalance['is_balanced']) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Cannot close period with unbalanced trial balance. Difference: {$trialBalance['difference']}"
             );
         }
     }
 
     /**
+     * Map fiscal_period_length config to frequency
+     */
+    public function getFrequencyFromConfig(): string
+    {
+        $periodLength = config('laravel_accounting.fiscal_period_length', 12);
+
+        return match ($periodLength) {
+            12 => 'monthly',
+            4 => 'quarterly',
+            2 => 'semi-annual',
+            1 => 'yearly',
+            default => 'custom',
+        };
+    }
+
+    /**
+     * Get months per period from config
+     */
+    public function getMonthsPerPeriod(): int
+    {
+        $periodLength = config('laravel_accounting.fiscal_period_length', 12);
+
+        return (int) (12 / $periodLength);
+    }
+
+    /**
      * Generate period name based on year and frequency
      */
-    protected function generatePeriodName(FiscalYear $year, int $periodNumber, string $frequency): string
+    protected function generatePeriodName(FiscalYear $year, int $periodNumber, string $frequency, $startDate = null, $endDate = null): string
     {
         return match ($frequency) {
-            'monthly' => sprintf('%s - Period %02d', $year->name, $periodNumber),
+            'monthly' => $startDate ? $startDate->format('F Y') : sprintf('%s - Period %02d', $year->name, $periodNumber),
             'quarterly' => sprintf('%s - Q%d', $year->name, $periodNumber),
+            'semi-annual' => sprintf('%s - H%d', $year->name, $periodNumber),
             'yearly' => $year->name,
+            'custom' => $startDate && $endDate
+                ? sprintf('Period %d (%s - %s)', $periodNumber, $startDate->format('M Y'), $endDate->format('M Y'))
+                : sprintf('%s - Period %d', $year->name, $periodNumber),
             default => sprintf('%s - Period %d', $year->name, $periodNumber),
         };
+    }
+
+    /**
+     * Ensure periods exist for current and upcoming fiscal years
+     * This method can be called from a cron job to automatically create periods
+     */
+    public function ensurePeriodsExist(int $yearsAhead = 1): array
+    {
+        return DB::transaction(function () use ($yearsAhead) {
+            $created = [];
+            $fiscalYearStart = config('laravel_accounting.default_fiscal_year_start', [
+                'month' => 1,
+                'day' => 1,
+            ]);
+
+            $currentYear = now()->year;
+            $startMonth = $fiscalYearStart['month'];
+            $startDay = $fiscalYearStart['day'];
+
+            for ($i = 0; $i <= $yearsAhead; $i++) {
+                $yearStartDate = now()
+                    ->setYear($currentYear + $i)
+                    ->setMonth($startMonth)
+                    ->setDay($startDay)
+                    ->startOfDay();
+
+                if ($yearStartDate->isFuture() && $i === 0) {
+                    $yearStartDate->subYear();
+                }
+
+                $yearEndDate = $yearStartDate->copy()->addYear()->subDay();
+
+                $fiscalYear = FiscalYear::firstOrCreate([
+                    'start_date' => $yearStartDate->toDateString(),
+                    'end_date' => $yearEndDate->toDateString(),
+                ], [
+                    'name' => $yearStartDate->year . '-' . $yearEndDate->year,
+                    'is_closed' => false,
+                ]);
+
+                $existingPeriodsCount = $fiscalYear->fiscalPeriods()->count();
+                $expectedPeriodsCount = config('laravel_accounting.fiscal_period_length', 12);
+
+                if ($existingPeriodsCount < $expectedPeriodsCount) {
+                    $periods = $this->createPeriodsForYear($fiscalYear);
+                    $created[$fiscalYear->name] = count($periods);
+                }
+            }
+
+            return $created;
+        });
     }
 
     /**

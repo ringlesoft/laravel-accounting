@@ -371,19 +371,11 @@ Developers may extend or override templates to match custom accounting structure
   - [ ] Add validation before posting
   - [ ] Add event dispatching
 
-- [x] **Reversible Trait**
-  - [x] Create trait file (stub exists)
-  - [ ] Implement reverse(?string $reason): JournalEntry
-  - [ ] Add validation (can only reverse posted entries)
-  - [ ] Create reversal entry with opposite debits/credits
-  - [ ] Link original and reversal entries
-  - [ ] Add event dispatching
-
 - [x] **MultiTenant Trait**
   - [x] Create trait file (stub exists)
-  - [ ] Implement global scope for tenant_id filtering
-  - [ ] Add boot method to auto-set tenant_id
-  - [ ] Add tenant() relationship if needed
+  - [x] Implement global scope for tenant_id filtering
+  - [x] Add boot method to auto-set tenant_id
+  - [x] Add helper methods (getTenantId, setTenantId)
 
 - [x] **HasTablePrefix Trait**
   - [x] Ensure proper table name resolution from config
@@ -398,15 +390,15 @@ Developers may extend or override templates to match custom accounting structure
   - [x] Add methods: debit(), credit(), make(), validate()
 
 ### 7. Events System
-- [ ] **Create Event Classes**
-  - [ ] JournalEntryCreated
-  - [ ] JournalEntryPosted
-  - [ ] JournalEntryReversed
-  - [ ] JournalEntryVoided
-  - [ ] PeriodOpened
-  - [ ] PeriodClosed
-  - [ ] PeriodLocked
-  - [ ] BalanceRecalculated
+- [x] **Create Event Classes**
+  - [x] JournalEntryCreated
+  - [x] JournalEntryPosted
+  - [x] JournalEntryReversed
+  - [x] JournalEntryVoided
+  - [x] PeriodOpened
+  - [x] PeriodClosed
+  - [x] PeriodLocked
+  - [x] BalanceRecalculated
 
 - [ ] **Dispatch Events**
   - [ ] Integrate events in JournalService

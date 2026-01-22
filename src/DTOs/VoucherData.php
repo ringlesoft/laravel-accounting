@@ -9,7 +9,9 @@ use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 use RingleSoft\LaravelAccounting\Enums\EntryType;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
+use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Services\JournalService;
+use Throwable;
 
 class VoucherData
 {
@@ -151,5 +153,14 @@ class VoucherData
         $voucher->sourceModel = $sourceModel;
 
         return $voucher;
+    }
+
+    /**
+     * Create a journal entry from the voucher data
+     * @throws Throwable
+     */
+    public function createJournal(): JournalEntry
+    {
+        return (app(JournalService::class)->createDraft($this));
     }
 }

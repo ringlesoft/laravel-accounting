@@ -3,9 +3,13 @@
 namespace RingleSoft\LaravelAccounting\Services;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
+use RingleSoft\LaravelAccounting\Validators\JournalEntryValidator;
 use RingleSoft\LaravelAccounting\Enums\EntryType;
 use RingleSoft\LaravelAccounting\Events\JournalEntryCreated;
 use RingleSoft\LaravelAccounting\Events\JournalEntryPosted;
@@ -29,6 +33,8 @@ class JournalService
      */
     public function createDraft(VoucherData $voucher, int|string|null $userId = null): JournalEntry
     {
+
+
         return DB::transaction(function () use ($voucher, $userId) {
             $this->validateVoucher($voucher);
 
@@ -46,11 +52,13 @@ class JournalService
                 'is_posted' => false,
                 'metadata' => $voucher->metadata ?? [],
             ];
-            if (isset($voucher->sourceModel) && ($keyName = $voucher->sourceModel->getKeyName()) && ($modalId = $voucher->sourceModel->$keyName)) {
+            if(isset($voucher->sourceModel) && ($keyName = $voucher->sourceModel->getKeyName()) && ($modalId = $voucher->sourceModel->$keyName)) {
                 $journalData['postable_id'] = $modalId;
                 $journalData['postable_type'] = get_class($voucher->sourceModel);
-
             }
+
+            JournalEntryValidator::validate($journalData);
+
             $journalEntry = JournalEntry::create($journalData);
 
             foreach ($voucher->entries as $entry) {
@@ -161,6 +169,10 @@ class JournalService
                 throw new InvalidArgumentException('Journal entry has already been reversed');
             }
 
+            if ($entry->is_voided) {
+                throw new InvalidArgumentException('Cannot reverse a voided journal entry');
+            }
+
             $reversalEntry = JournalEntry::create([
                 'transaction_date' => now(),
                 'description' => "Reversal: {$entry->description}".($reason ? " - {$reason}" : ''),
@@ -174,7 +186,7 @@ class JournalService
                 'reversal_of_id' => $entry->id,
             ]);
 
-            foreach ($entry->items as $item) {
+            foreach ($entry->items  as $item) {
                 JournalEntryItem::create([
                     'journal_entry_id' => $reversalEntry->id,
                     'account_id' => $item->account_id,
@@ -204,7 +216,7 @@ class JournalService
      */
     public function void(JournalEntry $entry, ?string $reason = null, int|string|null $userId = null): bool
     {
-        return DB::transaction(function () use ($entry, $reason, $userId) {
+        return DB::transaction(static function () use ($entry, $reason, $userId) {
             if ($entry->is_voided) {
                 throw new InvalidArgumentException('Journal entry is already voided');
             }
@@ -229,7 +241,7 @@ class JournalService
     /**
      * Get journal entries for a specific period
      */
-    public function getEntriesForPeriod(FiscalPeriod $period, bool $postedOnly = true)
+    public function getEntriesForPeriod(FiscalPeriod $period, bool $postedOnly = true): Collection|array
     {
         $query = JournalEntry::where('fiscal_period_id', $period->id);
 
@@ -242,7 +254,6 @@ class JournalService
 
     /**
      * Validate voucher data
-     *
      * @throws JournalNotBalancedException|InvalidArgumentException
      * @throws InvalidVoucherException
      */
@@ -257,7 +268,7 @@ class JournalService
         }
 
         $totalAmount = array_reduce($voucher->entries, static function ($carry, $entry) {
-            return $carry + ($entry->type === EntryType::CREDIT ? $entry->amount : -$entry->amount);
+            return $carry + ($entry->type === EntryType::CREDIT ? $entry->amount : -$entry->amount );
         }, 0);
 
         if (abs($totalAmount) > 0.01) {

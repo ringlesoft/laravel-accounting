@@ -37,6 +37,11 @@ trait Postable
         return $this->morphOne(JournalEntry::class, 'postable');
     }
 
+    public function withTemplate(AccountingTemplate $template): self {
+        $this->template = $template;
+        return $this;
+    }
+
     /**
      * @throws Throwable
      * @throws InvalidVoucherException
@@ -65,7 +70,7 @@ trait Postable
     /**
      * @throws LaravelAccountingException
      */
-    public function post(): bool
+    public function post(): bool // createAndPostJournal() instead
     {
         try {
             return DB::transaction(function () {

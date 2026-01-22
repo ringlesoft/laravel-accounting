@@ -13,6 +13,14 @@ use RingleSoft\LaravelAccounting\Reports\GeneralLedger;
 use RingleSoft\LaravelAccounting\Reports\IncomeStatement;
 use RingleSoft\LaravelAccounting\Reports\TrialBalance;
 
+/**
+ * @property Report  $balanceSheet
+ * @property Report  $incomeStatement
+ * @property Report  $cashFlowStatement
+ * @property Report  $trialBalance
+ * @property Report  $generalLedger
+ * @property Report  $accountLedger
+ */
 class ReportService
 {
     protected array $reports = [

@@ -5,6 +5,7 @@ namespace RingleSoft\LaravelAccounting\Traits;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Facades\DB;
 use ReflectionClass;
 use RingleSoft\LaravelAccounting\Attributes\DefaultAccountingTemplate;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
@@ -12,6 +13,7 @@ use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalEntryAlreadyExistsException;
+use RingleSoft\LaravelAccounting\Exceptions\LaravelAccountingException;
 use RingleSoft\LaravelAccounting\Exceptions\TemplateNotFoundException;
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
@@ -22,7 +24,6 @@ use Throwable;
  * @mixin Builder
  * @mixin Model
  * @mixin PostableModel
- *
  * @property JournalEntry $journalEntry
  *
  * @phpstan-require-implements PostableModel
@@ -45,12 +46,11 @@ trait Postable
     public function createJournal(): bool
     {
         if ($this->hasJournalEntry()) {
-            throw new JournalEntryAlreadyExistsException;
+            throw new JournalEntryAlreadyExistsException();
         }
         $voucherData = $this->toVoucher();
         LaravelAccounting::journals()->createDraft($voucherData);
         $this->load('journalEntry');
-
         return true;
     }
 
@@ -59,22 +59,32 @@ trait Postable
         if ($journal = $this->journalEntry) {
             return $journal->post();
         }
-
-        return true;
+        return false;
     }
 
+    /**
+     * @throws LaravelAccountingException
+     */
     public function post(): bool
     {
-        return $this->createJournal() && $this->postJournal();
+        try {
+            return DB::transaction(function () {
+                return $this->createJournal() && $this->postJournal();
+            });
+        } catch (Throwable $e) {
+            throw LaravelAccountingException::from($e, "Failed to post to journal. " . $e->getMessage());
+        }
     }
 
     public function postWithTemplate(AccountingTemplate $template): bool
     {
         $this->template = $template;
-
         return $this->post();
     }
 
+    /**
+     * @return bool
+     */
     public function hasJournalEntry(): bool
     {
         return $this->journalEntry()->exists();
@@ -93,7 +103,7 @@ trait Postable
     public function getTemplate(): ?AccountingTemplate
     {
         // Firstly, check if template is assigned
-        if (! empty($this->template)) {
+        if (!empty($this->template)) {
             return $this->template;
         }
 
@@ -103,7 +113,6 @@ trait Postable
         if (count($attributes) > 0) {
             return $attributes[0]->newInstance()->getTemplate();
         }
-
         return null;
     }
 
@@ -115,10 +124,9 @@ trait Postable
     public function toVoucher(): VoucherData
     {
         $template = $this->getTemplate();
-        if (! $template) {
-            throw new TemplateNotFoundException('No template found for '.get_class($this));
+        if (!$template) {
+            throw new TemplateNotFoundException('No template found for ' . get_class($this));
         }
-
         return $template->make($this);
     }
 }

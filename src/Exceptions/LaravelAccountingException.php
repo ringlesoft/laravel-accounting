@@ -10,4 +10,9 @@ class LaravelAccountingException extends Exception
     {
         parent::__construct($message, $code, $previous);
     }
+
+    public static function from(Exception $e, ?string $message): LaravelAccountingException
+    {
+        return new self(($message ?? $e->getMessage() ?? 'Unknown Exception'), $e->getCode(), $e);
+    }
 }

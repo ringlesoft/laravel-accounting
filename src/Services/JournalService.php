@@ -12,6 +12,7 @@ use RingleSoft\LaravelAccounting\Events\JournalEntryPosted;
 use RingleSoft\LaravelAccounting\Events\JournalEntryReversed;
 use RingleSoft\LaravelAccounting\Events\JournalEntryVoided;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+use RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
 use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
@@ -57,8 +58,8 @@ class JournalService
                     'journal_entry_id' => $journalEntry->id,
                     'account_id' => $entry->accountId,
                     'description' => $entry->memo,
-                    'debit_amount' => $entry->amount > 0 ? abs($entry->amount) : 0,
-                    'credit_amount' => $entry->amount < 0 ? abs($entry->amount) : 0,
+                    'debit_amount' => $entry->isDebit() ? abs($entry->amount) : 0,
+                    'credit_amount' => $entry->isCredit() ? abs($entry->amount) : 0,
                     'currency_code' => $journalEntry->currency_code,
                 ]);
             }
@@ -120,12 +121,13 @@ class JournalService
      * Post a journal entry
      *
      * @throws Throwable
+     * @throws DuplicatePostingException
      */
     public function post(JournalEntry $entry, ?int $userId = null): bool
     {
         return DB::transaction(function () use ($entry, $userId) {
             if ($entry->is_posted) {
-                return true;
+                throw new DuplicatePostingException("Journal entry {$entry->id} is already posted");
             }
 
             $this->validateBalance($entry);

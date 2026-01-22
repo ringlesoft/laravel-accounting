@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class PreviousPeriodNotClosedException extends Exception
+class PreviousPeriodNotClosedException extends LaravelAccountingException
 {
     protected $message = 'Previous period must be closed.';
 

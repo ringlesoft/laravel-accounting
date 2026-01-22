@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class JournalEntryAlreadyExistsException extends Exception
+class JournalEntryAlreadyExistsException extends LaravelAccountingException
 {
     protected $message = 'A journal entry for this model already exists.';
 

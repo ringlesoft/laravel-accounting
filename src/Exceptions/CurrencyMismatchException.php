@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class CurrencyMismatchException extends Exception
+class CurrencyMismatchException extends LaravelAccountingException
 {
     protected $message = 'Currency mismatch detected in transaction.';
 

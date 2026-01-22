@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class InvalidAccountTypeException extends Exception
+class InvalidAccountTypeException extends LaravelAccountingException
 {
     protected $message = 'Invalid account type specified.';
 

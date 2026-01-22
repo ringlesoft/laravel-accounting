@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class InvalidTransactionDateException extends Exception
+class InvalidTransactionDateException extends LaravelAccountingException
 {
     protected $message = 'Invalid transaction date. Date must fall within an open fiscal period.';
 

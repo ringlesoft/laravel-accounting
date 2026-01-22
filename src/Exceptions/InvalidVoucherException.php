@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class InvalidVoucherException extends Exception
+class InvalidVoucherException extends LaravelAccountingException
 {
     protected $message = 'Invalid voucher data provided.';
 

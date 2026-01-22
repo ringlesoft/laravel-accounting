@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class TrialBalanceException extends Exception
+class TrialBalanceException extends LaravelAccountingException
 {
     protected $message = 'Trial balance does not balance. Total debits must equal total credits.';
 

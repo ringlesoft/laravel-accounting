@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class AccountNotFoundException extends Exception
+class AccountNotFoundException extends LaravelAccountingException
 {
     protected $message = 'Account not found.';
 

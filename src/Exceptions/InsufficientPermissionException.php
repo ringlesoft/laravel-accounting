@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class InsufficientPermissionException extends Exception
+class InsufficientPermissionException extends LaravelAccountingException
 {
     protected $message = 'Insufficient permissions to perform this action.';
 

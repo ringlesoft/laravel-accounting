@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class FiscalPeriodNotFoundException extends Exception
+class FiscalPeriodNotFoundException extends LaravelAccountingException
 {
     protected $message = 'There should be a fiscal period .';
 

@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class DuplicatePostingException extends Exception
+class DuplicatePostingException extends LaravelAccountingException
 {
     protected $message = 'This transaction has already been posted.';
 

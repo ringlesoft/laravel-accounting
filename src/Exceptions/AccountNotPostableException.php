@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class AccountNotPostableException extends Exception
+class AccountNotPostableException extends LaravelAccountingException
 {
     protected $message = 'This account does not allow manual entries.';
 

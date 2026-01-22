@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class JournalNotBalancedException extends Exception
+class JournalNotBalancedException extends LaravelAccountingException
 {
     protected $message = 'Journal entry is not balanced. Debits must equal credits.';
 

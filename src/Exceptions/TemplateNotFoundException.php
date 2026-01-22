@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class TemplateNotFoundException extends Exception
+class TemplateNotFoundException extends LaravelAccountingException
 {
     protected $message = 'Accounting template not found.';
 

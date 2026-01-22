@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class PeriodLockedException extends Exception
+class PeriodLockedException extends LaravelAccountingException
 {
     protected $message = 'The fiscal period is locked and cannot be modified.';
 

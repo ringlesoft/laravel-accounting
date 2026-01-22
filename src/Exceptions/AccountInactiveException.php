@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class AccountInactiveException extends Exception
+class AccountInactiveException extends LaravelAccountingException
 {
     protected $message = 'The account is inactive and cannot be used in transactions.';
 

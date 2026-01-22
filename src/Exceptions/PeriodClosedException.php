@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Exceptions;
 
 use Exception;
 
-class PeriodClosedException extends Exception
+class PeriodClosedException extends LaravelAccountingException
 {
     protected $message = 'The fiscal period is closed and cannot accept new transactions.';
 

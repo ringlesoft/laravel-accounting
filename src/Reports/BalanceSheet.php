@@ -3,7 +3,7 @@
 namespace RingleSoft\LaravelAccounting\Reports;
 
 use Carbon\Carbon;
-use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum as AccountTypeEnum;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Report;
 
 class BalanceSheet extends Report
@@ -21,7 +21,7 @@ class BalanceSheet extends Report
         $liabilityType = AccountTypeEnum::LIABILITY->accountType();
         $equityType = AccountTypeEnum::EQUITY->accountType();
 
-        if (!$assetType || !$liabilityType || !$equityType) {
+        if (! $assetType || ! $liabilityType || ! $equityType) {
             $this->setData([
                 'as_of_date' => $asOfDate->toDateString(),
                 'assets' => ['accounts' => [], 'total' => 0],
@@ -30,6 +30,7 @@ class BalanceSheet extends Report
                 'total_liabilities_and_equity' => 0,
                 'is_balanced' => true,
             ]);
+
             return $this;
         }
 
@@ -37,21 +38,21 @@ class BalanceSheet extends Report
         $liabilityBalances = $this->balanceService->getBalancesByAccountType($liabilityType, $asOfDate);
         $equityBalances = $this->balanceService->getBalancesByAccountType($equityType, $asOfDate);
 
-        $assets = $assetBalances->map(fn($item) => [
+        $assets = $assetBalances->map(fn ($item) => [
             'account_id' => $item['account_id'],
             'code' => $item['code'],
             'name' => $item['name'],
             'balance' => $item['balance'],
         ])->toArray();
 
-        $liabilities = $liabilityBalances->map(fn($item) => [
+        $liabilities = $liabilityBalances->map(fn ($item) => [
             'account_id' => $item['account_id'],
             'code' => $item['code'],
             'name' => $item['name'],
             'balance' => $item['balance'],
         ])->toArray();
 
-        $equity = $equityBalances->map(fn($item) => [
+        $equity = $equityBalances->map(fn ($item) => [
             'account_id' => $item['account_id'],
             'code' => $item['code'],
             'name' => $item['name'],

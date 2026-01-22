@@ -3,7 +3,7 @@
 namespace RingleSoft\LaravelAccounting\Reports;
 
 use Carbon\Carbon;
-use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum as AccountTypeEnum;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Report;
 
 class IncomeStatement extends Report
@@ -25,7 +25,7 @@ class IncomeStatement extends Report
         $incomeType = AccountTypeEnum::INCOME->accountType();
         $expenseType = AccountTypeEnum::EXPENSE->accountType();
 
-        if (!$incomeType || !$expenseType) {
+        if (! $incomeType || ! $expenseType) {
             $this->setData([
                 'period' => [
                     'start_date' => $startDate->toDateString(),
@@ -35,20 +35,21 @@ class IncomeStatement extends Report
                 'expenses' => ['accounts' => [], 'total' => 0],
                 'net_income' => 0,
             ]);
+
             return $this;
         }
 
         $revenueBalances = $this->balanceService->getPeriodBalancesByAccountType($incomeType, $startDate, $endDate);
         $expenseBalances = $this->balanceService->getPeriodBalancesByAccountType($expenseType, $startDate, $endDate);
 
-        $revenue = $revenueBalances->map(fn($item) => [
+        $revenue = $revenueBalances->map(fn ($item) => [
             'account_id' => $item['account_id'],
             'code' => $item['code'],
             'name' => $item['name'],
             'amount' => $item['balance'],
         ])->toArray();
 
-        $expenses = $expenseBalances->map(fn($item) => [
+        $expenses = $expenseBalances->map(fn ($item) => [
             'account_id' => $item['account_id'],
             'code' => $item['code'],
             'name' => $item['name'],

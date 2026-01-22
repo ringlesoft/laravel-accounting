@@ -5,9 +5,9 @@ namespace RingleSoft\LaravelAccounting\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\AccountType;
-use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum as AccountTypeEnum;
 
 class AccountService
 {
@@ -107,6 +107,7 @@ class AccountService
     public function getByType(AccountTypeEnum $accountType): Collection
     {
         $typeId = AccountType::findByName($accountType->value)?->id;
+
         return Account::where('account_type_id', $typeId)
             ->where('is_active', true)
             ->orderBy('code')

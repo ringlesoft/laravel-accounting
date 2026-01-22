@@ -228,10 +228,10 @@ class BalanceService
         $normalBalance = $accountType->normal_balance;
         $asOfDate = $asOfDate ?? now();
 
-        $accountsTable = (new Account())->getTable();
-        $journalEntryItemsTable = (new JournalEntryItem())->getTable();
-        $journalEntriesTable = (new JournalEntry())->getTable();
-        $accountTypesTable = (new AccountType())->getTable();
+        $accountsTable = (new Account)->getTable();
+        $journalEntryItemsTable = (new JournalEntryItem)->getTable();
+        $journalEntriesTable = (new JournalEntry)->getTable();
+        $accountTypesTable = (new AccountType)->getTable();
 
         $results = DB::table("$accountsTable as acc")
             ->leftJoin("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
@@ -273,12 +273,6 @@ class BalanceService
         })->values();
     }
 
-    /**
-     * @param AccountTypeEnum $accountTypeEnum
-     * @param Carbon $startDate
-     * @param Carbon $endDate
-     * @return Collection
-     */
     public function getPeriodBalancesByAccountTypeEnum(AccountTypeEnum $accountTypeEnum, Carbon $startDate, Carbon $endDate): Collection
     {
         return $this->getPeriodBalancesByAccountType($accountTypeEnum->accountType(), $startDate, $endDate);
@@ -293,9 +287,9 @@ class BalanceService
         $accountTypeId = $accountType->id;
         $normalBalance = $accountType->normal_balance;
 
-        $accountsTable = (new Account())->getTable();
-        $journalEntryItemsTable = (new JournalEntryItem())->getTable();
-        $journalEntriesTable = (new JournalEntry())->getTable();
+        $accountsTable = (new Account)->getTable();
+        $journalEntryItemsTable = (new JournalEntryItem)->getTable();
+        $journalEntriesTable = (new JournalEntry)->getTable();
 
         $results = DB::table("$accountsTable as acc")
             ->leftJoin("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
@@ -346,10 +340,10 @@ class BalanceService
         ?string $codePattern = null
     ): Collection {
 
-        $accountsTable = (new Account())->getTable();
-        $journalEntryItemsTable = (new JournalEntryItem())->getTable();
-        $journalEntriesTable = (new JournalEntry())->getTable();
-        $accountTypesTable = (new AccountType())->getTable();
+        $accountsTable = (new Account)->getTable();
+        $journalEntryItemsTable = (new JournalEntryItem)->getTable();
+        $journalEntriesTable = (new JournalEntry)->getTable();
+        $accountTypesTable = (new AccountType)->getTable();
 
         $query = DB::table("$accountsTable as acc")
             ->leftJoin("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')

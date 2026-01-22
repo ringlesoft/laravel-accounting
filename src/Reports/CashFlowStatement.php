@@ -4,7 +4,7 @@ namespace RingleSoft\LaravelAccounting\Reports;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum as AccountTypeEnum;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\Report;
 
@@ -79,7 +79,7 @@ class CashFlowStatement extends Report
         $incomeType = AccountTypeEnum::INCOME->accountType();
         $expenseType = AccountTypeEnum::EXPENSE->accountType();
 
-        if (!$incomeType || !$expenseType) {
+        if (! $incomeType || ! $expenseType) {
             return 0;
         }
 
@@ -97,7 +97,7 @@ class CashFlowStatement extends Report
         $assetTypeId = AccountTypeEnum::ASSET->getId();
         $liabilityTypeId = AccountTypeEnum::LIABILITY->getId();
 
-        if (!$assetTypeId || !$liabilityTypeId) {
+        if (! $assetTypeId || ! $liabilityTypeId) {
             return [
                 'net_income' => $netIncome,
                 'adjustments' => $adjustments,
@@ -170,7 +170,7 @@ class CashFlowStatement extends Report
 
         $assetTypeId = AccountTypeEnum::ASSET->getId();
 
-        if (!$assetTypeId) {
+        if (! $assetTypeId) {
             return ['activities' => $activities, 'total' => $total];
         }
 
@@ -207,7 +207,7 @@ class CashFlowStatement extends Report
         $liabilityTypeId = AccountTypeEnum::LIABILITY->getId();
         $equityTypeId = AccountTypeEnum::EQUITY->getId();
 
-        if (!$liabilityTypeId || !$equityTypeId) {
+        if (! $liabilityTypeId || ! $equityTypeId) {
             return ['activities' => $activities, 'total' => $total];
         }
 

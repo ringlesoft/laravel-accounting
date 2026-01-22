@@ -12,7 +12,6 @@ enum AccountTypeEnum: string
     case INCOME = 'Income';
     case EXPENSE = 'Expense';
 
-
     public function accountType(): ?AccountType
     {
         return AccountType::findByName($this->value);

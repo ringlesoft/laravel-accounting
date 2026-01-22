@@ -13,6 +13,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
 use RingleSoft\LaravelAccounting\Models\Account;
 
 /**
@@ -103,7 +104,7 @@ abstract class AccountingTemplate implements PostableTemplate
     }
 
     /**
-     * @throws AccountNotFoundException|InvalidVoucherException
+     * @throws AccountNotFoundException|InvalidVoucherException|JournalNotBalancedException
      */
     public function make(PostableModel $model): VoucherData
     {

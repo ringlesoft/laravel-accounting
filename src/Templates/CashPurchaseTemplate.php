@@ -3,9 +3,16 @@
 namespace RingleSoft\LaravelAccounting\Templates;
 
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Templates\AccountingTemplate;
 
 class CashPurchaseTemplate extends AccountingTemplate
 {
+    /**
+     * @param AccountPreset $expenseAccount
+     * @param AccountPreset|null $inputTaxAccount
+     * @param AccountPreset $cashAccount
+     * @param float $taxRate
+     */
     public function __construct(
         protected AccountPreset $expenseAccount = AccountPreset::COST_OF_GOODS_SOLD,
         protected ?AccountPreset $inputTaxAccount = AccountPreset::INPUT_VAT,

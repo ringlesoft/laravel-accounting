@@ -68,4 +68,11 @@ return [
      */
     'account_code_format' => '/^[0-9]{4}(-[0-9]{2})?$/',
 
+    /*
+     * Allow posting journal entries to parent accounts
+     * If false, posting to accounts that have children will throw an exception
+     * Default: false
+     */
+    'allow_posting_on_parents' => false,
+
 ];

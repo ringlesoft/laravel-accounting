@@ -15,6 +15,5 @@ class BalanceRecalculated
         public FiscalPeriod $period,
         public int $accountsUpdated = 0,
         public ?int $userId = null
-    ) {
-    }
+    ) {}
 }

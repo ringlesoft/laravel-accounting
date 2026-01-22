@@ -4,7 +4,6 @@ namespace RingleSoft\LaravelAccounting\DTOs;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 use RingleSoft\LaravelAccounting\Enums\EntryType;
@@ -35,6 +34,7 @@ class VoucherData
     public function on(Carbon $date): self
     {
         $this->date = $date;
+
         return $this;
     }
 
@@ -44,6 +44,7 @@ class VoucherData
     public function describe(string $description): self
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -53,6 +54,7 @@ class VoucherData
     public function debit(int|string $accountId, float $amount, ?string $memo = null): self
     {
         $this->entries[] = new VoucherDataItem(EntryType::DEBIT, $accountId, $amount, $memo);
+
         return $this;
     }
 
@@ -62,6 +64,7 @@ class VoucherData
     public function credit(int|string $accountId, float $amount, ?string $memo = null): self
     {
         $this->entries[] = new VoucherDataItem(EntryType::CREDIT, $accountId, $amount, $memo);
+
         return $this;
     }
 
@@ -71,6 +74,7 @@ class VoucherData
     public function reference(string $reference): self
     {
         $this->reference = $reference;
+
         return $this;
     }
 
@@ -80,6 +84,7 @@ class VoucherData
     public function currency(string|CurrencyCode $currencyCode): self
     {
         $this->currency = is_string($currencyCode) ? CurrencyCode::from($currencyCode) : $currencyCode;
+
         return $this;
     }
 
@@ -89,21 +94,23 @@ class VoucherData
     public function withMetadata(array $metadata): self
     {
         $this->metadata = array_merge($this->metadata, $metadata);
+
         return $this;
     }
 
     /**
-     * @param Model|PostableModel $modal
      * @return $this
      */
     public function setSource(Model|PostableModel $modal): self
     {
         $this->sourceModel = $modal;
+
         return $this;
     }
 
     /**
      * Validate the voucher data
+     *
      * @throws InvalidVoucherException
      * @throws JournalNotBalancedException
      */
@@ -135,13 +142,14 @@ class VoucherData
         return new self;
     }
 
-
     /**
      * Create instance for a PostableModal
      */
-    public static function for(Model|PostableModel $sourceModel): self {
+    public static function for(Model|PostableModel $sourceModel): self
+    {
         $voucher = new self;
         $voucher->sourceModel = $sourceModel;
+
         return $voucher;
     }
 }

@@ -2,7 +2,6 @@
 
 namespace RingleSoft\LaravelAccounting\Services;
 
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -16,7 +15,6 @@ use RingleSoft\LaravelAccounting\Reports\TrialBalance;
 
 class ReportService
 {
-
     protected array $reports = [
         'balance_sheet' => BalanceSheet::class,
         'income_statement' => IncomeStatement::class,
@@ -26,19 +24,18 @@ class ReportService
         'account_ledger' => AccountLedger::class,
     ];
 
-    public function __construct(protected BalanceService $balanceService)
-    {
-    }
+    public function __construct(protected BalanceService $balanceService) {}
 
     /**
      * Register a custom report type
      */
     public function register(string $key, string $reportClass): self
     {
-        if (!is_subclass_of($reportClass, Report::class)) {
-            throw new InvalidArgumentException("Report class must extend " . Report::class);
+        if (! is_subclass_of($reportClass, Report::class)) {
+            throw new InvalidArgumentException('Report class must extend '.Report::class);
         }
         $this->reports[$key] = $reportClass;
+
         return $this;
     }
 
@@ -71,6 +68,7 @@ class ReportService
                 return $this->generateReport($reportType, $params);
             });
         }
+
         return $this->generateReport($reportType, $params);
     }
 
@@ -83,6 +81,7 @@ class ReportService
 
         $report->setParameters($params);
         $report->generate();
+
         return $report;
     }
 
@@ -91,7 +90,7 @@ class ReportService
      */
     protected function createReportInstance(string $reportType): Report
     {
-        if (!$this->hasReport($reportType)) {
+        if (! $this->hasReport($reportType)) {
             throw new InvalidArgumentException("Unknown report type: {$reportType}");
         }
 
@@ -106,6 +105,7 @@ class ReportService
     protected function getCacheKey(string $reportType, array $params): string
     {
         $paramsHash = md5(json_encode($params, JSON_THROW_ON_ERROR));
+
         return "laravel_accounting.report.{$reportType}.{$paramsHash}";
     }
 
@@ -143,18 +143,18 @@ class ReportService
         $csv = '';
 
         if (isset($data['title'])) {
-            $csv .= $data['title'] . "\n\n";
+            $csv .= $data['title']."\n\n";
         }
 
         if (is_array($data['rows'])) {
-            if (!empty($data['rows'])) {
+            if (! empty($data['rows'])) {
                 $headers = array_keys($data['rows'][0]);
-                $csv .= implode(',', $headers) . "\n";
+                $csv .= implode(',', $headers)."\n";
 
                 foreach ($data['rows'] as $row) {
                     $csv .= implode(',', array_map(function ($value) {
-                            return is_numeric($value) ? $value : '"' . str_replace('"', '""', $value) . '"';
-                        }, array_values($row))) . "\n";
+                        return is_numeric($value) ? $value : '"'.str_replace('"', '""', $value).'"';
+                    }, array_values($row)))."\n";
                 }
             }
         }
@@ -201,24 +201,18 @@ class ReportService
         ];
     }
 
-    /**
-     * @param string $reportType
-     * @param array $params
-     * @return Report
-     */
     public function __call(string $reportType, array $params = []): Report
     {
         $snakeCaseType = Str::of($reportType)->snake()->toString();
         if (isset($this->reports[$snakeCaseType])) {
             $reportClass = $this->reports[$snakeCaseType];
-            return (new $reportClass(params: $params[0]));
+
+            return new $reportClass(params: $params[0]);
         }
         // Todo: if the method isn't in this class throw error
-        if (!method_exists($this, $reportType)) {
+        if (! method_exists($this, $reportType)) {
             throw new InvalidArgumentException("Report type {$reportType} does not exist");
         }
         throw new InvalidArgumentException("Report type {$reportType} does not exist");
     }
-
 }
-

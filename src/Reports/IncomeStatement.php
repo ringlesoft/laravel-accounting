@@ -36,7 +36,7 @@ class IncomeStatement extends Report
         foreach ($accounts as $account) {
             $accountTypeCode = $account->accountType->code;
 
-            if (!str_starts_with($accountTypeCode, 'REVENUE') && !str_starts_with($accountTypeCode, 'EXPENSE')) {
+            if (! str_starts_with($accountTypeCode, 'REVENUE') && ! str_starts_with($accountTypeCode, 'EXPENSE')) {
                 continue;
             }
 

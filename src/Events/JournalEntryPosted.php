@@ -14,6 +14,5 @@ class JournalEntryPosted
     public function __construct(
         public JournalEntry $journalEntry,
         public ?int $userId = null
-    ) {
-    }
+    ) {}
 }

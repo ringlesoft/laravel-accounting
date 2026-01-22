@@ -31,14 +31,15 @@ class AccountTemplateEntry
 
     /**
      * Resolve the amount from the closure
-     * @param float $amount the amount fetched from the model's `getAmount()` method
-     * @return float
+     *
+     * @param  float  $amount  the amount fetched from the model's `getAmount()` method
      */
     public function getAmount(float $amount): float
     {
-        if(is_callable($this->amount)) {
+        if (is_callable($this->amount)) {
             return (float) ($this->amount)($amount);
         }
+
         return $this->amount ?? $amount;
     }
 }

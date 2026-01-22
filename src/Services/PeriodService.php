@@ -25,6 +25,7 @@ class PeriodService
 
     /**
      * Open a fiscal period
+     *
      * @throws Throwable
      */
     public function openPeriod(FiscalPeriod $period, ?int $userId = null): bool
@@ -52,6 +53,7 @@ class PeriodService
 
     /**
      * Close a fiscal period
+     *
      * @throws Throwable
      */
     public function closePeriod(FiscalPeriod $period, ?int $userId = null): bool
@@ -79,6 +81,7 @@ class PeriodService
 
     /**
      * Lock a fiscal period
+     *
      * @throws Throwable
      */
     public function lockPeriod(FiscalPeriod $period, ?int $userId = null): bool
@@ -122,6 +125,7 @@ class PeriodService
 
     /**
      * Roll forward balances from one period to another
+     *
      * @throws Throwable
      */
     public function rollForwardBalances(FiscalPeriod $from, FiscalPeriod $to): void
@@ -252,6 +256,7 @@ class PeriodService
     /**
      * Ensure periods exist for current and upcoming fiscal years
      * This method can be called from a cron job to automatically create periods
+     *
      * @throws Throwable
      */
     public function ensurePeriodsExist(int $yearsAhead = 1): array
@@ -285,7 +290,7 @@ class PeriodService
                     'start_date' => $yearStartDate->toDateString(),
                     'end_date' => $yearEndDate->toDateString(),
                 ], [
-                    'name' => $yearStartDate->year . '-' . $yearEndDate->year,
+                    'name' => $yearStartDate->year.'-'.$yearEndDate->year,
                     'is_closed' => false,
                 ]);
 

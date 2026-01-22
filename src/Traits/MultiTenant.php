@@ -10,10 +10,10 @@ trait MultiTenant
 {
     protected static function bootMultiTenant(): void
     {
-        static::addGlobalScope(new MultiTenantScope());
+        static::addGlobalScope(new MultiTenantScope);
 
         static::creating(function (Model $model) {
-            if (!$model->getAttribute('tenant_id')) {
+            if (! $model->getAttribute('tenant_id')) {
                 $tenantField = config('laravel_accounting.multi_tenancy_field', 'tenant_id');
                 $tenantId = Auth::user()?->{$tenantField};
 

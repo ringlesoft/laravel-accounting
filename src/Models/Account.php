@@ -42,7 +42,7 @@ class Account extends Model
     ];
 
     protected $with = [
-        'accountType'
+        'accountType',
     ];
 
     public function __construct(array $attributes = [])

@@ -22,6 +22,7 @@ use Throwable;
  * @mixin Builder
  * @mixin Model
  * @mixin PostableModel
+ *
  * @property JournalEntry $journalEntry
  *
  * @phpstan-require-implements PostableModel
@@ -43,20 +44,22 @@ trait Postable
      */
     public function createJournal(): bool
     {
-        if($this->hasJournalEntry()){
-            throw new JournalEntryAlreadyExistsException();
+        if ($this->hasJournalEntry()) {
+            throw new JournalEntryAlreadyExistsException;
         }
         $voucherData = $this->toVoucher();
         LaravelAccounting::journals()->createDraft($voucherData);
         $this->load('journalEntry');
+
         return true;
     }
 
     public function postJournal(): bool
     {
-        if($journal = $this->journalEntry){
+        if ($journal = $this->journalEntry) {
             return $journal->post();
         }
+
         return true;
     }
 
@@ -68,12 +71,10 @@ trait Postable
     public function postWithTemplate(AccountingTemplate $template): bool
     {
         $this->template = $template;
+
         return $this->post();
     }
 
-    /**
-     * @return bool
-     */
     public function hasJournalEntry(): bool
     {
         return $this->journalEntry()->exists();
@@ -92,7 +93,7 @@ trait Postable
     public function getTemplate(): ?AccountingTemplate
     {
         // Firstly, check if template is assigned
-        if(!empty($this->template)){
+        if (! empty($this->template)) {
             return $this->template;
         }
 
@@ -102,6 +103,7 @@ trait Postable
         if (count($attributes) > 0) {
             return $attributes[0]->newInstance()->getTemplate();
         }
+
         return null;
     }
 
@@ -116,6 +118,7 @@ trait Postable
         if (! $template) {
             throw new TemplateNotFoundException('No template found for '.get_class($this));
         }
+
         return $template->make($this);
     }
 }

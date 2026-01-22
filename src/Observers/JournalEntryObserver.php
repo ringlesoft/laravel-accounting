@@ -15,8 +15,8 @@ class JournalEntryObserver
     {
         if ($journalEntry->is_posted) {
             throw new DuplicatePostingException(
-                "Cannot delete posted journal entry #{$journalEntry->transaction_number}. " .
-                "Posted entries must be reversed or voided instead."
+                "Cannot delete posted journal entry #{$journalEntry->transaction_number}. ".
+                'Posted entries must be reversed or voided instead.'
             );
         }
 
@@ -31,15 +31,15 @@ class JournalEntryObserver
     {
         if ($journalEntry->is_posted && $journalEntry->isDirty()) {
             $allowedFields = ['is_voided', 'voided_at', 'voided_by_user_id', 'is_reversed'];
-            
+
             $dirtyFields = array_keys($journalEntry->getDirty());
             $unauthorizedChanges = array_diff($dirtyFields, $allowedFields);
 
-            if (!empty($unauthorizedChanges)) {
+            if (! empty($unauthorizedChanges)) {
                 throw new DuplicatePostingException(
-                    "Cannot modify posted journal entry #{$journalEntry->transaction_number}. " .
-                    "Posted entries can only be reversed or voided. " .
-                    "Attempted to modify: " . implode(', ', $unauthorizedChanges)
+                    "Cannot modify posted journal entry #{$journalEntry->transaction_number}. ".
+                    'Posted entries can only be reversed or voided. '.
+                    'Attempted to modify: '.implode(', ', $unauthorizedChanges)
                 );
             }
         }

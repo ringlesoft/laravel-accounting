@@ -38,7 +38,7 @@ class JournalEntryItem extends Model
     ];
 
     protected $with = [
-        'account'
+        'account',
     ];
 
     public function __construct(array $attributes = [])

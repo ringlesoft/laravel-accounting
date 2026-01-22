@@ -14,6 +14,5 @@ class PeriodLocked
     public function __construct(
         public FiscalPeriod $period,
         public ?int $userId = null
-    ) {
-    }
+    ) {}
 }

@@ -7,22 +7,20 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 class CashPurchaseTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset  $expenseAccount = AccountPreset::COST_OF_GOODS_SOLD,
+        protected AccountPreset $expenseAccount = AccountPreset::COST_OF_GOODS_SOLD,
         protected ?AccountPreset $inputTaxAccount = AccountPreset::INPUT_VAT,
-        protected AccountPreset  $cashAccount = AccountPreset::CASH,
-        protected float          $taxRate = 0,
-    )
-    {
-    }
+        protected AccountPreset $cashAccount = AccountPreset::CASH,
+        protected float $taxRate = 0,
+    ) {}
 
     public function configure(): void
     {
         // Inventory/Expense + Input VAT → Cash
-        $this->debit($this->expenseAccount, fn($amount) => ($amount * (1 - $this->taxRate)));
+        $this->debit($this->expenseAccount, fn ($amount) => ($amount * (1 - $this->taxRate)));
         if ($this->taxRate > 0) {
-            $this->debit($this->inputTaxAccount, fn($amount) => ($amount * ($this->taxRate)));
+            $this->debit($this->inputTaxAccount, fn ($amount) => ($amount * ($this->taxRate)));
         }
         $this->credit($this->cashAccount);
-        $this->describe(fn($model) => (get_class($model)));
+        $this->describe(fn ($model) => (get_class($model)));
     }
 }

@@ -60,8 +60,9 @@ class UpdateBalancesCommand extends Command
     {
         $period = FiscalPeriod::find($periodId);
 
-        if (!$period) {
+        if (! $period) {
             $this->error("Fiscal period with ID {$periodId} not found.");
+
             return self::FAILURE;
         }
 
@@ -71,8 +72,9 @@ class UpdateBalancesCommand extends Command
 
         if ($accountId) {
             $account = Account::find($accountId);
-            if (!$account) {
+            if (! $account) {
                 $this->error("Account with ID {$accountId} not found.");
+
                 return self::FAILURE;
             }
 
@@ -92,8 +94,9 @@ class UpdateBalancesCommand extends Command
     {
         $account = Account::find($accountId);
 
-        if (!$account) {
+        if (! $account) {
             $this->error("Account with ID {$accountId} not found.");
+
             return self::FAILURE;
         }
 
@@ -104,6 +107,7 @@ class UpdateBalancesCommand extends Command
 
         if ($periods->isEmpty()) {
             $this->warn('No fiscal periods found.');
+
             return self::SUCCESS;
         }
 
@@ -124,8 +128,9 @@ class UpdateBalancesCommand extends Command
 
     protected function updateAllBalances(): int
     {
-        if (!$this->confirm('This will recalculate balances for all accounts and periods. Continue?', true)) {
+        if (! $this->confirm('This will recalculate balances for all accounts and periods. Continue?', true)) {
             $this->comment('Operation cancelled.');
+
             return self::SUCCESS;
         }
 
@@ -137,11 +142,13 @@ class UpdateBalancesCommand extends Command
 
         if ($periods->isEmpty()) {
             $this->warn('No fiscal periods found.');
+
             return self::SUCCESS;
         }
 
         if ($accounts->isEmpty()) {
             $this->warn('No active accounts found.');
+
             return self::SUCCESS;
         }
 

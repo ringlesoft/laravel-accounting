@@ -16,6 +16,5 @@ class JournalEntryReversed
         public JournalEntry $reversalEntry,
         public ?string $reason = null,
         public ?int $userId = null
-    ) {
-    }
+    ) {}
 }

@@ -17,9 +17,9 @@ class AccountObserver
 
         if ($transactionCount > 0) {
             throw new InvalidAccountTypeException(
-                "Cannot delete account '{$account->code} - {$account->name}'. " .
-                "This account has {$transactionCount} transaction(s). " .
-                "Accounts with transactions cannot be deleted. Consider deactivating it instead."
+                "Cannot delete account '{$account->code} - {$account->name}'. ".
+                "This account has {$transactionCount} transaction(s). ".
+                'Accounts with transactions cannot be deleted. Consider deactivating it instead.'
             );
         }
 
@@ -27,9 +27,9 @@ class AccountObserver
 
         if ($childrenCount > 0) {
             throw new InvalidAccountTypeException(
-                "Cannot delete account '{$account->code} - {$account->name}'. " .
-                "This account has {$childrenCount} child account(s). " .
-                "Delete or reassign child accounts first."
+                "Cannot delete account '{$account->code} - {$account->name}'. ".
+                "This account has {$childrenCount} child account(s). ".
+                'Delete or reassign child accounts first.'
             );
         }
 
@@ -47,9 +47,9 @@ class AccountObserver
 
             if ($transactionCount > 0) {
                 throw new InvalidAccountTypeException(
-                    "Cannot change account type for account '{$account->code} - {$account->name}'. " .
-                    "This account has {$transactionCount} transaction(s). " .
-                    "Accounts with transactions cannot have their type changed."
+                    "Cannot change account type for account '{$account->code} - {$account->name}'. ".
+                    "This account has {$transactionCount} transaction(s). ".
+                    'Accounts with transactions cannot have their type changed.'
                 );
             }
         }
@@ -57,15 +57,15 @@ class AccountObserver
         if ($account->isDirty('parent_id') && $account->parent_id) {
             if ($account->parent_id === $account->id) {
                 throw new InvalidAccountTypeException(
-                    "Account cannot be its own parent."
+                    'Account cannot be its own parent.'
                 );
             }
 
             $parent = Account::find($account->parent_id);
             if ($parent && $parent->isDescendantOf($account)) {
                 throw new InvalidAccountTypeException(
-                    "Cannot create circular parent-child relationship. " .
-                    "The selected parent is a descendant of this account."
+                    'Cannot create circular parent-child relationship. '.
+                    'The selected parent is a descendant of this account.'
                 );
             }
         }

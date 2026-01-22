@@ -230,7 +230,7 @@ class CashFlowStatement extends Report
 
             if (abs($netChange) > 0.01) {
                 $activities[] = [
-                    'description' => $netChange > 0 ? "Capital contribution" : "Dividends paid",
+                    'description' => $netChange > 0 ? 'Capital contribution' : 'Dividends paid',
                     'amount' => $netChange,
                 ];
                 $total += $netChange;

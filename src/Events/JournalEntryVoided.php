@@ -15,6 +15,5 @@ class JournalEntryVoided
         public JournalEntry $journalEntry,
         public ?string $reason = null,
         public ?int $userId = null
-    ) {
-    }
+    ) {}
 }

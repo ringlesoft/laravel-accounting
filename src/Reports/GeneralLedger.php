@@ -3,7 +3,6 @@
 namespace RingleSoft\LaravelAccounting\Reports;
 
 use Carbon\Carbon;
-use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Models\Report;
 
@@ -50,7 +49,7 @@ class GeneralLedger extends Report
 
                 $accountCode = $item->account->code;
 
-                if (!isset($accountBalances[$accountCode])) {
+                if (! isset($accountBalances[$accountCode])) {
                     $accountBalances[$accountCode] = [
                         'account_id' => $item->account_id,
                         'code' => $accountCode,

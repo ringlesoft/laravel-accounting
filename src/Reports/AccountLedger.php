@@ -22,7 +22,7 @@ class AccountLedger extends Report
             $endDate = Carbon::parse($endDate);
         }
 
-        if (!$accountId) {
+        if (! $accountId) {
             throw new \InvalidArgumentException('account_id parameter is required for Account Ledger report');
         }
 

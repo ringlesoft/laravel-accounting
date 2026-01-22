@@ -27,14 +27,14 @@ class FiscalPeriodObserver
     {
         if ($fiscalPeriod->is_locked) {
             $allowedFields = [];
-            
+
             $dirtyFields = array_keys($fiscalPeriod->getDirty());
             $unauthorizedChanges = array_diff($dirtyFields, $allowedFields);
 
-            if (!empty($unauthorizedChanges)) {
+            if (! empty($unauthorizedChanges)) {
                 throw new PeriodClosedException(
-                    "Cannot modify locked fiscal period '{$fiscalPeriod->name}'. " .
-                    "Attempted to modify: " . implode(', ', $unauthorizedChanges)
+                    "Cannot modify locked fiscal period '{$fiscalPeriod->name}'. ".
+                    'Attempted to modify: '.implode(', ', $unauthorizedChanges)
                 );
             }
         }
@@ -69,7 +69,7 @@ class FiscalPeriodObserver
 
         if ($transactionCount > 0) {
             throw new PeriodClosedException(
-                "Cannot delete fiscal period '{$fiscalPeriod->name}'. " .
+                "Cannot delete fiscal period '{$fiscalPeriod->name}'. ".
                 "This period has {$transactionCount} journal entry(ies)."
             );
         }
@@ -84,18 +84,18 @@ class FiscalPeriodObserver
     {
         if ($fiscalPeriod->start_date >= $fiscalPeriod->end_date) {
             throw new \InvalidArgumentException(
-                "Fiscal period start date must be before end date. " .
-                "Start: {$fiscalPeriod->start_date->toDateString()}, " .
+                'Fiscal period start date must be before end date. '.
+                "Start: {$fiscalPeriod->start_date->toDateString()}, ".
                 "End: {$fiscalPeriod->end_date->toDateString()}"
             );
         }
 
         $maxDuration = 366;
         $duration = $fiscalPeriod->start_date->diffInDays($fiscalPeriod->end_date);
-        
+
         if ($duration > $maxDuration) {
             throw new \InvalidArgumentException(
-                "Fiscal period duration cannot exceed {$maxDuration} days. " .
+                "Fiscal period duration cannot exceed {$maxDuration} days. ".
                 "Current duration: {$duration} days."
             );
         }
@@ -124,7 +124,7 @@ class FiscalPeriodObserver
 
         if ($overlapping) {
             throw new \InvalidArgumentException(
-                "Fiscal period dates overlap with existing period '{$overlapping->name}' " .
+                "Fiscal period dates overlap with existing period '{$overlapping->name}' ".
                 "({$overlapping->start_date->toDateString()} to {$overlapping->end_date->toDateString()})."
             );
         }

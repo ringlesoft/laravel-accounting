@@ -16,8 +16,8 @@ class CashSaleTemplate extends AccountingTemplate
     public function configure(): void
     {
         // Cash → Sales Revenue (+ Tax Payable)
-        $this->debit($this->cashAccount);
-        $this->credit($this->revenueAccount, fn ($amount) => $amount / (1 + $this->taxRate));
+        $this->debit($this->cashAccount)
+            ->credit($this->revenueAccount, fn ($amount) => $amount / (1 + $this->taxRate));
 
         if ($this->taxRate > 0 && $this->taxAccount) {
             $this->credit($this->taxAccount, fn ($amount) => $amount * $this->taxRate / (1 + $this->taxRate));

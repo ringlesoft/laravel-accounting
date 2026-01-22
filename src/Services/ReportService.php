@@ -5,10 +5,12 @@ namespace RingleSoft\LaravelAccounting\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use JsonException;
 use RingleSoft\LaravelAccounting\Models\Report;
 use RingleSoft\LaravelAccounting\Reports\AccountLedger;
 use RingleSoft\LaravelAccounting\Reports\BalanceSheet;
 use RingleSoft\LaravelAccounting\Reports\CashFlowStatement;
+use RingleSoft\LaravelAccounting\Reports\ChartsOfAccounts;
 use RingleSoft\LaravelAccounting\Reports\GeneralLedger;
 use RingleSoft\LaravelAccounting\Reports\IncomeStatement;
 use RingleSoft\LaravelAccounting\Reports\TrialBalance;
@@ -20,6 +22,7 @@ use RingleSoft\LaravelAccounting\Reports\TrialBalance;
  * @property Report  $trialBalance
  * @property Report  $generalLedger
  * @property Report  $accountLedger
+ * @property Report  $chartOfAccounts
  */
 class ReportService
 {
@@ -30,6 +33,7 @@ class ReportService
         'trial_balance' => TrialBalance::class,
         'general_ledger' => GeneralLedger::class,
         'account_ledger' => AccountLedger::class,
+        'charts_of_accounts' => ChartsOfAccounts::class,
     ];
 
     public function __construct(protected BalanceService $balanceService) {}
@@ -65,6 +69,7 @@ class ReportService
 
     /**
      * Generate a report
+     * @throws JsonException
      */
     public function generate(string $reportType, array $params = []): Report
     {
@@ -109,12 +114,12 @@ class ReportService
 
     /**
      * Generate cache key for report
+     * @throws JsonException
      */
     protected function getCacheKey(string $reportType, array $params): string
     {
         $paramsHash = md5(json_encode($params, JSON_THROW_ON_ERROR));
-
-        return "laravel_accounting.report.{$reportType}.{$paramsHash}";
+        return "laravel_accounting.report.$reportType.$paramsHash";
     }
 
     /**
@@ -131,8 +136,9 @@ class ReportService
 
     /**
      * Export report to specific format
+     * @throws JsonException
      */
-    public function export(Report $report, string $format = 'array'): mixed
+    public function export(Report $report, string $format = 'array'): string|array|bool
     {
         return match ($format) {
             'array' => $report->toArray(),
@@ -154,16 +160,14 @@ class ReportService
             $csv .= $data['title']."\n\n";
         }
 
-        if (is_array($data['rows'])) {
-            if (! empty($data['rows'])) {
-                $headers = array_keys($data['rows'][0]);
-                $csv .= implode(',', $headers)."\n";
+        if (is_array($data['rows']) && !empty($data['rows'])) {
+            $headers = array_keys($data['rows'][0]);
+            $csv .= implode(',', $headers)."\n";
 
-                foreach ($data['rows'] as $row) {
-                    $csv .= implode(',', array_map(function ($value) {
-                        return is_numeric($value) ? $value : '"'.str_replace('"', '""', $value).'"';
-                    }, array_values($row)))."\n";
-                }
+            foreach ($data['rows'] as $row) {
+                $csv .= implode(',', array_map(static function ($value) {
+                    return is_numeric($value) ? $value : '"'.str_replace('"', '""', $value).'"';
+                }, array_values($row)))."\n";
             }
         }
 
@@ -205,6 +209,11 @@ class ReportService
                 'name' => 'Account Ledger',
                 'description' => 'Detailed transaction history for a specific account',
                 'parameters' => ['account_id', 'start_date', 'end_date', 'tenant_id'],
+            ],
+            'charts_of_accounts' => [
+                'name' => 'Chart of Accounts',
+                'description' => 'Hierarchical list of all accounts with optional balances',
+                'parameters' => ['include_inactive', 'account_type', 'show_balances', 'as_of_date', 'tenant_id'],
             ],
         ];
     }

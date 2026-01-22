@@ -41,23 +41,22 @@ class JournalService
             $fiscalPeriod = $this->findFiscalPeriod($voucher->date);
 
             $journalData = [
-                'transaction_date' => $voucher->date,
+                'transaction_date' => $voucher->date ?? now(),
                 'description' => $voucher->description,
                 'reference' => $voucher->reference,
                 'currency_code' => $voucher->currency_code ?? config('laravel_accounting.default_currency_code'),
                 'fiscal_period_id' => $fiscalPeriod?->id,
-                'posted_at' => now(),
+                'posted_at' => null,
                 'posted_by_user_id' => $userId ?? auth()->id(),
                 'created_by_user_id' => $userId ?? auth()->id(),
                 'is_posted' => false,
                 'metadata' => $voucher->metadata ?? [],
             ];
+
             if(isset($voucher->sourceModel) && ($keyName = $voucher->sourceModel->getKeyName()) && ($modalId = $voucher->sourceModel->$keyName)) {
                 $journalData['postable_id'] = $modalId;
                 $journalData['postable_type'] = get_class($voucher->sourceModel);
             }
-
-            JournalEntryValidator::validate($journalData);
 
             $journalEntry = JournalEntry::create($journalData);
 

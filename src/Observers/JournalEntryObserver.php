@@ -3,10 +3,26 @@
 namespace RingleSoft\LaravelAccounting\Observers;
 
 use RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
+use RingleSoft\LaravelAccounting\Validators\JournalEntryValidator;
+use function PHPUnit\Framework\isEmpty;
 
 class JournalEntryObserver
 {
+    /**
+     * Handle the JournalEntry "creating" event.
+     * Validate journal entry data before creation
+     * @throws InvalidVoucherException
+     */
+    public function creating(JournalEntry $journalEntry): bool
+    {
+        $journalData = $journalEntry->getAttributes();
+        JournalEntryValidator::validate($journalData);
+
+        return true;
+    }
+
     /**
      * Handle the JournalEntry "deleting" event.
      * Prevent deletion of posted journal entries
@@ -38,7 +54,7 @@ class JournalEntryObserver
             if (!empty($unauthorizedChanges)) {
                 throw new DuplicatePostingException(
                     "Cannot modify posted journal entry #{$journalEntry->transaction_number}. " .
-                    "1Posted entries can only be reversed or voided. " .
+                    "Posted entries can only be reversed or voided. " .
                     "Attempted to modify: " . implode(', ', $unauthorizedChanges)
                 );
             }
@@ -46,4 +62,6 @@ class JournalEntryObserver
 
         return true;
     }
+
+
 }

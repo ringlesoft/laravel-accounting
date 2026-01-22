@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Validators;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -27,8 +28,8 @@ class JournalEntryValidator
             'transaction_date' => [
                 'required',
                 'date',
-                'before_or_equal:today',
                 'after_or_equal:' . now()->subYears(10)->toDateString(),
+                'before_or_equal:' . now()->addDay()->toDateString(),
             ],
             'description' => 'nullable|string|max:500',
             'reference' => 'nullable|string|max:100',
@@ -38,7 +39,7 @@ class JournalEntryValidator
                 'size:3',
                 Rule::in(array_column(CurrencyCode::cases(), 'value')),
             ],
-            'exchange_rate' => 'required|numeric|min:0.0001|max:999999.9999',
+            'exchange_rate' => 'required|numeric|min:0.0001|max:9999999999999.9999',
             'fiscal_period_id' => [
                 'required',
                 'exists:' . $tablePrefix . '_fiscal_periods,id'
@@ -68,6 +69,11 @@ class JournalEntryValidator
      */
     public static function validate(array $data, ?int $ignoreId = null): void
     {
+
+        if(!empty($data['metadata'])) {
+            $data['metadata'] = json_decode($data['metadata'], true);
+        }
+
         $validator = Validator::make($data, self::rules($ignoreId));
 
         if ($validator->fails()) {

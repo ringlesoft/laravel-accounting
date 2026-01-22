@@ -171,21 +171,8 @@ class Account extends Model
 
     // Validation Rules
 
-    public static function validationRules(): array
+    public static function validationRules(?int $ignoreId = null): array
     {
-        return [
-            'code' => 'required|string|max:50',
-            'name' => 'required|string|max:255',
-            'account_type_id' => 'required|exists:'.config('laravel_accounting.table_prefix', 'la').'_account_types,id',
-            'category' => 'nullable|string|max:100',
-            'sub_category' => 'nullable|string|max:100',
-            'report_section' => 'nullable|string|max:100',
-            'parent_id' => 'nullable|exists:'.config('laravel_accounting.table_prefix', 'la').'_accounts,id',
-            'currency_code' => 'required|string|size:3',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-            'is_system_account' => 'boolean',
-            'allows_manual_entries' => 'boolean',
-        ];
+        return \RingleSoft\LaravelAccounting\Validators\AccountValidator::rules($ignoreId);
     }
 }

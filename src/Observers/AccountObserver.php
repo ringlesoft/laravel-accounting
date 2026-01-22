@@ -2,11 +2,25 @@
 
 namespace RingleSoft\LaravelAccounting\Observers;
 
+use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidAccountTypeException;
 use RingleSoft\LaravelAccounting\Models\Account;
+use RingleSoft\LaravelAccounting\Validators\AccountValidator;
 
 class AccountObserver
 {
+    /**
+     * Handle the Account "creating" event.
+     * Validate account data before creation
+     * @throws InvalidArgumentException
+     */
+    public function creating(Account $account): bool
+    {
+        $accountData = $account->getAttributes();
+        AccountValidator::validate($accountData);
+        return true;
+    }
+
     /**
      * Handle the Account "deleting" event.
      * Prevent deletion of accounts that have transactions

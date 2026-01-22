@@ -247,4 +247,9 @@ class AccountService
             'children' => $children,
         ];
     }
+
+    public function query()
+    {
+        return Account::query();
+    }
 }

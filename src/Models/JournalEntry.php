@@ -66,6 +66,11 @@ class JournalEntry extends Model
         'exchange_rate' => 'decimal:10',
     ];
 
+    protected $with = [
+        'fiscalPeriod',
+        'items'
+    ];
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);

@@ -41,6 +41,10 @@ class Account extends Model
         'allows_manual_entries' => 'boolean',
     ];
 
+    protected $with = [
+        'accountType'
+    ];
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);

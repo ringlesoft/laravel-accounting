@@ -45,6 +45,10 @@ class FiscalPeriod extends Model
         'closed_at' => 'datetime',
     ];
 
+    protected $with = [
+      'fiscalYear'
+    ];
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);

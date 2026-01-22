@@ -18,6 +18,7 @@ use RingleSoft\LaravelAccounting\Events\JournalEntryVoided;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
+use RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException;
 use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
@@ -53,7 +54,7 @@ class JournalService
                 'metadata' => $voucher->metadata ?? [],
             ];
 
-            if(isset($voucher->sourceModel) && ($keyName = $voucher->sourceModel->getKeyName()) && ($modalId = $voucher->sourceModel->$keyName)) {
+            if (isset($voucher->sourceModel) && ($keyName = $voucher->sourceModel->getKeyName()) && ($modalId = $voucher->sourceModel->$keyName)) {
                 $journalData['postable_id'] = $modalId;
                 $journalData['postable_type'] = get_class($voucher->sourceModel);
             }
@@ -105,7 +106,7 @@ class JournalService
      */
     public function validatePeriod(JournalEntry $entry): bool
     {
-        if (! $entry->fiscalPeriod) {
+        if (!$entry->fiscalPeriod) {
             throw new PeriodClosedException('No fiscal period found for this transaction date');
         }
 
@@ -125,10 +126,35 @@ class JournalService
     }
 
     /**
+     * Validate that no parent accounts are being posted to
+     *
+     * @throws ParentAccountPostingException
+     */
+    public function validateParentAccounts(JournalEntry $entry): bool
+    {
+        if (config('laravel_accounting.allow_posting_on_parents', false)) {
+            return true;
+        }
+
+        $entry->load('items.account.children');
+        foreach ($entry->items as $item) {
+            if ($item->account && $item->account->children()->exists()) {
+                throw new ParentAccountPostingException(
+                    "Cannot post to parent account '{$item->account->name}' (Code: {$item->account->code}). "
+                    . "This account has child accounts and posting is not allowed on parent accounts."
+                );
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Post a journal entry
      *
      * @throws Throwable
      * @throws DuplicatePostingException
+     * @throws ParentAccountPostingException
      */
     public function post(JournalEntry $entry, ?int $userId = null): bool
     {
@@ -139,6 +165,7 @@ class JournalService
 
             $this->validateBalance($entry);
             $this->validatePeriod($entry);
+            $this->validateParentAccounts($entry);
 
             $entry->update([
                 'is_posted' => true,
@@ -160,7 +187,7 @@ class JournalService
     public function reverse(JournalEntry $entry, ?string $reason = null, ?int $userId = null): JournalEntry
     {
         return DB::transaction(function () use ($entry, $reason, $userId) {
-            if (! $entry->is_posted) {
+            if (!$entry->is_posted) {
                 throw new InvalidArgumentException('Cannot reverse an unposted journal entry');
             }
 
@@ -174,7 +201,7 @@ class JournalService
 
             $reversalEntry = JournalEntry::create([
                 'transaction_date' => now(),
-                'description' => "Reversal: {$entry->description}".($reason ? " - {$reason}" : ''),
+                'description' => "Reversal: {$entry->description}" . ($reason ? " - {$reason}" : ''),
                 'reference' => "REV-{$entry->reference}",
                 'currency_code' => $entry->currency_code,
                 'fiscal_period_id' => $this->findFiscalPeriod(now())?->id,
@@ -185,7 +212,7 @@ class JournalService
                 'reversal_of_id' => $entry->id,
             ]);
 
-            foreach ($entry->items  as $item) {
+            foreach ($entry->items as $item) {
                 JournalEntryItem::create([
                     'journal_entry_id' => $reversalEntry->id,
                     'account_id' => $item->account_id,
@@ -252,6 +279,126 @@ class JournalService
     }
 
     /**
+     * Get paginated transactions with aggregated account information
+     * Optimized for large datasets using correlated subqueries instead of GROUP BY
+     *
+     * @param array $filters Optional filters: ['status' => 'posted|draft|voided', 'date_from' => Carbon, 'date_to' => Carbon, 'account_id' => int, 'reference' => string, 'fiscal_period_id' => int]
+     * @param int $perPage Number of items per page
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function getTransactions(array $filters = [], int $perPage = 20)
+    {
+        $prefix = config('laravel_accounting.table_prefix', 'la');
+        $driver = DB::connection()->getDriverName();
+
+        $accountsAggregation = $this->getAccountsAggregationQuery($driver, $prefix);
+        $debitSum = "(SELECT COALESCE(SUM(debit_amount), 0) FROM {$prefix}_journal_entry_items WHERE journal_entry_id = je.id)";
+        $creditSum = "(SELECT COALESCE(SUM(credit_amount), 0) FROM {$prefix}_journal_entry_items WHERE journal_entry_id = je.id)";
+
+        $query = DB::table("{$prefix}_journal_entries as je")
+            ->select(
+                'je.id',
+                'je.transaction_number',
+                'je.transaction_date',
+                'je.description',
+                'je.reference',
+                'je.postable_type',
+                'je.postable_id',
+                'je.is_posted',
+                'je.is_voided',
+                'je.is_reversed',
+                'je.posted_at',
+                'je.currency_code',
+                'je.fiscal_period_id',
+                DB::raw("({$accountsAggregation}) as accounts"),
+                DB::raw("{$debitSum} as total_debit"),
+                DB::raw("{$creditSum} as total_credit")
+            );
+
+        $this->applyTransactionFilters($query, $filters);
+
+        return $query
+            ->orderBy('je.transaction_date', 'desc')
+            ->orderBy('je.id', 'desc')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get database-specific accounts aggregation query
+     */
+    protected function getAccountsAggregationQuery(string $driver, string $prefix): string
+    {
+        return match ($driver) {
+            'mysql', 'mariadb' => "SELECT GROUP_CONCAT(DISTINCT acc.name ORDER BY acc.name SEPARATOR ', ')
+                FROM {$prefix}_journal_entry_items jei
+                INNER JOIN {$prefix}_accounts acc ON jei.account_id = acc.id
+                WHERE jei.journal_entry_id = je.id",
+            'pgsql' => "SELECT STRING_AGG(DISTINCT acc.name, ', ' ORDER BY acc.name)
+                FROM {$prefix}_journal_entry_items jei
+                INNER JOIN {$prefix}_accounts acc ON jei.account_id = acc.id
+                WHERE jei.journal_entry_id = je.id",
+            'sqlite' => "SELECT GROUP_CONCAT(DISTINCT acc.name, ', ')
+                FROM {$prefix}_journal_entry_items jei
+                INNER JOIN {$prefix}_accounts acc ON jei.account_id = acc.id
+                WHERE jei.journal_entry_id = je.id",
+            default => "SELECT GROUP_CONCAT(DISTINCT acc.name, ', ')
+                FROM {$prefix}_journal_entry_items jei
+                INNER JOIN {$prefix}_accounts acc ON jei.account_id = acc.id
+                WHERE jei.journal_entry_id = je.id",
+        };
+    }
+
+    /**
+     * Apply filters to transaction query
+     */
+    protected function applyTransactionFilters($query, array $filters): void
+    {
+        if (isset($filters['status'])) {
+            match ($filters['status']) {
+                'posted' => $query->where('je.is_posted', true)->where('je.is_voided', false),
+                'unposted', 'draft' => $query->where('je.is_posted', false)->where('je.is_voided', false),
+                'voided' => $query->where('je.is_voided', true),
+                'reversed' => $query->where('je.is_reversed', true),
+                default => null,
+            };
+        }
+
+        if (isset($filters['start_date'])) {
+            $query->where('je.transaction_date', '>=', $filters['start_date']);
+        }
+
+        if (isset($filters['end_ate'])) {
+            $query->where('je.transaction_date', '<=', $filters['end_ate']);
+        }
+
+        if (isset($filters['fiscal_period_id'])) {
+            $query->where('je.fiscal_period_id', $filters['fiscal_period_id']);
+        }
+
+        if (isset($filters['account_id'])) {
+            $query->whereExists(function ($subQuery) use ($filters) {
+                $prefix = config('laravel_accounting.table_prefix', 'la');
+                $subQuery->select(DB::raw(1))
+                    ->from("{$prefix}_journal_entry_items as jei_filter")
+                    ->whereColumn('jei_filter.journal_entry_id', 'je.id')
+                    ->where('jei_filter.account_id', $filters['account_id']);
+            });
+        }
+
+        if (isset($filters['reference']) && !empty($filters['reference'])) {
+            $query->where('je.reference', 'like', '%' . $filters['reference'] . '%');
+        }
+
+        if (isset($filters['search']) && !empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('je.description', 'like', '%' . $filters['search'] . '%')
+                    ->orWhere('je.reference', 'like', '%' . $filters['search'] . '%')
+                    ->orWhere('je.transaction_number', 'like', '%' . $filters['search'] . '%');
+            });
+        }
+    }
+
+    /**
      * Validate voucher data
      * @throws JournalNotBalancedException|InvalidArgumentException
      * @throws InvalidVoucherException
@@ -267,7 +414,7 @@ class JournalService
         }
 
         $totalAmount = array_reduce($voucher->entries, static function ($carry, $entry) {
-            return $carry + ($entry->type === EntryType::CREDIT ? $entry->amount : -$entry->amount );
+            return $carry + ($entry->type === EntryType::CREDIT ? $entry->amount : -$entry->amount);
         }, 0);
 
         if (abs($totalAmount) > 0.01) {

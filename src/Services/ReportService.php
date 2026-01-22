@@ -2,21 +2,60 @@
 
 namespace RingleSoft\LaravelAccounting\Services;
 
-use Carbon\Carbon;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Models\Report;
+use RingleSoft\LaravelAccounting\Reports\AccountLedger;
 use RingleSoft\LaravelAccounting\Reports\BalanceSheet;
+use RingleSoft\LaravelAccounting\Reports\CashFlowStatement;
+use RingleSoft\LaravelAccounting\Reports\GeneralLedger;
 use RingleSoft\LaravelAccounting\Reports\IncomeStatement;
-use RingleSoft\LaravelAccounting\Reports\Report;
 use RingleSoft\LaravelAccounting\Reports\TrialBalance;
 
 class ReportService
 {
-    protected BalanceService $balanceService;
 
-    public function __construct(BalanceService $balanceService)
+    protected array $reports = [
+        'balance_sheet' => BalanceSheet::class,
+        'income_statement' => IncomeStatement::class,
+        'cash_flow_statement' => CashFlowStatement::class,
+        'trial_balance' => TrialBalance::class,
+        'general_ledger' => GeneralLedger::class,
+        'account_ledger' => AccountLedger::class,
+    ];
+
+    public function __construct(protected BalanceService $balanceService)
     {
-        $this->balanceService = $balanceService;
+    }
+
+    /**
+     * Register a custom report type
+     */
+    public function register(string $key, string $reportClass): self
+    {
+        if (!is_subclass_of($reportClass, Report::class)) {
+            throw new InvalidArgumentException("Report class must extend " . Report::class);
+        }
+        $this->reports[$key] = $reportClass;
+        return $this;
+    }
+
+    /**
+     * Check if a report type exists
+     */
+    public function hasReport(string $reportType): bool
+    {
+        return isset($this->reports[$reportType]);
+    }
+
+    /**
+     * Get all registered report types
+     */
+    public function getRegisteredReports(): array
+    {
+        return array_keys($this->reports);
     }
 
     /**
@@ -32,7 +71,6 @@ class ReportService
                 return $this->generateReport($reportType, $params);
             });
         }
-
         return $this->generateReport($reportType, $params);
     }
 
@@ -45,7 +83,6 @@ class ReportService
 
         $report->setParameters($params);
         $report->generate();
-
         return $report;
     }
 
@@ -54,12 +91,13 @@ class ReportService
      */
     protected function createReportInstance(string $reportType): Report
     {
-        return match ($reportType) {
-            'balance_sheet' => new BalanceSheet($this->balanceService),
-            'income_statement' => new IncomeStatement($this->balanceService),
-            'trial_balance' => new TrialBalance($this->balanceService),
-            default => throw new \InvalidArgumentException("Unknown report type: {$reportType}"),
-        };
+        if (!$this->hasReport($reportType)) {
+            throw new InvalidArgumentException("Unknown report type: {$reportType}");
+        }
+
+        $reportClass = $this->reports[$reportType];
+
+        return new $reportClass($this->balanceService);
     }
 
     /**
@@ -67,8 +105,7 @@ class ReportService
      */
     protected function getCacheKey(string $reportType, array $params): string
     {
-        $paramsHash = md5(json_encode($params));
-
+        $paramsHash = md5(json_encode($params, JSON_THROW_ON_ERROR));
         return "laravel_accounting.report.{$reportType}.{$paramsHash}";
     }
 
@@ -85,49 +122,15 @@ class ReportService
     }
 
     /**
-     * Generate Balance Sheet
-     */
-    public function balanceSheet(?Carbon $asOfDate = null, ?int $tenantId = null): array
-    {
-        return $this->generate('balance_sheet', [
-            'as_of_date' => $asOfDate ?? now(),
-            'tenant_id' => $tenantId,
-        ])->toArray();
-    }
-
-    /**
-     * Generate Income Statement
-     */
-    public function incomeStatement(?Carbon $startDate = null, ?Carbon $endDate = null, ?int $tenantId = null): array
-    {
-        return $this->generate('income_statement', [
-            'start_date' => $startDate ?? now()->startOfMonth(),
-            'end_date' => $endDate ?? now()->endOfMonth(),
-            'tenant_id' => $tenantId,
-        ])->toArray();
-    }
-
-    /**
-     * Generate Trial Balance
-     */
-    public function trialBalance(?FiscalPeriod $period = null, ?int $tenantId = null): array
-    {
-        return $this->generate('trial_balance', [
-            'period' => $period,
-            'tenant_id' => $tenantId,
-        ])->toArray();
-    }
-
-    /**
      * Export report to specific format
      */
     public function export(Report $report, string $format = 'array'): mixed
     {
         return match ($format) {
             'array' => $report->toArray(),
-            'json' => json_encode($report->toArray(), JSON_PRETTY_PRINT),
+            'json' => json_encode($report->toArray(), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT),
             'csv' => $this->exportToCsv($report),
-            default => throw new \InvalidArgumentException("Unsupported export format: {$format}"),
+            default => throw new InvalidArgumentException("Unsupported export format: {$format}"),
         };
     }
 
@@ -140,18 +143,18 @@ class ReportService
         $csv = '';
 
         if (isset($data['title'])) {
-            $csv .= $data['title']."\n\n";
+            $csv .= $data['title'] . "\n\n";
         }
 
-        if (isset($data['rows']) && is_array($data['rows'])) {
-            if (! empty($data['rows'])) {
+        if (is_array($data['rows'])) {
+            if (!empty($data['rows'])) {
                 $headers = array_keys($data['rows'][0]);
-                $csv .= implode(',', $headers)."\n";
+                $csv .= implode(',', $headers) . "\n";
 
                 foreach ($data['rows'] as $row) {
                     $csv .= implode(',', array_map(function ($value) {
-                        return is_numeric($value) ? $value : '"'.str_replace('"', '""', $value).'"';
-                    }, array_values($row)))."\n";
+                            return is_numeric($value) ? $value : '"' . str_replace('"', '""', $value) . '"';
+                        }, array_values($row))) . "\n";
                 }
             }
         }
@@ -175,11 +178,47 @@ class ReportService
                 'description' => 'Statement of profit and loss showing revenues and expenses',
                 'parameters' => ['start_date', 'end_date', 'tenant_id'],
             ],
+            'cash_flow_statement' => [
+                'name' => 'Cash Flow Statement',
+                'description' => 'Statement of cash flows using indirect method',
+                'parameters' => ['start_date', 'end_date', 'tenant_id'],
+            ],
             'trial_balance' => [
                 'name' => 'Trial Balance',
                 'description' => 'List of all accounts with their debit and credit balances',
-                'parameters' => ['period', 'tenant_id'],
+                'parameters' => ['as_of_date', 'tenant_id'],
+            ],
+            'general_ledger' => [
+                'name' => 'General Ledger',
+                'description' => 'Chronological list of all journal entries with running balances',
+                'parameters' => ['start_date', 'end_date', 'account_id', 'tenant_id'],
+            ],
+            'account_ledger' => [
+                'name' => 'Account Ledger',
+                'description' => 'Detailed transaction history for a specific account',
+                'parameters' => ['account_id', 'start_date', 'end_date', 'tenant_id'],
             ],
         ];
     }
+
+    /**
+     * @param string $reportType
+     * @param array $params
+     * @return Report
+     */
+    public function __call(string $reportType, array $params = []): Report
+    {
+        $snakeCaseType = Str::of($reportType)->snake()->toString();
+        if (isset($this->reports[$snakeCaseType])) {
+            $reportClass = $this->reports[$snakeCaseType];
+            return (new $reportClass(params: $params[0]));
+        }
+        // Todo: if the method isn't in this class throw error
+        if (!method_exists($this, $reportType)) {
+            throw new InvalidArgumentException("Report type {$reportType} does not exist");
+        }
+        throw new InvalidArgumentException("Report type {$reportType} does not exist");
+    }
+
 }
+

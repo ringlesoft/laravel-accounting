@@ -126,6 +126,14 @@ class AccountService
             ->get();
     }
 
+
+    public function all() {
+        return Account::where('is_active', true)
+            ->with('accountType')
+            ->orderBy('code')
+            ->get();
+    }
+
     /**
      * Search accounts
      */

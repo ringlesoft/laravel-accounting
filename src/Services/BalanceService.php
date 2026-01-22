@@ -12,6 +12,7 @@ use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\AccountBalance;
 use RingleSoft\LaravelAccounting\Models\AccountType;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
+use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Models\JournalEntryItem;
 use Throwable;
 
@@ -197,29 +198,6 @@ class BalanceService
     }
 
     /**
-     * Get account balances by type
-     */
-    public function getBalancesByType(string $accountType, ?Carbon $asOfDate = null): Collection
-    {
-        $asOfDate = $asOfDate ?? now();
-
-        $accounts = Account::whereHas('accountType', function ($query) use ($accountType) {
-            $query->where('code', $accountType);
-        })->where('is_active', true)->get();
-
-        return $accounts->map(function ($account) use ($asOfDate) {
-            return [
-                'account_id' => $account->id,
-                'account_code' => $account->code,
-                'account_name' => $account->name,
-                'balance' => $this->getAccountBalance($account, $asOfDate),
-            ];
-        })->filter(function ($item) {
-            return abs($item['balance']) > 0.01;
-        })->values();
-    }
-
-    /**
      * Update cached balance for a specific account and period
      */
     public function updateAccountBalance(Account $account, FiscalPeriod $period): void
@@ -241,24 +219,29 @@ class BalanceService
     }
 
     /**
-     * Get balances for multiple accounts by type ID as of a specific date
-     * Optimized for bulk retrieval in reports
+     * Get balances for multiple accounts by AccountType model as of a specific date
+     * Optimized for bulk retrieval in reports like Balance Sheet
      */
-    public function getBalancesByAccountTypeId(int $accountTypeId, ?Carbon $asOfDate = null): Collection
+    public function getBalancesByAccountType(AccountType $accountType, ?Carbon $asOfDate = null): Collection
     {
+        $accountTypeId = $accountType->id;
+        $normalBalance = $accountType->normal_balance;
         $asOfDate = $asOfDate ?? now();
 
-        $prefix = config('laravel_accounting.table_prefix', 'la');
+        $accountsTable = (new Account())->getTable();
+        $journalEntryItemsTable = (new JournalEntryItem())->getTable();
+        $journalEntriesTable = (new JournalEntry())->getTable();
+        $accountTypesTable = (new AccountType())->getTable();
 
-        $results = DB::table("{$prefix}_accounts as acc")
-            ->leftJoin("{$prefix}_journal_entry_items as jei", 'acc.id', '=', 'jei.account_id')
-            ->leftJoin("{$prefix}_journal_entries as je", function ($join) use ($asOfDate) {
+        $results = DB::table("$accountsTable as acc")
+            ->leftJoin("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
+            ->leftJoin("$journalEntriesTable as je", function ($join) use ($asOfDate) {
                 $join->on('jei.journal_entry_id', '=', 'je.id')
                     ->where('je.is_posted', '=', true)
                     ->where('je.is_voided', '=', false)
                     ->where('je.transaction_date', '<=', $asOfDate);
             })
-            ->join("{$prefix}_account_types as at", 'acc.account_type_id', '=', 'at.id')
+            ->join("$accountTypesTable as at", 'acc.account_type_id', '=', 'at.id')
             ->where('acc.is_active', true)
             ->where('acc.account_type_id', $accountTypeId)
             ->select(
@@ -291,15 +274,6 @@ class BalanceService
     }
 
     /**
-     * Get balances for multiple accounts by AccountType model as of a specific date
-     * Optimized for bulk retrieval in reports like Balance Sheet
-     */
-    public function getBalancesByAccountType(AccountType $accountType, ?Carbon $asOfDate = null): Collection
-    {
-        return $this->getBalancesByAccountTypeId($accountType->id, $asOfDate);
-    }
-
-    /**
      * @param AccountTypeEnum $accountTypeEnum
      * @param Carbon $startDate
      * @param Carbon $endDate
@@ -319,32 +293,32 @@ class BalanceService
         $accountTypeId = $accountType->id;
         $normalBalance = $accountType->normal_balance;
 
-        $prefix = config('laravel_accounting.table_prefix', 'la');
+        $accountsTable = (new Account())->getTable();
+        $journalEntryItemsTable = (new JournalEntryItem())->getTable();
+        $journalEntriesTable = (new JournalEntry())->getTable();
 
-        $results = DB::table("{$prefix}_accounts as acc")
-            ->leftJoin("{$prefix}_journal_entry_items as jei", 'acc.id', '=', 'jei.account_id')
-            ->leftJoin("{$prefix}_journal_entries as je", function ($join) use ($startDate, $endDate) {
+        $results = DB::table("$accountsTable as acc")
+            ->leftJoin("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
+            ->leftJoin("$journalEntriesTable as je", function ($join) use ($startDate, $endDate) {
                 $join->on('jei.journal_entry_id', '=', 'je.id')
                     ->where('je.is_posted', '=', true)
                     ->where('je.is_voided', '=', false)
                     ->whereBetween('je.transaction_date', [$startDate, $endDate]);
             })
-            ->join("{$prefix}_account_types as at", 'acc.account_type_id', '=', 'at.id')
             ->where('acc.is_active', true)
             ->where('acc.account_type_id', $accountTypeId)
             ->select(
                 'acc.id as account_id',
                 'acc.code',
                 'acc.name',
-                'at.normal_balance',
                 DB::raw('COALESCE(SUM(jei.debit_amount), 0) as total_debits'),
                 DB::raw('COALESCE(SUM(jei.credit_amount), 0) as total_credits')
             )
-            ->groupBy('acc.id', 'acc.code', 'acc.name', 'at.normal_balance')
+            ->groupBy('acc.id', 'acc.code', 'acc.name')
             ->get();
 
-        return $results->map(function ($item) {
-            $balance = $item->normal_balance === NormalBalance::DEBIT->value
+        return $results->map(function ($item) use ($normalBalance) {
+            $balance = $normalBalance === NormalBalance::DEBIT->value
                 ? $item->total_debits - $item->total_credits
                 : $item->total_credits - $item->total_debits;
 
@@ -371,17 +345,21 @@ class BalanceService
         Carbon $endDate,
         ?string $codePattern = null
     ): Collection {
-        $prefix = config('laravel_accounting.table_prefix', 'la');
 
-        $query = DB::table("{$prefix}_accounts as acc")
-            ->leftJoin("{$prefix}_journal_entry_items as jei", 'acc.id', '=', 'jei.account_id')
-            ->leftJoin("{$prefix}_journal_entries as je", function ($join) use ($startDate, $endDate) {
+        $accountsTable = (new Account())->getTable();
+        $journalEntryItemsTable = (new JournalEntryItem())->getTable();
+        $journalEntriesTable = (new JournalEntry())->getTable();
+        $accountTypesTable = (new AccountType())->getTable();
+
+        $query = DB::table("$accountsTable as acc")
+            ->leftJoin("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
+            ->leftJoin("$journalEntriesTable as je", function ($join) use ($startDate, $endDate) {
                 $join->on('jei.journal_entry_id', '=', 'je.id')
                     ->where('je.is_posted', '=', true)
                     ->where('je.is_voided', '=', false)
                     ->whereBetween('je.transaction_date', [$startDate, $endDate]);
             })
-            ->join("{$prefix}_account_types as at", 'acc.account_type_id', '=', 'at.id')
+            ->join("$accountTypesTable as at", 'acc.account_type_id', '=', 'at.id')
             ->where('acc.is_active', true)
             ->where('acc.account_type_id', $accountTypeId);
 

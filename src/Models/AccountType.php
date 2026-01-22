@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 
+
+/**
+ * Account Type Model
+ * @property string $normal_balance
+ */
 class AccountType extends Model
 {
     use HasTablePrefix;

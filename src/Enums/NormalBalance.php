@@ -6,6 +6,6 @@ enum NormalBalance: string
 {
     // TODO: Implement
 
-    case DEBIT = 'DEBIT';
-    case CREDIT = 'CREDIT';
+    case DEBIT = 'Debit';
+    case CREDIT = 'Credit';
 }

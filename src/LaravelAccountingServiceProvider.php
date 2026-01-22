@@ -4,6 +4,12 @@ namespace RingleSoft\LaravelAccounting;
 
 use Illuminate\Support\ServiceProvider;
 use RingleSoft\LaravelAccounting\Commands\InstallCommand;
+use RingleSoft\LaravelAccounting\Models\Account;
+use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
+use RingleSoft\LaravelAccounting\Models\JournalEntry;
+use RingleSoft\LaravelAccounting\Observers\AccountObserver;
+use RingleSoft\LaravelAccounting\Observers\FiscalPeriodObserver;
+use RingleSoft\LaravelAccounting\Observers\JournalEntryObserver;
 
 class LaravelAccountingServiceProvider extends ServiceProvider
 {
@@ -14,6 +20,7 @@ class LaravelAccountingServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerObservers();
 
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'ringlesoft');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
@@ -48,5 +55,12 @@ class LaravelAccountingServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../database/seeders' => database_path('seeders'),
         ], 'accounting-seeders');
+    }
+
+    private function registerObservers(): void
+    {
+        JournalEntry::observe(JournalEntryObserver::class);
+        Account::observe(AccountObserver::class);
+        FiscalPeriod::observe(FiscalPeriodObserver::class);
     }
 }

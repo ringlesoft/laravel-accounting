@@ -562,10 +562,10 @@ Developers may extend or override templates to match custom accounting structure
   - [x] Transaction date must fall within fiscal period - Implemented in JournalService::findFiscalPeriod() and PeriodService::isDateInOpenPeriod()
   - [x] Currency codes must be valid ISO 4217 - CurrencyCode enum with ISO 4217 codes and isValid() method
 
-- [ ] **Add Model Observers**
-  - [ ] JournalEntryObserver (prevent deletion if posted) - Not implemented
-  - [ ] AccountObserver (prevent deletion if has transactions) - Not implemented
-  - [ ] FiscalPeriodObserver (validate dates) - Not implemented
+- [x] **Add Model Observers**
+  - [x] JournalEntryObserver (prevent deletion if posted) - Implemented
+  - [x] AccountObserver (prevent deletion if has transactions) - Implemented
+  - [x] FiscalPeriodObserver (validate dates) - Implemented
 
 ### 15. Testing
 - [ ] **Unit Tests**

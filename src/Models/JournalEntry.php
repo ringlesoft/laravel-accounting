@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use RingleSoft\LaravelAccounting\Exceptions\LaravelAccountingException;
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Services\JournalService;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\HasUuid;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
+use RingleSoft\LaravelAccounting\Validators\JournalEntryValidator;
 use Throwable;
 
 /**
@@ -53,6 +55,7 @@ class JournalEntry extends Model
         'is_reversed',
         'voided_at',
         'tenant_id',
+        'metadata',
     ];
 
     protected $guarded = ['id'];
@@ -65,6 +68,7 @@ class JournalEntry extends Model
         'is_voided' => 'boolean',
         'is_reversed' => 'boolean',
         'exchange_rate' => 'decimal:10',
+        'metadata' => 'array'
     ];
 
     protected $with = [
@@ -244,23 +248,26 @@ class JournalEntry extends Model
     {
         if ($this->canBeReversed()) {
             return (app(JournalService::class))->reverse($this, $reason);
-        } else {
-            throw new Exception("This entry cannot be reversed");
         }
+        throw new LaravelAccountingException("This entry cannot be reversed");
+    }
+
+    /**
+     * @throws LaravelAccountingException
+     * @throws Throwable
+     */
+    public function void(?string $reason): bool
+    {
+        if ($this->canBeVoided()) {
+            return (app(JournalService::class))->void($this, $reason);
+        }
+        throw new LaravelAccountingException("This entry cannot be reversed");
     }
 
     // Validation Rules
 
-    public static function validationRules(): array
+    public static function validationRules(?int $ignoreId = null): array
     {
-        return [
-            'transaction_number' => 'nullable|string|max:50|unique:' . config('laravel_accounting.table_prefix', 'la') . '_journal_entries,transaction_number',
-            'transaction_date' => 'required|date',
-            'description' => 'nullable|string',
-            'reference' => 'nullable|string|max:100',
-            'currency_code' => 'required|string|size:3',
-            'exchange_rate' => 'required|numeric|min:0',
-            'fiscal_period_id' => 'required|exists:' . config('laravel_accounting.table_prefix', 'la') . '_fiscal_periods,id',
-        ];
+        return JournalEntryValidator::rules($ignoreId);
     }
 }

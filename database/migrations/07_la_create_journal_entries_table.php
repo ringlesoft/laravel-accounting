@@ -51,6 +51,7 @@ return new class extends Migration
             $table->boolean('is_voided')->default(false);
             $table->boolean('is_reversed')->default(false);
             $table->timestamp('voided_at')->nullable();
+            $table->json('metadata');
             $table->timestamps();
 
             $table->foreign('fiscal_period_id')

@@ -26,14 +26,14 @@ class AccountValidator
             'name' => 'required|string|max:255',
             'account_type_id' => [
                 'required',
-                'exists:' . $tablePrefix . '_account_types,id',
+                'exists:'.$tablePrefix.'_account_types,id',
             ],
             'category' => 'nullable|string|max:100',
             'sub_category' => 'nullable|string|max:100',
             'report_section' => 'nullable|string|max:100',
             'parent_id' => [
                 'nullable',
-                'exists:' . $tablePrefix . '_accounts,id',
+                'exists:'.$tablePrefix.'_accounts,id',
                 function ($attribute, $value, $fail) use ($ignoreId) {
                     if ($value && $ignoreId && $value == $ignoreId) {
                         $fail('An account cannot be its own parent.');

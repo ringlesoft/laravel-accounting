@@ -157,10 +157,11 @@ class VoucherData
 
     /**
      * Create a journal entry from the voucher data
+     *
      * @throws Throwable
      */
     public function createJournal(): JournalEntry
     {
-        return (app(JournalService::class)->createDraft($this));
+        return app(JournalService::class)->createDraft($this);
     }
 }

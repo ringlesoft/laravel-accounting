@@ -6,13 +6,13 @@ use RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Validators\JournalEntryValidator;
-use function PHPUnit\Framework\isEmpty;
 
 class JournalEntryObserver
 {
     /**
      * Handle the JournalEntry "creating" event.
      * Validate journal entry data before creation
+     *
      * @throws InvalidVoucherException
      */
     public function creating(JournalEntry $journalEntry): bool
@@ -31,8 +31,8 @@ class JournalEntryObserver
     {
         if ($journalEntry->is_posted) {
             throw new DuplicatePostingException(
-                "Cannot delete posted journal entry #{$journalEntry->transaction_number}. " .
-                "Posted entries must be reversed or voided instead."
+                "Cannot delete posted journal entry #{$journalEntry->transaction_number}. ".
+                'Posted entries must be reversed or voided instead.'
             );
         }
 
@@ -42,6 +42,7 @@ class JournalEntryObserver
     /**
      * Handle the JournalEntry "updating" event.
      * Prevent modification of posted journal entries
+     *
      * @throws DuplicatePostingException
      */
     public function updating(JournalEntry $journalEntry): bool
@@ -51,17 +52,15 @@ class JournalEntryObserver
             $allowedFields = ['is_voided', 'voided_at', 'voided_by_user_id', 'is_reversed', 'updated_at'];
             $dirtyFields = array_keys($journalEntry->getDirty());
             $unauthorizedChanges = array_diff($dirtyFields, $allowedFields);
-            if (!empty($unauthorizedChanges)) {
+            if (! empty($unauthorizedChanges)) {
                 throw new DuplicatePostingException(
-                    "Cannot modify posted journal entry #{$journalEntry->transaction_number}. " .
-                    "Posted entries can only be reversed or voided. " .
-                    "Attempted to modify: " . implode(', ', $unauthorizedChanges)
+                    "Cannot modify posted journal entry #{$journalEntry->transaction_number}. ".
+                    'Posted entries can only be reversed or voided. '.
+                    'Attempted to modify: '.implode(', ', $unauthorizedChanges)
                 );
             }
         }
 
         return true;
     }
-
-
 }

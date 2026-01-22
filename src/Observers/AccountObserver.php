@@ -12,12 +12,14 @@ class AccountObserver
     /**
      * Handle the Account "creating" event.
      * Validate account data before creation
+     *
      * @throws InvalidArgumentException
      */
     public function creating(Account $account): bool
     {
         $accountData = $account->getAttributes();
         AccountValidator::validate($accountData);
+
         return true;
     }
 

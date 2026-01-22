@@ -24,6 +24,7 @@ use Throwable;
  * @mixin Builder
  * @mixin Model
  * @mixin PostableModel
+ *
  * @property JournalEntry $journalEntry
  *
  * @phpstan-require-implements PostableModel
@@ -37,8 +38,10 @@ trait Postable
         return $this->morphOne(JournalEntry::class, 'postable');
     }
 
-    public function withTemplate(AccountingTemplate $template): self {
+    public function withTemplate(AccountingTemplate $template): self
+    {
         $this->template = $template;
+
         return $this;
     }
 
@@ -51,11 +54,12 @@ trait Postable
     public function createJournal(): bool
     {
         if ($this->hasJournalEntry()) {
-            throw new JournalEntryAlreadyExistsException();
+            throw new JournalEntryAlreadyExistsException;
         }
         $voucherData = $this->toVoucher();
         LaravelAccounting::journals()->createDraft($voucherData);
         $this->load('journalEntry');
+
         return true;
     }
 
@@ -64,6 +68,7 @@ trait Postable
         if ($journal = $this->journalEntry) {
             return $journal->post();
         }
+
         return false;
     }
 
@@ -77,19 +82,17 @@ trait Postable
                 return $this->createJournal() && $this->postJournal();
             });
         } catch (Throwable $e) {
-            throw LaravelAccountingException::from($e, "Failed to post to journal. " . $e->getMessage());
+            throw LaravelAccountingException::from($e, 'Failed to post to journal. '.$e->getMessage());
         }
     }
 
     public function postWithTemplate(AccountingTemplate $template): bool
     {
         $this->template = $template;
+
         return $this->post();
     }
 
-    /**
-     * @return bool
-     */
     public function hasJournalEntry(): bool
     {
         return $this->journalEntry()->exists();
@@ -108,7 +111,7 @@ trait Postable
     public function getTemplate(): ?AccountingTemplate
     {
         // Firstly, check if template is assigned
-        if (!empty($this->template)) {
+        if (! empty($this->template)) {
             return $this->template;
         }
 
@@ -118,6 +121,7 @@ trait Postable
         if (count($attributes) > 0) {
             return $attributes[0]->newInstance()->getTemplate();
         }
+
         return null;
     }
 
@@ -129,9 +133,10 @@ trait Postable
     public function toVoucher(): VoucherData
     {
         $template = $this->getTemplate();
-        if (!$template) {
-            throw new TemplateNotFoundException('No template found for ' . get_class($this));
+        if (! $template) {
+            throw new TemplateNotFoundException('No template found for '.get_class($this));
         }
+
         return $template->make($this);
     }
 }

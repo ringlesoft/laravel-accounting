@@ -28,7 +28,7 @@ class ChartsOfAccounts extends Report
 
         $accounts = $this->accountService->getChartOfAccounts();
 
-        if (!$includeInactive) {
+        if (! $includeInactive) {
             $accounts = $accounts->map(function ($account) {
                 return $this->filterInactiveAccounts($account);
             })->filter();
@@ -65,13 +65,13 @@ class ChartsOfAccounts extends Report
      */
     protected function filterInactiveAccounts(array $account): ?array
     {
-        if (!$account['is_active']) {
+        if (! $account['is_active']) {
             return null;
         }
 
-        if (!empty($account['children'])) {
+        if (! empty($account['children'])) {
             $account['children'] = collect($account['children'])
-                ->map(fn($child) => $this->filterInactiveAccounts($child))
+                ->map(fn ($child) => $this->filterInactiveAccounts($child))
                 ->filter()
                 ->values()
                 ->toArray();
@@ -98,9 +98,9 @@ class ChartsOfAccounts extends Report
             $account['balance_type'] = $balance >= 0 ? 'normal' : 'abnormal';
         }
 
-        if (!empty($account['children'])) {
+        if (! empty($account['children'])) {
             $account['children'] = collect($account['children'])
-                ->map(fn($child) => $this->addBalancesToAccount($child, $asOfDate))
+                ->map(fn ($child) => $this->addBalancesToAccount($child, $asOfDate))
                 ->toArray();
         }
 
@@ -130,12 +130,12 @@ class ChartsOfAccounts extends Report
                 }
 
                 $type = $account['type'];
-                if (!isset($accountsByType[$type])) {
+                if (! isset($accountsByType[$type])) {
                     $accountsByType[$type] = 0;
                 }
                 $accountsByType[$type]++;
 
-                if (!empty($account['children'])) {
+                if (! empty($account['children'])) {
                     $countAccounts($account['children']);
                 }
             }

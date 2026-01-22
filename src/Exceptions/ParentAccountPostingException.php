@@ -2,6 +2,4 @@
 
 namespace RingleSoft\LaravelAccounting\Exceptions;
 
-class ParentAccountPostingException extends LaravelAccountingException
-{
-}
+class ParentAccountPostingException extends LaravelAccountingException {}

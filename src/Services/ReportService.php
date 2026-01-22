@@ -16,13 +16,13 @@ use RingleSoft\LaravelAccounting\Reports\IncomeStatement;
 use RingleSoft\LaravelAccounting\Reports\TrialBalance;
 
 /**
- * @property Report  $balanceSheet
- * @property Report  $incomeStatement
- * @property Report  $cashFlowStatement
- * @property Report  $trialBalance
- * @property Report  $generalLedger
- * @property Report  $accountLedger
- * @property Report  $chartOfAccounts
+ * @property Report $balanceSheet
+ * @property Report $incomeStatement
+ * @property Report $cashFlowStatement
+ * @property Report $trialBalance
+ * @property Report $generalLedger
+ * @property Report $accountLedger
+ * @property Report $chartOfAccounts
  */
 class ReportService
 {
@@ -69,6 +69,7 @@ class ReportService
 
     /**
      * Generate a report
+     *
      * @throws JsonException
      */
     public function generate(string $reportType, array $params = []): Report
@@ -114,11 +115,13 @@ class ReportService
 
     /**
      * Generate cache key for report
+     *
      * @throws JsonException
      */
     protected function getCacheKey(string $reportType, array $params): string
     {
         $paramsHash = md5(json_encode($params, JSON_THROW_ON_ERROR));
+
         return "laravel_accounting.report.$reportType.$paramsHash";
     }
 
@@ -136,6 +139,7 @@ class ReportService
 
     /**
      * Export report to specific format
+     *
      * @throws JsonException
      */
     public function export(Report $report, string $format = 'array'): string|array|bool
@@ -160,7 +164,7 @@ class ReportService
             $csv .= $data['title']."\n\n";
         }
 
-        if (is_array($data['rows']) && !empty($data['rows'])) {
+        if (is_array($data['rows']) && ! empty($data['rows'])) {
             $headers = array_keys($data['rows'][0]);
             $csv .= implode(',', $headers)."\n";
 

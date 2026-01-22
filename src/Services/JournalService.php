@@ -4,19 +4,16 @@ namespace RingleSoft\LaravelAccounting\Services;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
-use RingleSoft\LaravelAccounting\Validators\JournalEntryValidator;
 use RingleSoft\LaravelAccounting\Enums\EntryType;
 use RingleSoft\LaravelAccounting\Events\JournalEntryCreated;
 use RingleSoft\LaravelAccounting\Events\JournalEntryPosted;
 use RingleSoft\LaravelAccounting\Events\JournalEntryReversed;
 use RingleSoft\LaravelAccounting\Events\JournalEntryVoided;
-use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
 use RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException;
 use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
@@ -34,7 +31,6 @@ class JournalService
      */
     public function createDraft(VoucherData $voucher, int|string|null $userId = null): JournalEntry
     {
-
 
         return DB::transaction(function () use ($voucher, $userId) {
             $this->validateVoucher($voucher);
@@ -106,7 +102,7 @@ class JournalService
      */
     public function validatePeriod(JournalEntry $entry): bool
     {
-        if (!$entry->fiscalPeriod) {
+        if (! $entry->fiscalPeriod) {
             throw new PeriodClosedException('No fiscal period found for this transaction date');
         }
 
@@ -141,7 +137,7 @@ class JournalService
             if ($item->account && $item->account->children()->exists()) {
                 throw new ParentAccountPostingException(
                     "Cannot post to parent account '{$item->account->name}' (Code: {$item->account->code}). "
-                    . "This account has child accounts and posting is not allowed on parent accounts."
+                    .'This account has child accounts and posting is not allowed on parent accounts.'
                 );
             }
         }
@@ -187,7 +183,7 @@ class JournalService
     public function reverse(JournalEntry $entry, ?string $reason = null, ?int $userId = null): JournalEntry
     {
         return DB::transaction(function () use ($entry, $reason, $userId) {
-            if (!$entry->is_posted) {
+            if (! $entry->is_posted) {
                 throw new InvalidArgumentException('Cannot reverse an unposted journal entry');
             }
 
@@ -201,7 +197,7 @@ class JournalService
 
             $reversalEntry = JournalEntry::create([
                 'transaction_date' => now(),
-                'description' => "Reversal: {$entry->description}" . ($reason ? " - {$reason}" : ''),
+                'description' => "Reversal: {$entry->description}".($reason ? " - {$reason}" : ''),
                 'reference' => "REV-{$entry->reference}",
                 'currency_code' => $entry->currency_code,
                 'fiscal_period_id' => $this->findFiscalPeriod(now())?->id,
@@ -282,8 +278,8 @@ class JournalService
      * Get paginated transactions with aggregated account information
      * Optimized for large datasets using correlated subqueries instead of GROUP BY
      *
-     * @param array $filters Optional filters: ['status' => 'posted|draft|voided', 'date_from' => Carbon, 'date_to' => Carbon, 'account_id' => int, 'reference' => string, 'fiscal_period_id' => int]
-     * @param int $perPage Number of items per page
+     * @param  array  $filters  Optional filters: ['status' => 'posted|draft|voided', 'date_from' => Carbon, 'date_to' => Carbon, 'account_id' => int, 'reference' => string, 'fiscal_period_id' => int]
+     * @param  int  $perPage  Number of items per page
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getTransactions(array $filters = [], int $perPage = 20)
@@ -385,21 +381,22 @@ class JournalService
             });
         }
 
-        if (isset($filters['reference']) && !empty($filters['reference'])) {
-            $query->where('je.reference', 'like', '%' . $filters['reference'] . '%');
+        if (isset($filters['reference']) && ! empty($filters['reference'])) {
+            $query->where('je.reference', 'like', '%'.$filters['reference'].'%');
         }
 
-        if (isset($filters['search']) && !empty($filters['search'])) {
+        if (isset($filters['search']) && ! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('je.description', 'like', '%' . $filters['search'] . '%')
-                    ->orWhere('je.reference', 'like', '%' . $filters['search'] . '%')
-                    ->orWhere('je.transaction_number', 'like', '%' . $filters['search'] . '%');
+                $q->where('je.description', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('je.reference', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('je.transaction_number', 'like', '%'.$filters['search'].'%');
             });
         }
     }
 
     /**
      * Validate voucher data
+     *
      * @throws JournalNotBalancedException|InvalidArgumentException
      * @throws InvalidVoucherException
      */

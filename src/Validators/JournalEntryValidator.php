@@ -2,8 +2,6 @@
 
 namespace RingleSoft\LaravelAccounting\Validators;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
@@ -28,8 +26,8 @@ class JournalEntryValidator
             'transaction_date' => [
                 'required',
                 'date',
-                'after_or_equal:' . now()->subYears(10)->toDateString(),
-                'before_or_equal:' . now()->addDay()->toDateString(),
+                'after_or_equal:'.now()->subYears(10)->toDateString(),
+                'before_or_equal:'.now()->addDay()->toDateString(),
             ],
             'description' => 'nullable|string|max:500',
             'reference' => 'nullable|string|max:100',
@@ -42,7 +40,7 @@ class JournalEntryValidator
             'exchange_rate' => 'required|numeric|min:0.0001|max:9999999999999.9999',
             'fiscal_period_id' => [
                 'required',
-                'exists:' . $tablePrefix . '_fiscal_periods,id'
+                'exists:'.$tablePrefix.'_fiscal_periods,id',
             ],
             'postable_id' => 'nullable|integer',
             'postable_type' => 'nullable|string|required_with:postable_id',
@@ -51,7 +49,7 @@ class JournalEntryValidator
             'voided_by_user_id' => 'nullable|exists:users,id',
             'reversal_of_id' => [
                 'nullable',
-                'exists:' . $tablePrefix . '_journal_entries,id',
+                'exists:'.$tablePrefix.'_journal_entries,id',
             ],
             'is_posted' => 'boolean',
             'is_voided' => 'boolean',
@@ -70,7 +68,7 @@ class JournalEntryValidator
     public static function validate(array $data, ?int $ignoreId = null): void
     {
 
-        if(!empty($data['metadata'])) {
+        if (! empty($data['metadata'])) {
             $data['metadata'] = json_decode($data['metadata'], true);
         }
 

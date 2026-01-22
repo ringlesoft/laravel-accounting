@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\AccountType;
-use RingleSoft\LaravelAccounting\Enums\AccountType as AccountTypeEnum;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum as AccountTypeEnum;
 
 class AccountService
 {

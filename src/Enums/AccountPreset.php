@@ -294,7 +294,7 @@ enum AccountPreset: string
     /**
      * Get account type (Asset, Liability, Equity, Revenue, Expense)
      */
-    public function type(): AccountType
+    public function type(): AccountTypeEnum
     {
         return match ($this) {
             // Assets (1000-2999)
@@ -303,30 +303,30 @@ enum AccountPreset: string
             self::MACHINERY_AND_EQUIPMENT, self::GOODWILL,
             self::INPUT_VAT, self::VAT_RECOVERABLE,
             self::WITHHOLDING_TAX_RECEIVABLE,
-            self::ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS => AccountType::ASSET,
+            self::ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS => AccountTypeEnum::ASSET,
 
             // Liabilities (3000-4999)
             self::ACCOUNTS_PAYABLE, self::SALES_TAX_PAYABLE,
             self::VAT_PAYABLE, self::GST_PAYABLE,
             self::WAGES_PAYABLE, self::UNEARNED_REVENUE,
-            self::LONG_TERM_DEBT, self::WITHHOLDING_TAX_PAYABLE => AccountType::LIABILITY,
+            self::LONG_TERM_DEBT, self::WITHHOLDING_TAX_PAYABLE => AccountTypeEnum::LIABILITY,
 
             // Equity (5000-5999)
             self::COMMON_STOCK, self::RETAINED_EARNINGS,
-            self::OWNERS_EQUITY, self::DRAWINGS => AccountType::EQUITY,
+            self::OWNERS_EQUITY, self::DRAWINGS => AccountTypeEnum::EQUITY,
 
             // Revenue (6000-6999)
             self::SALES_REVENUE, self::SERVICE_REVENUE,
             self::INTEREST_REVENUE, self::OTHER_INCOME,
-            self::SALES_RETURNS, self::SALES_DISCOUNTS => AccountType::INCOME,
+            self::SALES_RETURNS, self::SALES_DISCOUNTS => AccountTypeEnum::INCOME,
 
             // Expenses (7000-8999)
             self::COST_OF_GOODS_SOLD, self::SALARIES_EXPENSE,
             self::RENT_EXPENSE, self::DEPRECIATION_EXPENSE,
             self::INTEREST_EXPENSE, self::BAD_DEBT_EXPENSE,
-            self::INPUT_GST, self::OUTPUT_GST => AccountType::EXPENSE,
+            self::INPUT_GST, self::OUTPUT_GST => AccountTypeEnum::EXPENSE,
 
-            default => AccountType::ASSET, // Fallback
+            default => AccountTypeEnum::ASSET, // Fallback
         };
     }
 
@@ -379,15 +379,15 @@ enum AccountPreset: string
     public function normalBalance(): NormalBalance
     {
         return match ($this->type()) {
-            AccountType::ASSET, AccountType::EXPENSE => NormalBalance::DEBIT,
-            AccountType::LIABILITY, AccountType::EQUITY, AccountType::INCOME => NormalBalance::CREDIT,
+            AccountTypeEnum::ASSET, AccountTypeEnum::EXPENSE => NormalBalance::DEBIT,
+            AccountTypeEnum::LIABILITY, AccountTypeEnum::EQUITY, AccountTypeEnum::INCOME => NormalBalance::CREDIT,
         };
     }
 
     /**
      * Get all presets by type
      */
-    public static function byType(AccountType $type): array
+    public static function byType(AccountTypeEnum $type): array
     {
         return array_filter(
             self::cases(),

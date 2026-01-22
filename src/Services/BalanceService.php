@@ -5,10 +5,12 @@ namespace RingleSoft\LaravelAccounting\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Enums\NormalBalance;
 use RingleSoft\LaravelAccounting\Events\BalanceRecalculated;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\AccountBalance;
+use RingleSoft\LaravelAccounting\Models\AccountType;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\JournalEntryItem;
 use Throwable;
@@ -236,5 +238,178 @@ class BalanceService
                 'closing_balance' => $movement['closing_balance'],
             ]
         );
+    }
+
+    /**
+     * Get balances for multiple accounts by type ID as of a specific date
+     * Optimized for bulk retrieval in reports
+     */
+    public function getBalancesByAccountTypeId(int $accountTypeId, ?Carbon $asOfDate = null): Collection
+    {
+        $asOfDate = $asOfDate ?? now();
+
+        $prefix = config('laravel_accounting.table_prefix', 'la');
+
+        $results = DB::table("{$prefix}_accounts as acc")
+            ->leftJoin("{$prefix}_journal_entry_items as jei", 'acc.id', '=', 'jei.account_id')
+            ->leftJoin("{$prefix}_journal_entries as je", function ($join) use ($asOfDate) {
+                $join->on('jei.journal_entry_id', '=', 'je.id')
+                    ->where('je.is_posted', '=', true)
+                    ->where('je.is_voided', '=', false)
+                    ->where('je.transaction_date', '<=', $asOfDate);
+            })
+            ->join("{$prefix}_account_types as at", 'acc.account_type_id', '=', 'at.id')
+            ->where('acc.is_active', true)
+            ->where('acc.account_type_id', $accountTypeId)
+            ->select(
+                'acc.id as account_id',
+                'acc.code',
+                'acc.name',
+                'at.normal_balance',
+                DB::raw('COALESCE(SUM(jei.debit_amount), 0) as total_debits'),
+                DB::raw('COALESCE(SUM(jei.credit_amount), 0) as total_credits')
+            )
+            ->groupBy('acc.id', 'acc.code', 'acc.name', 'at.normal_balance')
+            ->get();
+
+        return $results->map(function ($item) {
+            $balance = $item->normal_balance === NormalBalance::DEBIT->value
+                ? $item->total_debits - $item->total_credits
+                : $item->total_credits - $item->total_debits;
+
+            return [
+                'account_id' => $item->account_id,
+                'code' => $item->code,
+                'name' => $item->name,
+                'total_debits' => (float) $item->total_debits,
+                'total_credits' => (float) $item->total_credits,
+                'balance' => (float) $balance,
+            ];
+        })->filter(function ($item) {
+            return abs($item['balance']) > 0.01;
+        })->values();
+    }
+
+    /**
+     * Get balances for multiple accounts by AccountType model as of a specific date
+     * Optimized for bulk retrieval in reports like Balance Sheet
+     */
+    public function getBalancesByAccountType(AccountType $accountType, ?Carbon $asOfDate = null): Collection
+    {
+        return $this->getBalancesByAccountTypeId($accountType->id, $asOfDate);
+    }
+
+    /**
+     * @param AccountTypeEnum $accountTypeEnum
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return Collection
+     */
+    public function getPeriodBalancesByAccountTypeEnum(AccountTypeEnum $accountTypeEnum, Carbon $startDate, Carbon $endDate): Collection
+    {
+        return $this->getPeriodBalancesByAccountType($accountTypeEnum->accountType(), $startDate, $endDate);
+    }
+
+    /**
+     * Get balances for multiple accounts by AccountType model for a specific period
+     * Optimized for period-based reports like Income Statement
+     */
+    public function getPeriodBalancesByAccountType(AccountType $accountType, Carbon $startDate, Carbon $endDate): Collection
+    {
+        $accountTypeId = $accountType->id;
+        $normalBalance = $accountType->normal_balance;
+
+        $prefix = config('laravel_accounting.table_prefix', 'la');
+
+        $results = DB::table("{$prefix}_accounts as acc")
+            ->leftJoin("{$prefix}_journal_entry_items as jei", 'acc.id', '=', 'jei.account_id')
+            ->leftJoin("{$prefix}_journal_entries as je", function ($join) use ($startDate, $endDate) {
+                $join->on('jei.journal_entry_id', '=', 'je.id')
+                    ->where('je.is_posted', '=', true)
+                    ->where('je.is_voided', '=', false)
+                    ->whereBetween('je.transaction_date', [$startDate, $endDate]);
+            })
+            ->join("{$prefix}_account_types as at", 'acc.account_type_id', '=', 'at.id')
+            ->where('acc.is_active', true)
+            ->where('acc.account_type_id', $accountTypeId)
+            ->select(
+                'acc.id as account_id',
+                'acc.code',
+                'acc.name',
+                'at.normal_balance',
+                DB::raw('COALESCE(SUM(jei.debit_amount), 0) as total_debits'),
+                DB::raw('COALESCE(SUM(jei.credit_amount), 0) as total_credits')
+            )
+            ->groupBy('acc.id', 'acc.code', 'acc.name', 'at.normal_balance')
+            ->get();
+
+        return $results->map(function ($item) {
+            $balance = $item->normal_balance === NormalBalance::DEBIT->value
+                ? $item->total_debits - $item->total_credits
+                : $item->total_credits - $item->total_debits;
+
+            return [
+                'account_id' => $item->account_id,
+                'code' => $item->code,
+                'name' => $item->name,
+                'total_debits' => (float) $item->total_debits,
+                'total_credits' => (float) $item->total_credits,
+                'balance' => (float) $balance,
+            ];
+        })->filter(function ($item) {
+            return abs($item['balance']) > 0.01;
+        })->values();
+    }
+
+    /**
+     * Get balances for accounts matching a code pattern by type ID for a specific period
+     * Useful for Cash Flow Statement subcategories
+     */
+    public function getPeriodBalancesByAccountTypeIdAndCodePattern(
+        int $accountTypeId,
+        Carbon $startDate,
+        Carbon $endDate,
+        ?string $codePattern = null
+    ): Collection {
+        $prefix = config('laravel_accounting.table_prefix', 'la');
+
+        $query = DB::table("{$prefix}_accounts as acc")
+            ->leftJoin("{$prefix}_journal_entry_items as jei", 'acc.id', '=', 'jei.account_id')
+            ->leftJoin("{$prefix}_journal_entries as je", function ($join) use ($startDate, $endDate) {
+                $join->on('jei.journal_entry_id', '=', 'je.id')
+                    ->where('je.is_posted', '=', true)
+                    ->where('je.is_voided', '=', false)
+                    ->whereBetween('je.transaction_date', [$startDate, $endDate]);
+            })
+            ->join("{$prefix}_account_types as at", 'acc.account_type_id', '=', 'at.id')
+            ->where('acc.is_active', true)
+            ->where('acc.account_type_id', $accountTypeId);
+
+        if ($codePattern) {
+            $query->where('acc.code', 'LIKE', $codePattern);
+        }
+
+        $results = $query
+            ->select(
+                'acc.id as account_id',
+                'acc.code',
+                'acc.name',
+                'at.normal_balance',
+                DB::raw('COALESCE(SUM(jei.debit_amount), 0) as total_debits'),
+                DB::raw('COALESCE(SUM(jei.credit_amount), 0) as total_credits')
+            )
+            ->groupBy('acc.id', 'acc.code', 'acc.name', 'at.normal_balance')
+            ->get();
+
+        return $results->map(function ($item) {
+            return [
+                'account_id' => $item->account_id,
+                'code' => $item->code,
+                'name' => $item->name,
+                'normal_balance' => $item->normal_balance,
+                'total_debits' => (float) $item->total_debits,
+                'total_credits' => (float) $item->total_credits,
+            ];
+        });
     }
 }

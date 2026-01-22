@@ -2,9 +2,9 @@
 
 namespace RingleSoft\LaravelAccounting\Enums;
 
-use RingleSoft\LaravelAccounting\Models\AccountType as AccountTypeModel;
+use RingleSoft\LaravelAccounting\Models\AccountType;
 
-enum AccountType: string
+enum AccountTypeEnum: string
 {
     case ASSET = 'Asset';
     case LIABILITY = 'Liability';
@@ -13,9 +13,13 @@ enum AccountType: string
     case EXPENSE = 'Expense';
 
 
+    public function accountType(): ?AccountType
+    {
+        return AccountType::findByName($this->value);
+    }
+
     public function getId(): ?int
     {
-        // TODO introduce Cache
-        return AccountTypeModel::findByName($this->value)?->id;
+        return $this->accountType()?->id;
     }
 }

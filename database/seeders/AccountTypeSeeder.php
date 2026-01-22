@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use RingleSoft\LaravelAccounting\Enums\AccountType as AccountTypeEnum;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum as AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Enums\NormalBalance;
 use RingleSoft\LaravelAccounting\Models\AccountType;
 

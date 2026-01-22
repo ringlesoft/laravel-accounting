@@ -4,18 +4,12 @@ namespace RingleSoft\LaravelAccounting\Reports;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use RingleSoft\LaravelAccounting\Enums\AccountType as AccountTypeEnum;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum as AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Account;
-use RingleSoft\LaravelAccounting\Models\JournalEntry;
-use RingleSoft\LaravelAccounting\Models\JournalEntryItem;
 use RingleSoft\LaravelAccounting\Models\Report;
 
 class CashFlowStatement extends Report
 {
-    protected string $accountsTable;
-    protected string $journalEntryItemsTable;
-    protected string $journalEntriesTable;
-
     public function generate(): self
     {
         $startDate = $this->getParameter('start_date', now()->startOfMonth());
@@ -30,10 +24,6 @@ class CashFlowStatement extends Report
 
         $this->setTitle('Cash Flow Statement (Indirect Method)');
 
-        $this->accountsTable = (new Account())->getTable();
-        $this->journalEntryItemsTable = (new JournalEntryItem())->getTable();
-        $this->journalEntriesTable = (new JournalEntry())->getTable();
-
         $netIncome = $this->calculateNetIncome($startDate, $endDate);
 
         $operating = $this->calculateOperatingActivities($startDate, $endDate, $netIncome);
@@ -42,24 +32,27 @@ class CashFlowStatement extends Report
 
         $netCashFlow = $operating['total'] + $investing['total'] + $financing['total'];
 
-        $assetTypeId = AccountTypeEnum::ASSET->getId();
         $beginningCash = 0;
         $endingCash = 0;
 
+        $assetTypeId = AccountTypeEnum::ASSET->getId();
         if ($assetTypeId) {
-            $cashAccounts = DB::table("{$this->accountsTable} as acc")
+            $prefix = config('laravel_accounting.table_prefix', 'la');
+            $cashAccount = DB::table("{$prefix}_accounts as acc")
                 ->where('acc.account_type_id', $assetTypeId)
                 ->where('acc.is_active', true)
-                ->where('acc.code', 'LIKE', '%CASH%')
-                ->orWhere('acc.name', 'LIKE', '%Cash%')
+                ->where(function ($query) {
+                    $query->where('acc.code', 'LIKE', '%CASH%')
+                        ->orWhere('acc.name', 'LIKE', '%Cash%');
+                })
                 ->select('acc.id')
                 ->first();
 
-            if ($cashAccounts) {
-                $cashAccount = Account::find($cashAccounts->id);
-                if ($cashAccount) {
-                    $beginningCash = $this->balanceService->getAccountBalance($cashAccount, $startDate->copy()->subDay());
-                    $endingCash = $this->balanceService->getAccountBalance($cashAccount, $endDate);
+            if ($cashAccount) {
+                $account = Account::find($cashAccount->id);
+                if ($account) {
+                    $beginningCash = $this->balanceService->getAccountBalance($account, $startDate->copy()->subDay());
+                    $endingCash = $this->balanceService->getAccountBalance($account, $endDate);
                 }
             }
         }
@@ -83,27 +76,17 @@ class CashFlowStatement extends Report
 
     protected function calculateNetIncome(Carbon $startDate, Carbon $endDate): float
     {
-        $incomeTypeId = AccountTypeEnum::INCOME->getId();
-        $expenseTypeId = AccountTypeEnum::EXPENSE->getId();
+        $incomeType = AccountTypeEnum::INCOME->accountType();
+        $expenseType = AccountTypeEnum::EXPENSE->accountType();
 
-        if (!$incomeTypeId || !$expenseTypeId) {
+        if (!$incomeType || !$expenseType) {
             return 0;
         }
 
-        $revenueData = $this->getAccountBalancesForPeriod($incomeTypeId, $startDate, $endDate);
-        $expenseData = $this->getAccountBalancesForPeriod($expenseTypeId, $startDate, $endDate);
+        $revenueBalances = $this->balanceService->getPeriodBalancesByAccountType($incomeType, $startDate, $endDate);
+        $expenseBalances = $this->balanceService->getPeriodBalancesByAccountType($expenseType, $startDate, $endDate);
 
-        $totalRevenue = 0;
-        foreach ($revenueData as $account) {
-            $totalRevenue += $account->total_credits - $account->total_debits;
-        }
-
-        $totalExpenses = 0;
-        foreach ($expenseData as $account) {
-            $totalExpenses += $account->total_debits - $account->total_credits;
-        }
-
-        return $totalRevenue - $totalExpenses;
+        return $revenueBalances->sum('balance') - $expenseBalances->sum('balance');
     }
 
     protected function calculateOperatingActivities(Carbon $startDate, Carbon $endDate, float $netIncome): array
@@ -122,7 +105,9 @@ class CashFlowStatement extends Report
             ];
         }
 
-        $currentAssets = DB::table("{$this->accountsTable} as acc")
+        $prefix = config('laravel_accounting.table_prefix', 'la');
+
+        $currentAssets = DB::table("{$prefix}_accounts as acc")
             ->where('acc.account_type_id', $assetTypeId)
             ->where('acc.is_active', true)
             ->where('acc.code', 'LIKE', '%CURRENT%')
@@ -147,7 +132,7 @@ class CashFlowStatement extends Report
             }
         }
 
-        $currentLiabilities = DB::table("{$this->accountsTable} as acc")
+        $currentLiabilities = DB::table("{$prefix}_accounts as acc")
             ->where('acc.account_type_id', $liabilityTypeId)
             ->where('acc.is_active', true)
             ->where('acc.code', 'LIKE', '%CURRENT%')
@@ -189,14 +174,19 @@ class CashFlowStatement extends Report
             return ['activities' => $activities, 'total' => $total];
         }
 
-        $fixedAssets = $this->getAccountBalancesForPeriod($assetTypeId, $startDate, $endDate, '%FIXED%');
+        $fixedAssets = $this->balanceService->getPeriodBalancesByAccountTypeIdAndCodePattern(
+            $assetTypeId,
+            $startDate,
+            $endDate,
+            '%FIXED%'
+        );
 
         foreach ($fixedAssets as $account) {
-            $netChange = $account->total_debits - $account->total_credits;
+            $netChange = $account['total_debits'] - $account['total_credits'];
 
             if (abs($netChange) > 0.01) {
                 $activities[] = [
-                    'description' => $netChange > 0 ? "Purchase of {$account->name}" : "Sale of {$account->name}",
+                    'description' => $netChange > 0 ? "Purchase of {$account['name']}" : "Sale of {$account['name']}",
                     'amount' => -$netChange,
                 ];
                 $total -= $netChange;
@@ -221,24 +211,33 @@ class CashFlowStatement extends Report
             return ['activities' => $activities, 'total' => $total];
         }
 
-        $longTermLiabilities = $this->getAccountBalancesForPeriod($liabilityTypeId, $startDate, $endDate, '%LONG%');
+        $longTermLiabilities = $this->balanceService->getPeriodBalancesByAccountTypeIdAndCodePattern(
+            $liabilityTypeId,
+            $startDate,
+            $endDate,
+            '%LONG%'
+        );
 
         foreach ($longTermLiabilities as $account) {
-            $netChange = $account->total_credits - $account->total_debits;
+            $netChange = $account['total_credits'] - $account['total_debits'];
 
             if (abs($netChange) > 0.01) {
                 $activities[] = [
-                    'description' => $netChange > 0 ? "Proceeds from {$account->name}" : "Repayment of {$account->name}",
+                    'description' => $netChange > 0 ? "Proceeds from {$account['name']}" : "Repayment of {$account['name']}",
                     'amount' => $netChange,
                 ];
                 $total += $netChange;
             }
         }
 
-        $equityAccounts = $this->getAccountBalancesForPeriod($equityTypeId, $startDate, $endDate);
+        $equityAccounts = $this->balanceService->getPeriodBalancesByAccountTypeIdAndCodePattern(
+            $equityTypeId,
+            $startDate,
+            $endDate
+        );
 
         foreach ($equityAccounts as $account) {
-            $netChange = $account->total_credits - $account->total_debits;
+            $netChange = $account['total_credits'] - $account['total_debits'];
 
             if (abs($netChange) > 0.01) {
                 $activities[] = [
@@ -253,37 +252,5 @@ class CashFlowStatement extends Report
             'activities' => $activities,
             'total' => $total,
         ];
-    }
-
-    /**
-     * Get account balances for a specific account type within a period
-     */
-    protected function getAccountBalancesForPeriod(int $accountTypeId, Carbon $startDate, Carbon $endDate, ?string $codeFilter = null)
-    {
-        $query = DB::table("{$this->accountsTable} as acc")
-            ->leftJoin("{$this->journalEntryItemsTable} as jei", 'acc.id', '=', 'jei.account_id')
-            ->leftJoin("{$this->journalEntriesTable} as je", function ($join) use ($startDate, $endDate) {
-                $join->on('jei.journal_entry_id', '=', 'je.id')
-                    ->where('je.is_posted', '=', true)
-                    ->where('je.is_voided', '=', false)
-                    ->whereBetween('je.transaction_date', [$startDate, $endDate]);
-            })
-            ->where('acc.is_active', true)
-            ->where('acc.account_type_id', $accountTypeId);
-
-        if ($codeFilter) {
-            $query->where('acc.code', 'LIKE', $codeFilter);
-        }
-
-        return $query
-            ->select(
-                'acc.id as account_id',
-                'acc.code',
-                'acc.name',
-                DB::raw('COALESCE(SUM(jei.debit_amount), 0) as total_debits'),
-                DB::raw('COALESCE(SUM(jei.credit_amount), 0) as total_credits')
-            )
-            ->groupBy('acc.id', 'acc.code', 'acc.name')
-            ->get();
     }
 }

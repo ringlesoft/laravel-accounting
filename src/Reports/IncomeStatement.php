@@ -3,11 +3,7 @@
 namespace RingleSoft\LaravelAccounting\Reports;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
-use RingleSoft\LaravelAccounting\Enums\AccountType as AccountTypeEnum;
-use RingleSoft\LaravelAccounting\Models\Account;
-use RingleSoft\LaravelAccounting\Models\JournalEntry;
-use RingleSoft\LaravelAccounting\Models\JournalEntryItem;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum as AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Report;
 
 class IncomeStatement extends Report
@@ -26,10 +22,10 @@ class IncomeStatement extends Report
 
         $this->setTitle('Income Statement');
 
-        $incomeTypeId = AccountTypeEnum::INCOME->getId();
-        $expenseTypeId = AccountTypeEnum::EXPENSE->getId();
+        $incomeType = AccountTypeEnum::INCOME->accountType();
+        $expenseType = AccountTypeEnum::EXPENSE->accountType();
 
-        if (!$incomeTypeId || !$expenseTypeId) {
+        if (!$incomeType || !$expenseType) {
             $this->setData([
                 'period' => [
                     'start_date' => $startDate->toDateString(),
@@ -42,50 +38,26 @@ class IncomeStatement extends Report
             return $this;
         }
 
-        $prefix = config('laravel_accounting.table_prefix', 'la');
+        $revenueBalances = $this->balanceService->getPeriodBalancesByAccountType($incomeType, $startDate, $endDate);
+        $expenseBalances = $this->balanceService->getPeriodBalancesByAccountType($expenseType, $startDate, $endDate);
 
-        $revenueAccounts = $this->getAccountBalances($prefix, $incomeTypeId, $startDate, $endDate);
-        $expenseAccounts = $this->getAccountBalances($prefix, $expenseTypeId, $startDate, $endDate);
+        $revenue = $revenueBalances->map(fn($item) => [
+            'account_id' => $item['account_id'],
+            'code' => $item['code'],
+            'name' => $item['name'],
+            'amount' => $item['balance'],
+        ])->toArray();
 
-        $revenue = [];
-        $totalRevenue = 0;
+        $expenses = $expenseBalances->map(fn($item) => [
+            'account_id' => $item['account_id'],
+            'code' => $item['code'],
+            'name' => $item['name'],
+            'amount' => $item['balance'],
+        ])->toArray();
 
-        foreach ($revenueAccounts as $account) {
-            $amount = $account->total_credits - $account->total_debits;
-
-            if (abs($amount) < 0.01) {
-                continue;
-            }
-
-            $revenue[] = [
-                'account_id' => $account->account_id,
-                'code' => $account->code,
-                'name' => $account->name,
-                'amount' => (float) $amount,
-            ];
-            $totalRevenue += $amount;
-        }
-
-        $expenses = [];
-        $totalExpenses = 0;
-
-        foreach ($expenseAccounts as $account) {
-            $amount = $account->total_debits - $account->total_credits;
-
-            if (abs($amount) < 0.01) {
-                continue;
-            }
-
-            $expenses[] = [
-                'account_id' => $account->account_id,
-                'code' => $account->code,
-                'name' => $account->name,
-                'amount' => (float) $amount,
-            ];
-            $totalExpenses += $amount;
-        }
-
-        $netIncome = $totalRevenue - $totalExpenses;
+        $totalRevenue = $revenueBalances->sum('balance');
+        $totalExpenses = $expenseBalances->sum('balance');
+        $netIncome = abs($totalRevenue) - abs($totalExpenses);
 
         $this->setData([
             'period' => [
@@ -104,34 +76,5 @@ class IncomeStatement extends Report
         ]);
 
         return $this;
-    }
-
-    /**
-     * Get account balances for a specific account type
-     */
-    protected function getAccountBalances(string $prefix, int $accountTypeId, Carbon $startDate, Carbon $endDate)
-    {
-        $accountsTable = (new Account())->getTable();
-        $journalEntryItemsTable = (new JournalEntryItem())->getTable();
-        $journalEntriesTable = (new JournalEntry())->getTable();
-        return DB::table("$accountsTable as acc")
-            ->leftJoin("{$journalEntryItemsTable} as jei", 'acc.id', '=', 'jei.account_id')
-            ->leftJoin("{$journalEntriesTable} as je", function ($join) use ($startDate, $endDate) {
-                $join->on('jei.journal_entry_id', '=', 'je.id')
-                    ->where('je.is_posted', '=', true)
-                    ->where('je.is_voided', '=', false)
-                    ->whereBetween('je.transaction_date', [$startDate, $endDate]);
-            })
-            ->where('acc.is_active', true)
-            ->where('acc.account_type_id', $accountTypeId)
-            ->select(
-                'acc.id as account_id',
-                'acc.code',
-                'acc.name',
-                DB::raw('COALESCE(SUM(jei.debit_amount), 0) as total_debits'),
-                DB::raw('COALESCE(SUM(jei.credit_amount), 0) as total_credits')
-            )
-            ->groupBy('acc.id', 'acc.code', 'acc.name')
-            ->get();
     }
 }

@@ -126,8 +126,8 @@ class AccountService
             ->get();
     }
 
-
-    public function all() {
+    public function all()
+    {
         return Account::where('is_active', true)
             ->with('accountType')
             ->orderBy('code')

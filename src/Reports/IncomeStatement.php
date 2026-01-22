@@ -3,7 +3,10 @@
 namespace RingleSoft\LaravelAccounting\Reports;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use RingleSoft\LaravelAccounting\Enums\AccountType as AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Account;
+use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Models\JournalEntryItem;
 use RingleSoft\LaravelAccounting\Models\Report;
 
@@ -23,59 +26,63 @@ class IncomeStatement extends Report
 
         $this->setTitle('Income Statement');
 
-        $accounts = Account::with('accountType')
-            ->where('is_active', true)
-            ->get();
+        $incomeTypeId = AccountTypeEnum::INCOME->getId();
+        $expenseTypeId = AccountTypeEnum::EXPENSE->getId();
+
+        if (!$incomeTypeId || !$expenseTypeId) {
+            $this->setData([
+                'period' => [
+                    'start_date' => $startDate->toDateString(),
+                    'end_date' => $endDate->toDateString(),
+                ],
+                'revenue' => ['accounts' => [], 'total' => 0],
+                'expenses' => ['accounts' => [], 'total' => 0],
+                'net_income' => 0,
+            ]);
+            return $this;
+        }
+
+        $prefix = config('laravel_accounting.table_prefix', 'la');
+
+        $revenueAccounts = $this->getAccountBalances($prefix, $incomeTypeId, $startDate, $endDate);
+        $expenseAccounts = $this->getAccountBalances($prefix, $expenseTypeId, $startDate, $endDate);
 
         $revenue = [];
-        $expenses = [];
-
         $totalRevenue = 0;
-        $totalExpenses = 0;
 
-        foreach ($accounts as $account) {
-            $accountTypeCode = $account->accountType->code;
-
-            if (! str_starts_with($accountTypeCode, 'REVENUE') && ! str_starts_with($accountTypeCode, 'EXPENSE')) {
-                continue;
-            }
-
-            $items = JournalEntryItem::where('account_id', $account->id)
-                ->whereHas('journalEntry', function ($query) use ($startDate, $endDate) {
-                    $query->where('is_posted', true)
-                        ->where('is_voided', false)
-                        ->whereBetween('transaction_date', [$startDate, $endDate]);
-                })
-                ->get();
-
-            $totalDebits = $items->sum('debit_amount');
-            $totalCredits = $items->sum('credit_amount');
-
-            $amount = 0;
-            if (str_starts_with($accountTypeCode, 'REVENUE')) {
-                $amount = $totalCredits - $totalDebits;
-            } else {
-                $amount = $totalDebits - $totalCredits;
-            }
+        foreach ($revenueAccounts as $account) {
+            $amount = $account->total_credits - $account->total_debits;
 
             if (abs($amount) < 0.01) {
                 continue;
             }
 
-            $accountData = [
-                'account_id' => $account->id,
+            $revenue[] = [
+                'account_id' => $account->account_id,
                 'code' => $account->code,
                 'name' => $account->name,
-                'amount' => $amount,
+                'amount' => (float) $amount,
             ];
+            $totalRevenue += $amount;
+        }
 
-            if (str_starts_with($accountTypeCode, 'REVENUE')) {
-                $revenue[] = $accountData;
-                $totalRevenue += $amount;
-            } else {
-                $expenses[] = $accountData;
-                $totalExpenses += $amount;
+        $expenses = [];
+        $totalExpenses = 0;
+
+        foreach ($expenseAccounts as $account) {
+            $amount = $account->total_debits - $account->total_credits;
+
+            if (abs($amount) < 0.01) {
+                continue;
             }
+
+            $expenses[] = [
+                'account_id' => $account->account_id,
+                'code' => $account->code,
+                'name' => $account->name,
+                'amount' => (float) $amount,
+            ];
+            $totalExpenses += $amount;
         }
 
         $netIncome = $totalRevenue - $totalExpenses;
@@ -97,5 +104,34 @@ class IncomeStatement extends Report
         ]);
 
         return $this;
+    }
+
+    /**
+     * Get account balances for a specific account type
+     */
+    protected function getAccountBalances(string $prefix, int $accountTypeId, Carbon $startDate, Carbon $endDate)
+    {
+        $accountsTable = (new Account())->getTable();
+        $journalEntryItemsTable = (new JournalEntryItem())->getTable();
+        $journalEntriesTable = (new JournalEntry())->getTable();
+        return DB::table("$accountsTable as acc")
+            ->leftJoin("{$journalEntryItemsTable} as jei", 'acc.id', '=', 'jei.account_id')
+            ->leftJoin("{$journalEntriesTable} as je", function ($join) use ($startDate, $endDate) {
+                $join->on('jei.journal_entry_id', '=', 'je.id')
+                    ->where('je.is_posted', '=', true)
+                    ->where('je.is_voided', '=', false)
+                    ->whereBetween('je.transaction_date', [$startDate, $endDate]);
+            })
+            ->where('acc.is_active', true)
+            ->where('acc.account_type_id', $accountTypeId)
+            ->select(
+                'acc.id as account_id',
+                'acc.code',
+                'acc.name',
+                DB::raw('COALESCE(SUM(jei.debit_amount), 0) as total_debits'),
+                DB::raw('COALESCE(SUM(jei.credit_amount), 0) as total_credits')
+            )
+            ->groupBy('acc.id', 'acc.code', 'acc.name')
+            ->get();
     }
 }

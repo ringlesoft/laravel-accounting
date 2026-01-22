@@ -33,6 +33,10 @@ class AccountType extends Model
     }
 
     // Relationships
+    public static function findByName(string $value)
+    {
+        return static::where('name', $value)->first();
+    }
 
     public function accounts(): HasMany
     {

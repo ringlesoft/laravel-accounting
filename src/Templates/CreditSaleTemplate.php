@@ -16,10 +16,10 @@ class CreditSaleTemplate extends AccountingTemplate
     public function configure(): void
     {
         $this->debit($this->receivableAccount);
-        $this->credit($this->revenueAccount, $amount / (1 + $this->taxRate));
+        $this->credit($this->revenueAccount, fn($amount) => ($amount / (1 + $this->taxRate)));
 
         if ($this->taxRate > 0 && $this->taxAccount) {
-            $this->credit($this->taxAccount, $amount * $this->taxRate / (1 + $this->taxRate));
+            $this->credit($this->taxAccount, fn($amount)  => ($amount * $this->taxRate / (1 + $this->taxRate)));
         }
     }
 }

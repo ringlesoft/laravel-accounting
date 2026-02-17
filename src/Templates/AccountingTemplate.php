@@ -14,7 +14,8 @@ use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
-use RingleSoft\LaravelAccounting\Models\Account;
+use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
+use RingleSoft\LaravelAccounting\Models\Account as AccountAlias;
 
 /**
  * @mixin PostableTemplate
@@ -58,7 +59,7 @@ abstract class AccountingTemplate implements PostableTemplate
     }
 
     /**
-     * @param  Closure(float): float|null  $amount
+     * @param Closure(float): float|null $amount
      * @return $this
      */
     public function debit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
@@ -69,7 +70,7 @@ abstract class AccountingTemplate implements PostableTemplate
     }
 
     /**
-     * @param  Closure(float): float|null  $amount
+     * @param Closure(float): float|null $amount
      * @return $this
      */
     public function credit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
@@ -82,7 +83,7 @@ abstract class AccountingTemplate implements PostableTemplate
     /**
      * Set the description of the voucher
      *
-     * @param  Closure(PostableModel $model): string|string  $description
+     * @param Closure(PostableModel $model): string|string $description
      */
     public function describe(Closure|string $description): self
     {
@@ -94,7 +95,7 @@ abstract class AccountingTemplate implements PostableTemplate
     /**
      * Set the date of the voucher
      *
-     * @param  Closure(PostableModel $model): Carbon|Carbon  $date
+     * @param Closure(PostableModel $model): Carbon|Carbon $date
      */
     public function date(Closure|Carbon $date): self
     {
@@ -102,6 +103,43 @@ abstract class AccountingTemplate implements PostableTemplate
 
         return $this;
     }
+
+    /**
+     * De-duplicate entries by account and type
+     * @return $this
+     */
+    public function deDuplicate(): self
+    {
+        $deduplicated = [];
+        foreach ($this->entries as $entry) {
+            $key = $entry->account->value . '_' . $entry->type->value;
+            if (isset($deduplicated[$key])) {
+                $existingAmount = $deduplicated[$key]->getAmount(0);
+                $newAmount = $entry->getAmount(0);
+                $deduplicated[$key]->amount = fn($total) => $existingAmount + $newAmount;
+            } else {
+                $deduplicated[$key] = $entry;
+            }
+        }
+        $this->entries = array_values($deduplicated);
+        return $this;
+    }
+
+    /**
+     * @return AccountTemplateEntry[]
+     */
+    public static function getPostableAccounts(): array
+    {
+        $instance = new static();
+        $instance->configure();
+        $entries = $instance->getEntries();
+        $accounts = ['DEBIT' => [], 'CREDIT' => []];
+        foreach ($entries as $entry) {
+            $accounts[$entry->type->value] = array_merge($accounts[$entry->type->value] , (LaravelAccounting::accounts()->getLastChildrenByPreset($entry->account)->toArray() ?? []));
+        }
+        return $accounts;
+    }
+
 
     /**
      * @throws AccountNotFoundException|InvalidVoucherException|JournalNotBalancedException
@@ -112,12 +150,12 @@ abstract class AccountingTemplate implements PostableTemplate
         $this->configure(); // Configure the template first
 
         $voucherEntries = [];
-        $journalPresets = array_map(static fn (AccountTemplateEntry $entry) => $entry->account->value, $this->entries);
-        $accounts = Account::whereIn('preset', $journalPresets)->get()->pluck('id', 'preset');
+        $journalPresets = array_map(static fn(AccountTemplateEntry $entry) => $entry->account->value, $this->entries);
+        $accounts = AccountAlias::whereIn('preset', $journalPresets)->get()->pluck('id', 'preset');
         foreach ($this->entries as $entry) {
             $accountId = $accounts->get($entry->account->value);
-            if (! $accountId) {
-                throw new AccountNotFoundException('Account not found for preset: '.$entry->account->value);
+            if (!$accountId) {
+                throw new AccountNotFoundException('Account not found for preset: ' . $entry->account->value);
             }
             $entryAmount = $entry->getAmount($amount);
             $voucherEntries[] = new VoucherDataItem($entry->type, $accountId, $entryAmount, $entry->memo);
@@ -132,5 +170,14 @@ abstract class AccountingTemplate implements PostableTemplate
         $voucher->validate();
 
         return $voucher;
+    }
+
+    /**
+     * Get the entries that will be posted
+     * @return AccountTemplateEntry[]
+     */
+    public function getEntries(): array
+    {
+        return $this->entries;
     }
 }

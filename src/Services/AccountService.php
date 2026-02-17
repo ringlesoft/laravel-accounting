@@ -2,9 +2,11 @@
 
 namespace RingleSoft\LaravelAccounting\Services;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\AccountType;
@@ -22,7 +24,7 @@ class AccountService
             if (isset($data['parent_id'])) {
                 $parent = Account::findOrFail($data['parent_id']);
 
-                if (! $parent->allows_manual_entries) {
+                if (!$parent->allows_manual_entries) {
                     $data['allows_manual_entries'] = $data['allows_manual_entries'] ?? true;
                 }
             }
@@ -127,7 +129,8 @@ class AccountService
     }
 
 
-    public function all() {
+    public function all()
+    {
         return Account::where('is_active', true)
             ->with('accountType')
             ->orderBy('code')
@@ -161,9 +164,25 @@ class AccountService
     /**
      * Get account by preset
      */
-    public function findByPreset(string $preset): ?Account
+    public function findByPreset(AccountPreset $preset): ?Account
     {
-        return Account::where('preset', $preset)->first();
+        return Account::where('preset', $preset->value)->first();
+    }
+
+    /**
+     * Get the last level child accounts by preset
+     *
+     * @param AccountPreset $preset
+     * @return Collection<Account>
+     */
+    public function getLastChildrenByPreset(AccountPreset $preset): Collection
+    {
+        $account = Account::where('preset', $preset->value)->with('children.children')->first();
+        if ($account->children->count() > 0) {
+            // TODO process level 2 of children
+            return $account->children;
+        }
+        return collect([$account]);
     }
 
     /**
@@ -209,7 +228,7 @@ class AccountService
         }
 
         $accountType = AccountType::find($data['account_type_id']);
-        if (! $accountType) {
+        if (!$accountType) {
             throw new InvalidArgumentException('Invalid account type');
         }
 
@@ -242,7 +261,7 @@ class AccountService
             ->where('parent_id', $account->id)
             ->orderBy('code')
             ->get()
-            ->map(fn ($child) => $this->buildAccountTree($child));
+            ->map(fn($child) => $this->buildAccountTree($child));
 
         return [
             'id' => $account->id,

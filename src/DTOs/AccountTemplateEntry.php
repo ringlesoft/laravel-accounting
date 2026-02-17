@@ -9,8 +9,10 @@ use RingleSoft\LaravelAccounting\Enums\EntryType;
 class AccountTemplateEntry
 {
     /**
-     * @param  Closure(float $amount): float|float|null  $amount  function that manipulates the amount fetched from the model's `getAmount()` method
-     * @param  Closure(): string|string|null  $memo  the memo for the specific entry
+     * @param EntryType $type
+     * @param AccountPreset $account
+     * @param Closure(float $amount): float|float|null $amount function that manipulates the amount fetched from the model's `getAmount()` method
+     * @param Closure(): string|string|null $memo the memo for the specific entry
      */
     public function __construct(
         public EntryType $type,

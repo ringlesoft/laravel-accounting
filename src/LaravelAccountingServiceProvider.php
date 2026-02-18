@@ -4,6 +4,7 @@ namespace RingleSoft\LaravelAccounting;
 
 use Illuminate\Support\ServiceProvider;
 use RingleSoft\LaravelAccounting\Commands\InstallCommand;
+use RingleSoft\LaravelAccounting\Commands\UpdateBalancesCommand;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
@@ -34,6 +35,7 @@ class LaravelAccountingServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 InstallCommand::class,
+                UpdateBalancesCommand::class,
             ]);
         }
     }

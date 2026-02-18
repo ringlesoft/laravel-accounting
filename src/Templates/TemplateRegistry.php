@@ -45,4 +45,12 @@ class TemplateRegistry
     {
         self::$templates[$key] = $templateClass;
     }
+
+    /**
+     * @return array|string[]
+     */
+    public static function templates(): array
+    {
+        return self::$templates;
+    }
 }

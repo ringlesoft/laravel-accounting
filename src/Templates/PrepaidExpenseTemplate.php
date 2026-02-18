@@ -7,8 +7,8 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 class PrepaidExpenseTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $expenseAccount = AccountPreset::GENERAL_EXPENSE,
-        protected AccountPreset $prepaidExpenseAccount = AccountPreset::PREPAID_EXPENSE
+        protected AccountPreset $expenseAccount = AccountPreset::EXPENSES,
+        protected AccountPreset $prepaidExpenseAccount = AccountPreset::PREPAID_EXPENSES
     ) {}
 
     public function configure(): void

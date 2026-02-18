@@ -9,7 +9,7 @@ use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 
 /**
  * Account Type Model
- *
+ * @mixin Builder
  * @property string $normal_balance
  */
 class AccountType extends Model

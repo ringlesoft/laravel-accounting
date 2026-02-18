@@ -42,6 +42,7 @@ return new class extends Migration
             $table->string('currency_code', 3)->default('USD');
 
             $table->string('preset', 100)->nullable()->index();
+            $table->enum('normal_balance', ['DEBIT', 'CREDIT'])->nullable();
 
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);

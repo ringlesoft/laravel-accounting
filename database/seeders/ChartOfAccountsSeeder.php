@@ -327,6 +327,18 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'DEBIT',
         ]);
 
+        // 10800 - Deferred Tax Asset
+        $this->createAccount([
+            'code' => '10800',
+            'name' => 'Deferred Tax Asset',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $currentAssets->id,
+            'preset' => AccountPreset::DEFERRED_TAX_ASSETS->value,
+            'category' => 'Current Assets',
+            'report_section' => 'Assets',
+            'normal_balance' => 'DEBIT',
+        ]);
+
         // 15000 - Non-Current Assets (Parent)
         $nonCurrentAssets = $this->createAccount([
             'code' => '15000',
@@ -418,6 +430,17 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'DEBIT',
         ]);
 
+        $this->createAccount([
+            'code' => '15107',
+            'name' => 'IT Equipment',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $ppeParent->id,
+            'preset' => AccountPreset::COMPUTER_EQUIPMENT->value,
+            'category' => 'Non-Current Assets',
+            'report_section' => 'Assets',
+            'normal_balance' => 'DEBIT',
+        ]);
+
         // 15200 - Accumulated Depreciation (Contra Asset)
         $accumDepreciation = $this->createAccount([
             'code' => '15200',
@@ -473,6 +496,28 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $assetType->id,
             'parent_id' => $accumDepreciation->id,
             'preset' => AccountPreset::ACCUM_DEPR_FURNITURE->value,
+            'category' => 'Non-Current Assets',
+            'sub_category' => 'Contra Asset',
+            'report_section' => 'Assets',
+            'normal_balance' => 'CREDIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '15205',
+            'name' => 'Accumulated Depreciation - Office Equipment',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $accumDepreciation->id,
+            'category' => 'Non-Current Assets',
+            'sub_category' => 'Contra Asset',
+            'report_section' => 'Assets',
+            'normal_balance' => 'CREDIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '15206',
+            'name' => 'Accumulated Depreciation - IT Equipment',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $accumDepreciation->id,
             'category' => 'Non-Current Assets',
             'sub_category' => 'Contra Asset',
             'report_section' => 'Assets',
@@ -558,6 +603,50 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'CREDIT',
         ]);
 
+        $this->createAccount([
+            'code' => '15311',
+            'name' => 'Accumulated Amortization - Patents',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $intangibleParent->id,
+            'category' => 'Non-Current Assets',
+            'sub_category' => 'Contra Asset',
+            'report_section' => 'Assets',
+            'normal_balance' => 'CREDIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '15312',
+            'name' => 'Accumulated Amortization - Software',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $intangibleParent->id,
+            'category' => 'Non-Current Assets',
+            'sub_category' => 'Contra Asset',
+            'report_section' => 'Assets',
+            'normal_balance' => 'CREDIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '15313',
+            'name' => 'Accumulated Amortization - Trademarks',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $intangibleParent->id,
+            'category' => 'Non-Current Assets',
+            'sub_category' => 'Contra Asset',
+            'report_section' => 'Assets',
+            'normal_balance' => 'CREDIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '15314',
+            'name' => 'Accumulated Amortization - Copyrights',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $intangibleParent->id,
+            'category' => 'Non-Current Assets',
+            'sub_category' => 'Contra Asset',
+            'report_section' => 'Assets',
+            'normal_balance' => 'CREDIT',
+        ]);
+
         // 15400 - Long-term Investments
         $this->createAccount([
             'code' => '15400',
@@ -565,6 +654,18 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $assetType->id,
             'parent_id' => $nonCurrentAssets->id,
             'preset' => AccountPreset::LONG_TERM_INVESTMENTS->value,
+            'category' => 'Non-Current Assets',
+            'report_section' => 'Assets',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        // 15500 - Right-of-Use Assets (IFRS 16/ASC 842)
+        $this->createAccount([
+            'code' => '15500',
+            'name' => 'Right-of-Use Assets',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $nonCurrentAssets->id,
+            'preset' => AccountPreset::RIGHT_OF_USE_ASSETS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
             'normal_balance' => 'DEBIT',
@@ -941,6 +1042,7 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $liabilityType->id,
             'category' => 'Long-term Liabilities',
             'report_section' => 'Liabilities',
+            'normal_balance' => 'CREDIT',
             'is_system_account' => true,
             'allows_manual_entries' => false,
         ]);
@@ -980,7 +1082,18 @@ class ChartOfAccountsSeeder extends Seeder
 
         $this->createAccount([
             'code' => '25004',
-            'name' => 'Lease Liabilities',
+            'name' => 'Deferred Tax Liability',
+            'account_type_id' => $liabilityType->id,
+            'parent_id' => $longTermLiabilities->id,
+            'preset' => AccountPreset::DEFERRED_TAX_LIABILITIES->value,
+            'category' => 'Long-term Liabilities',
+            'report_section' => 'Liabilities',
+            'normal_balance' => 'CREDIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '25005',
+            'name' => 'Lease Liability (Non-Current)',
             'account_type_id' => $liabilityType->id,
             'parent_id' => $longTermLiabilities->id,
             'preset' => AccountPreset::LEASE_LIABILITIES->value,
@@ -1007,6 +1120,19 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'CREDIT',
             'is_system_account' => true,
             'allows_manual_entries' => false,
+        ]);
+
+        // 30050 - Opening Balance Equity (CRITICAL for software deployment)
+        $this->createAccount([
+            'code' => '30050',
+            'name' => 'Opening Balance Equity',
+            'account_type_id' => $equityType->id,
+            'parent_id' => $equity->id,
+            'preset' => AccountPreset::OPENING_BALANCE_EQUITY->value,
+            'category' => 'Equity',
+            'report_section' => 'Equity',
+            'normal_balance' => 'CREDIT',
+            'is_system_account' => true,
         ]);
 
         // 4010 - Share Capital
@@ -1052,6 +1178,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::RETAINED_EARNINGS->value,
             'category' => 'Equity',
             'report_section' => 'Equity',
+            'normal_balance' => 'CREDIT',
             'is_system_account' => true,
         ]);
 
@@ -1063,6 +1190,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::CURRENT_YEAR_EARNINGS->value,
             'category' => 'Equity',
             'report_section' => 'Equity',
+            'normal_balance' => 'CREDIT',
             'is_system_account' => true,
         ]);
 
@@ -1101,6 +1229,31 @@ class ChartOfAccountsSeeder extends Seeder
             'sub_category' => 'Contra Equity',
             'report_section' => 'Equity',
             'normal_balance' => 'DEBIT',
+        ]);
+
+        // 30700 - Treasury Stock (Contra Equity)
+        $this->createAccount([
+            'code' => '30700',
+            'name' => 'Treasury Stock',
+            'account_type_id' => $equityType->id,
+            'parent_id' => $equity->id,
+            'preset' => AccountPreset::TREASURY_STOCK->value,
+            'category' => 'Equity',
+            'sub_category' => 'Contra Equity',
+            'report_section' => 'Equity',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        // 30800 - Accumulated Other Comprehensive Income (AOCI)
+        $this->createAccount([
+            'code' => '30800',
+            'name' => 'Accumulated Other Comprehensive Income',
+            'account_type_id' => $equityType->id,
+            'parent_id' => $equity->id,
+            'preset' => AccountPreset::OTHER_COMPREHENSIVE_INCOME->value,
+            'category' => 'Equity',
+            'report_section' => 'Equity',
+            'normal_balance' => 'CREDIT',
         ]);
     }
 
@@ -1345,6 +1498,39 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'DEBIT',
         ]);
 
+        $this->createAccount([
+            'code' => '50003',
+            'name' => 'Direct Labor',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $cogs->id,
+            'preset' => AccountPreset::DIRECT_LABOR->value,
+            'category' => 'Cost of Sales',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '50004',
+            'name' => 'Direct Materials',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $cogs->id,
+            'preset' => AccountPreset::DIRECT_MATERIALS->value,
+            'category' => 'Cost of Sales',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '50005',
+            'name' => 'Subcontractor Costs',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $cogs->id,
+            'preset' => AccountPreset::SUBCONTRACTOR_COSTS->value,
+            'category' => 'Cost of Sales',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
         // 7000 - Operating Expenses (Parent)
         $operatingExpenses = $this->createAccount([
             'code' => '60000',
@@ -1410,6 +1596,28 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $expenseType->id,
             'parent_id' => $payrollExpenses->id,
             'preset' => AccountPreset::COMMISSION_EXPENSE->value,
+            'category' => 'Operating Expenses',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '60105',
+            'name' => 'Payroll Taxes Expense',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $payrollExpenses->id,
+            'preset' => AccountPreset::PAYROLL_TAX_EXPENSE->value,
+            'category' => 'Operating Expenses',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '60106',
+            'name' => 'Employee Benefits Expense',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $payrollExpenses->id,
+            'preset' => AccountPreset::EMPLOYEE_BENEFITS_EXPENSE->value,
             'category' => 'Operating Expenses',
             'report_section' => 'Expenses',
             'normal_balance' => 'DEBIT',

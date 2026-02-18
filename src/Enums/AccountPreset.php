@@ -17,11 +17,13 @@ enum AccountPreset: string
     case PETTY_CASH = 'PETTY_CASH';
     case CASH_ON_HAND = 'CASH_ON_HAND';
     case CASH_IN_BANK = 'CASH_IN_BANK';
+    case UNDEPOSITED_FUNDS = 'UNDEPOSITED_FUNDS';
 
     case ACCOUNTS_RECEIVABLE = 'ACCOUNTS_RECEIVABLE';
     case TRADE_RECEIVABLES = 'TRADE_RECEIVABLES';
     case NOTES_RECEIVABLE = 'NOTES_RECEIVABLE';
     case OTHER_RECEIVABLES = 'OTHER_RECEIVABLES';
+    case UNBILLED_REVENUE = 'UNBILLED_REVENUE';
 
     case ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS = 'ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS';
     case ALLOWANCE_FOR_BAD_DEBTS = 'ALLOWANCE_FOR_BAD_DEBTS';
@@ -37,6 +39,8 @@ enum AccountPreset: string
     case PREPAID_RENT = 'PREPAID_RENT';
     case PREPAID_SUBSCRIPTIONS = 'PREPAID_SUBSCRIPTIONS';
 
+    case SUPPLIES = 'SUPPLIES';
+
     case PREPAID_TAXES = 'PREPAID_TAXES';
     case PREPAID_INCOME_TAX = 'PREPAID_INCOME_TAX';
     case ADVANCE_TO_SUPPLIERS = 'ADVANCE_TO_SUPPLIERS';
@@ -46,6 +50,7 @@ enum AccountPreset: string
     case MARKETABLE_SECURITIES = 'MARKETABLE_SECURITIES';
     case SHORT_TERM_INVESTMENTS = 'SHORT_TERM_INVESTMENTS';
     case TRADING_SECURITIES = 'TRADING_SECURITIES';
+    case FAIR_VALUE_ADJUSTMENT = 'FAIR_VALUE_ADJUSTMENT';
 
     // Non-Current Assets (1600-1999)
     case LONG_TERM_INVESTMENTS = 'LONG_TERM_INVESTMENTS';
@@ -63,6 +68,7 @@ enum AccountPreset: string
     case COMPUTER_EQUIPMENT = 'COMPUTER_EQUIPMENT';
     case FURNITURE_AND_FIXTURES = 'FURNITURE_AND_FIXTURES';
     case VEHICLES = 'VEHICLES';
+    case LEASED_ASSET = 'LEASED_ASSET';
 
     // Accumulated Depreciation (Contra-Asset) (2500-2799)
     case ACCUMULATED_DEPRECIATION = 'ACCUMULATED_DEPRECIATION';
@@ -70,8 +76,10 @@ enum AccountPreset: string
     case ACCUM_DEPR_EQUIPMENT = 'ACCUM_DEPR_EQUIPMENT';
     case ACCUM_DEPR_VEHICLES = 'ACCUM_DEPR_VEHICLES';
     case ACCUM_DEPR_FURNITURE = 'ACCUM_DEPR_FURNITURE';
+    case ACCUMULATED_IMPAIRMENT = 'ACCUMULATED_IMPAIRMENT';
 
     // Intangible Assets (2800-2899)
+    case INTANGIBLE_ASSETS = 'INTANGIBLE_ASSETS';
     case GOODWILL = 'GOODWILL';
     case PATENTS = 'PATENTS';
     case COPYRIGHTS = 'COPYRIGHTS';
@@ -125,6 +133,12 @@ enum AccountPreset: string
     case SALARIES_PAYABLE = 'SALARIES_PAYABLE';
     case BONUSES_PAYABLE = 'BONUSES_PAYABLE';
     case COMMISSIONS_PAYABLE = 'COMMISSIONS_PAYABLE';
+    case PAYROLL_CLEARING = 'PAYROLL_CLEARING';
+    case FEDERAL_WITHHOLDING_PAYABLE = 'FEDERAL_WITHHOLDING_PAYABLE';
+    case STATE_WITHHOLDING_PAYABLE = 'STATE_WITHHOLDING_PAYABLE';
+    case SOCIAL_SECURITY_PAYABLE = 'SOCIAL_SECURITY_PAYABLE';
+    case MEDICARE_PAYABLE = 'MEDICARE_PAYABLE';
+    case VACATION_PAYABLE = 'VACATION_PAYABLE';
 
     case EMPLOYEE_BENEFITS_PAYABLE = 'EMPLOYEE_BENEFITS_PAYABLE';
     case EMPLOYEE_INSURANCE_PAYABLE = 'EMPLOYEE_INSURANCE_PAYABLE';
@@ -134,6 +148,8 @@ enum AccountPreset: string
     // Long-term Liabilities (3700-3999)
     case LONG_TERM_DEBT = 'LONG_TERM_DEBT';
     case BONDS_PAYABLE = 'BONDS_PAYABLE';
+    case DISCOUNT_ON_BONDS = 'DISCOUNT_ON_BONDS';
+    case PREMIUM_ON_BONDS = 'PREMIUM_ON_BONDS';
     case MORTGAGE_PAYABLE = 'MORTGAGE_PAYABLE';
     case LEASE_LIABILITIES = 'LEASE_LIABILITIES';
 
@@ -160,6 +176,9 @@ enum AccountPreset: string
     case DRAWINGS = 'DRAWINGS';
     case OWNERS_DRAW = 'OWNERS_DRAW';
     case DIVIDENDS_DECLARED = 'DIVIDENDS_DECLARED';
+
+    case INCOME_SUMMARY = 'INCOME_SUMMARY';
+    case DONATED_CAPITAL = 'DONATED_CAPITAL';
 
     case OTHER_COMPREHENSIVE_INCOME = 'OTHER_COMPREHENSIVE_INCOME';
     case REVALUATION_RESERVE = 'REVALUATION_RESERVE';
@@ -190,6 +209,7 @@ enum AccountPreset: string
     case INVESTMENT_INCOME = 'INVESTMENT_INCOME';
 
     case GAIN_ON_SALE_OF_ASSETS = 'GAIN_ON_SALE_OF_ASSETS';
+    case UNREALIZED_GAIN = 'UNREALIZED_GAIN';
     case FOREIGN_EXCHANGE_GAIN = 'FOREIGN_EXCHANGE_GAIN';
 
     case OTHER_INCOME = 'OTHER_INCOME';
@@ -200,6 +220,8 @@ enum AccountPreset: string
     case SALES_RETURNS = 'SALES_RETURNS';
     case SALES_ALLOWANCES = 'SALES_ALLOWANCES';
     case SALES_DISCOUNTS = 'SALES_DISCOUNTS';
+    case PURCHASE_RETURNS = 'PURCHASE_RETURNS';
+    case PURCHASE_DISCOUNTS = 'PURCHASE_DISCOUNTS';
 
     // ====================================
     // EXPENSES (7xxx - 8xxx series)
@@ -209,6 +231,7 @@ enum AccountPreset: string
     case COST_OF_GOODS_SOLD = 'COST_OF_GOODS_SOLD';
     case COST_OF_SALES = 'COST_OF_SALES';
     case COST_OF_SERVICES = 'COST_OF_SERVICES';
+    case PURCHASES = 'PURCHASES';
 
     case MATERIALS_USED = 'MATERIALS_USED';
     case DIRECT_LABOR = 'DIRECT_LABOR';
@@ -219,6 +242,7 @@ enum AccountPreset: string
     case WAGES_EXPENSE = 'WAGES_EXPENSE';
     case BONUS_EXPENSE = 'BONUS_EXPENSE';
     case COMMISSION_EXPENSE = 'COMMISSION_EXPENSE';
+    case PAYROLL_TAX_EXPENSE = 'PAYROLL_TAX_EXPENSE';
 
     case RENT_EXPENSE = 'RENT_EXPENSE';
     case LEASE_EXPENSE = 'LEASE_EXPENSE';
@@ -227,6 +251,13 @@ enum AccountPreset: string
     case OFFICE_SUPPLIES_EXPENSE = 'OFFICE_SUPPLIES_EXPENSE';
     case POSTAGE_EXPENSE = 'POSTAGE_EXPENSE';
     case PRINTING_EXPENSE = 'PRINTING_EXPENSE';
+    case TELEPHONE_EXPENSE = 'TELEPHONE_EXPENSE';
+    case INTERNET_EXPENSE = 'INTERNET_EXPENSE';
+    case SHIPPING_EXPENSE = 'SHIPPING_EXPENSE';
+    case LICENSES_AND_PERMITS = 'LICENSES_AND_PERMITS';
+    case PROPERTY_TAX_EXPENSE = 'PROPERTY_TAX_EXPENSE';
+    case MERCHANT_SERVICES_FEES = 'MERCHANT_SERVICES_FEES';
+    case PAYROLL_PROCESSING_FEES = 'PAYROLL_PROCESSING_FEES';
 
     case TRAVEL_EXPENSE = 'TRAVEL_EXPENSE';
     case MEALS_AND_ENTERTAINMENT = 'MEALS_AND_ENTERTAINMENT';
@@ -256,6 +287,8 @@ enum AccountPreset: string
 
     case FOREIGN_EXCHANGE_LOSS = 'FOREIGN_EXCHANGE_LOSS';
     case LOSS_ON_SALE_OF_ASSETS = 'LOSS_ON_SALE_OF_ASSETS';
+    case UNREALIZED_LOSS = 'UNREALIZED_LOSS';
+    case IMPAIRMENT_LOSS = 'IMPAIRMENT_LOSS';
 
     // Tax Expenses (8200-8299)
     case INCOME_TAX_EXPENSE = 'INCOME_TAX_EXPENSE';
@@ -290,6 +323,9 @@ enum AccountPreset: string
     case SUSPENSE_ACCOUNT = 'SUSPENSE_ACCOUNT';
     case CLEARING_ACCOUNT = 'CLEARING_ACCOUNT';
     case INTERCOMPANY = 'INTERCOMPANY';
+    case FIXED_ASSETS = 'FIXED_ASSETS';
+    case EXPENSES = 'EXPENSES'; // Parent
+    case PAYROLL_EXPENSES = 'PAYROLL_EXPENSES'; // Parent
 
     /**
      * Get account type (Asset, Liability, Equity, Revenue, Expense)
@@ -302,75 +338,41 @@ enum AccountPreset: string
             self::PREPAID_EXPENSES, self::LAND, self::BUILDINGS,
             self::MACHINERY_AND_EQUIPMENT, self::GOODWILL,
             self::INPUT_VAT, self::VAT_RECOVERABLE,
-            self::WITHHOLDING_TAX_RECEIVABLE,
-            self::ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS => AccountTypeEnum::ASSET,
+            self::WITHHOLDING_TAX_RECEIVABLE, self::FIXED_ASSETS,
+            self::ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS,
+            self::SUPPLIES, self::INTANGIBLE_ASSETS, self::LEASED_ASSET,
+            self::FAIR_VALUE_ADJUSTMENT, self::ACCUMULATED_IMPAIRMENT => AccountTypeEnum::ASSET,
 
             // Liabilities (3000-4999)
             self::ACCOUNTS_PAYABLE, self::SALES_TAX_PAYABLE,
             self::VAT_PAYABLE, self::GST_PAYABLE,
             self::WAGES_PAYABLE, self::UNEARNED_REVENUE,
-            self::LONG_TERM_DEBT, self::WITHHOLDING_TAX_PAYABLE => AccountTypeEnum::LIABILITY,
+            self::LONG_TERM_DEBT, self::WITHHOLDING_TAX_PAYABLE,
+            self::DISCOUNT_ON_BONDS, self::PREMIUM_ON_BONDS => AccountTypeEnum::LIABILITY,
 
             // Equity (5000-5999)
             self::COMMON_STOCK, self::RETAINED_EARNINGS,
-            self::OWNERS_EQUITY, self::DRAWINGS => AccountTypeEnum::EQUITY,
+            self::OWNERS_EQUITY, self::DRAWINGS,
+            self::INCOME_SUMMARY, self::DONATED_CAPITAL => AccountTypeEnum::EQUITY,
 
             // Revenue (6000-6999)
             self::SALES_REVENUE, self::SERVICE_REVENUE,
             self::INTEREST_REVENUE, self::OTHER_INCOME,
-            self::SALES_RETURNS, self::SALES_DISCOUNTS => AccountTypeEnum::INCOME,
+            self::SALES_RETURNS, self::SALES_DISCOUNTS,
+            self::UNREALIZED_GAIN => AccountTypeEnum::INCOME,
 
             // Expenses (7000-8999)
+            self::EXPENSES,
+            self::PAYROLL_EXPENSES,
             self::COST_OF_GOODS_SOLD, self::SALARIES_EXPENSE,
             self::RENT_EXPENSE, self::DEPRECIATION_EXPENSE,
             self::INTEREST_EXPENSE, self::BAD_DEBT_EXPENSE,
-            self::INPUT_GST, self::OUTPUT_GST => AccountTypeEnum::EXPENSE,
+            self::INPUT_GST, self::OUTPUT_GST,
+            self::PURCHASES, self::PAYROLL_TAX_EXPENSE,
+            self::UNREALIZED_LOSS, self::IMPAIRMENT_LOSS => AccountTypeEnum::EXPENSE,
 
             default => AccountTypeEnum::ASSET, // Fallback
         };
-    }
-
-    /**
-     * Get default account code/number
-     */
-    public function defaultCode(): string
-    {
-        $codes = [
-            // Assets (1000-2999)
-            self::CASH->value => '1010',
-            self::ACCOUNTS_RECEIVABLE->value => '1100',
-            self::ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS->value => '1110',
-            self::INVENTORY->value => '1200',
-            self::PREPAID_EXPENSES->value => '1300',
-            self::LAND->value => '1500',
-            self::BUILDINGS->value => '1510',
-            self::ACCUMULATED_DEPRECIATION->value => '1520',
-
-            // Liabilities (3000-4999)
-            self::ACCOUNTS_PAYABLE->value => '2010',
-            self::SALES_TAX_PAYABLE->value => '2020',
-            self::VAT_PAYABLE->value => '2021',
-            self::WAGES_PAYABLE->value => '2030',
-            self::UNEARNED_REVENUE->value => '2040',
-
-            // Equity (5000-5999)
-            self::COMMON_STOCK->value => '3010',
-            self::RETAINED_EARNINGS->value => '3020',
-
-            // Revenue (6000-6999)
-            self::SALES_REVENUE->value => '4010',
-            self::SERVICE_REVENUE->value => '4020',
-            self::SALES_RETURNS->value => '4910',
-
-            // Expenses (7000-8999)
-            self::COST_OF_GOODS_SOLD->value => '5010',
-            self::SALARIES_EXPENSE->value => '6010',
-            self::RENT_EXPENSE->value => '6020',
-            self::DEPRECIATION_EXPENSE->value => '6030',
-            self::INTEREST_EXPENSE->value => '6040',
-        ];
-
-        return $codes[$this->value] ?? '9999'; // Default suspense account
     }
 
     /**
@@ -391,7 +393,7 @@ enum AccountPreset: string
     {
         return array_filter(
             self::cases(),
-            fn ($preset) => $preset->type() === $type
+            static fn($preset) => $preset->type() === $type
         );
     }
 
@@ -404,10 +406,12 @@ enum AccountPreset: string
             'current_assets' => [
                 self::CASH, self::ACCOUNTS_RECEIVABLE, self::INVENTORY,
                 self::PREPAID_EXPENSES, self::MARKETABLE_SECURITIES,
+                self::SUPPLIES,
             ],
             'fixed_assets' => [
                 self::LAND, self::BUILDINGS, self::MACHINERY_AND_EQUIPMENT,
                 self::VEHICLES, self::ACCUMULATED_DEPRECIATION,
+                self::LEASED_ASSET,
             ],
             'current_liabilities' => [
                 self::ACCOUNTS_PAYABLE, self::SALES_TAX_PAYABLE,
@@ -426,8 +430,50 @@ enum AccountPreset: string
                 self::INPUT_VAT, self::OUTPUT_VAT,
                 self::INCOME_TAX_PAYABLE,
             ],
+            'equity' => [
+                self::COMMON_STOCK, self::ADDITIONAL_PAID_IN_CAPITAL, self::RETAINED_EARNINGS,
+                self::PREFERRED_STOCK, self::CURRENT_YEAR_EARNINGS, self::OWNERS_EQUITY,
+                self::DRAWINGS, self::DIVIDENDS_DECLARED,
+                self::INCOME_SUMMARY, self::DONATED_CAPITAL,
+            ],
+            'inventory' => [
+                self::RAW_MATERIALS, self::WORK_IN_PROGRESS, self::FINISHED_GOODS,
+                self::MERCHANDISE_INVENTORY
+            ],
+            'payroll_liability' => [
+                self::WAGES_PAYABLE, self::SALARIES_PAYABLE, self::BONUSES_PAYABLE,
+                self::COMMISSIONS_PAYABLE,
+            ],
+            'gain_loss' => [
+                self::GAIN_ON_SALE_OF_ASSETS, self::LOSS_ON_SALE_OF_ASSETS,
+                self::UNREALIZED_GAIN, self::UNREALIZED_LOSS,
+                self::IMPAIRMENT_LOSS,
+            ],
+            'intangible_assets' => [
+                self::INTANGIBLE_ASSETS, self::GOODWILL, self::PATENTS,
+                self::COPYRIGHTS, self::TRADEMARKS, self::FRANCHISE_RIGHTS,
+                self::SOFTWARE, self::ACCUMULATED_AMORTIZATION,
+            ],
+            'bond_accounts' => [
+                self::BONDS_PAYABLE, self::DISCOUNT_ON_BONDS,
+                self::PREMIUM_ON_BONDS, self::BOND_ISSUANCE_COSTS,
+            ]
         ];
 
         return $categories[$category] ?? [];
+    }
+
+    /**
+     * These presets should never be available for account creation.
+     * That means we should not allow users to create accounts with these presets.
+     * @return AccountPreset[]
+     */
+    public function parents(): array
+    {
+        return [
+            self::FIXED_ASSETS,
+            self::EXPENSES,
+            self::PAYROLL_EXPENSES,
+        ];
     }
 }

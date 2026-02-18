@@ -102,6 +102,16 @@ class ChartOfAccountsSeeder extends Seeder
             'report_section' => 'Assets',
         ]);
 
+        $this->createAccount([
+            'code' => '1014',
+            'name' => 'Undeposited Funds',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $cashParent->id,
+            'preset' => AccountPreset::UNDEPOSITED_FUNDS->value,
+            'category' => 'Current Assets',
+            'report_section' => 'Assets',
+        ]);
+
         // 1100 - Accounts Receivable
         $receivablesParent = $this->createAccount([
             'code' => '1100',
@@ -237,6 +247,26 @@ class ChartOfAccountsSeeder extends Seeder
             'report_section' => 'Assets',
         ]);
 
+        $this->createAccount([
+            'code' => '1305',
+            'name' => 'Advance to Suppliers',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $prepaidParent->id,
+            'preset' => AccountPreset::ADVANCE_TO_SUPPLIERS->value,
+            'category' => 'Current Assets',
+            'report_section' => 'Assets',
+        ]);
+
+        $this->createAccount([
+            'code' => '1306',
+            'name' => 'Advance to Employees',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $prepaidParent->id,
+            'preset' => AccountPreset::ADVANCE_TO_EMPLOYEES->value,
+            'category' => 'Current Assets',
+            'report_section' => 'Assets',
+        ]);
+
         // 1400 - Tax Assets
         $this->createAccount([
             'code' => '1400',
@@ -277,6 +307,7 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $assetType->id,
             'parent_id' => $nonCurrentAssets->id,
             'category' => 'Non-Current Assets',
+            'preset' => AccountPreset::FIXED_ASSETS->value,
             'report_section' => 'Assets',
             'allows_manual_entries' => false,
         ]);
@@ -592,6 +623,16 @@ class ChartOfAccountsSeeder extends Seeder
             'report_section' => 'Liabilities',
         ]);
 
+        $this->createAccount([
+            'code' => '3202',
+            'name' => 'Line of Credit',
+            'account_type_id' => $liabilityType->id,
+            'parent_id' => $currentLiabilities->id,
+            'preset' => AccountPreset::LINE_OF_CREDIT->value,
+            'category' => 'Current Liabilities',
+            'report_section' => 'Liabilities',
+        ]);
+
         // 3300 - Unearned Revenue
         $this->createAccount([
             'code' => '3300',
@@ -619,6 +660,16 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $liabilityType->id,
             'parent_id' => $currentLiabilities->id,
             'preset' => AccountPreset::DEFERRED_REVENUE->value,
+            'category' => 'Current Liabilities',
+            'report_section' => 'Liabilities',
+        ]);
+
+        $this->createAccount([
+            'code' => '3303',
+            'name' => 'Advances from Customers',
+            'account_type_id' => $liabilityType->id,
+            'parent_id' => $currentLiabilities->id,
+            'preset' => AccountPreset::ADVANCES_FROM_CUSTOMERS->value,
             'category' => 'Current Liabilities',
             'report_section' => 'Liabilities',
         ]);
@@ -721,6 +772,56 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $liabilityType->id,
             'parent_id' => $payrollParent->id,
             'preset' => AccountPreset::BONUSES_PAYABLE->value,
+            'category' => 'Current Liabilities',
+            'report_section' => 'Liabilities',
+        ]);
+
+        $this->createAccount([
+            'code' => '3506',
+            'name' => 'Vacation Payable',
+            'account_type_id' => $liabilityType->id,
+            'parent_id' => $payrollParent->id,
+            'preset' => AccountPreset::VACATION_PAYABLE->value,
+            'category' => 'Current Liabilities',
+            'report_section' => 'Liabilities',
+        ]);
+
+        $this->createAccount([
+            'code' => '3510',
+            'name' => 'Payroll Clearing',
+            'account_type_id' => $liabilityType->id,
+            'parent_id' => $payrollParent->id,
+            'preset' => AccountPreset::PAYROLL_CLEARING->value,
+            'category' => 'Current Liabilities',
+            'report_section' => 'Liabilities',
+        ]);
+
+        $this->createAccount([
+            'code' => '3511',
+            'name' => 'Federal Withholding Payable',
+            'account_type_id' => $liabilityType->id,
+            'parent_id' => $payrollParent->id,
+            'preset' => AccountPreset::FEDERAL_WITHHOLDING_PAYABLE->value,
+            'category' => 'Current Liabilities',
+            'report_section' => 'Liabilities',
+        ]);
+
+        $this->createAccount([
+            'code' => '3512',
+            'name' => 'Social Security Payable',
+            'account_type_id' => $liabilityType->id,
+            'parent_id' => $payrollParent->id,
+            'preset' => AccountPreset::SOCIAL_SECURITY_PAYABLE->value,
+            'category' => 'Current Liabilities',
+            'report_section' => 'Liabilities',
+        ]);
+
+        $this->createAccount([
+            'code' => '3513',
+            'name' => 'Medicare Payable',
+            'account_type_id' => $liabilityType->id,
+            'parent_id' => $payrollParent->id,
+            'preset' => AccountPreset::MEDICARE_PAYABLE->value,
             'category' => 'Current Liabilities',
             'report_section' => 'Liabilities',
         ]);
@@ -1103,6 +1204,7 @@ class ChartOfAccountsSeeder extends Seeder
             'name' => 'Operating Expenses',
             'account_type_id' => $expenseType->id,
             'category' => 'Operating Expenses',
+            'preset' => AccountPreset::EXPENSES->value,
             'report_section' => 'Expenses',
             'is_system_account' => true,
             'allows_manual_entries' => false,
@@ -1115,6 +1217,7 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $expenseType->id,
             'parent_id' => $operatingExpenses->id,
             'category' => 'Operating Expenses',
+            'preset' => AccountPreset::PAYROLL_EXPENSES->value,
             'report_section' => 'Expenses',
             'allows_manual_entries' => false,
         ]);
@@ -1241,6 +1344,26 @@ class ChartOfAccountsSeeder extends Seeder
             'report_section' => 'Expenses',
         ]);
 
+        $this->createAccount([
+            'code' => '7305',
+            'name' => 'Telephone Expense',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $officeExpenses->id,
+            'preset' => AccountPreset::TELEPHONE_EXPENSE->value,
+            'category' => 'Operating Expenses',
+            'report_section' => 'Expenses',
+        ]);
+
+        $this->createAccount([
+            'code' => '7306',
+            'name' => 'Internet Expense',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $officeExpenses->id,
+            'preset' => AccountPreset::INTERNET_EXPENSE->value,
+            'category' => 'Operating Expenses',
+            'report_section' => 'Expenses',
+        ]);
+
         // 7400 - Marketing & Sales Expenses
         $marketingExpenses = $this->createAccount([
             'code' => '7400',
@@ -1344,6 +1467,16 @@ class ChartOfAccountsSeeder extends Seeder
             'report_section' => 'Expenses',
         ]);
 
+        $this->createAccount([
+            'code' => '7603',
+            'name' => 'Shipping Expense',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $operatingExpenses->id,
+            'preset' => AccountPreset::SHIPPING_EXPENSE->value,
+            'category' => 'Operating Expenses',
+            'report_section' => 'Expenses',
+        ]);
+
         // 7700 - Insurance & Depreciation
         $this->createAccount([
             'code' => '7700',
@@ -1425,6 +1558,26 @@ class ChartOfAccountsSeeder extends Seeder
             'report_section' => 'Expenses',
         ]);
 
+        $this->createAccount([
+            'code' => '8005',
+            'name' => 'Credit Card Fees',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $financialExpenses->id,
+            'preset' => AccountPreset::CREDIT_CARD_FEES->value,
+            'category' => 'Non-Operating Expenses',
+            'report_section' => 'Expenses',
+        ]);
+
+        $this->createAccount([
+            'code' => '8006',
+            'name' => 'Merchant Services Fees',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $financialExpenses->id,
+            'preset' => AccountPreset::MERCHANT_SERVICES_FEES->value,
+            'category' => 'Non-Operating Expenses',
+            'report_section' => 'Expenses',
+        ]);
+
         // 8100 - Tax Expenses
         $this->createAccount([
             'code' => '8100',
@@ -1481,7 +1634,7 @@ class ChartOfAccountsSeeder extends Seeder
      */
     protected function createAccount(array $attributes): Account
     {
-        return Account::firstOrCreate(
+        return Account::updateOrCreate(
             ['code' => $attributes['code']],
             array_merge([
                 'is_active' => true,

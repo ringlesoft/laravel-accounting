@@ -89,7 +89,7 @@ enum TransactionTemplate: string
      */
     public function getEntries(): array
     {
-        return match($this) {
+        return match ($this) {
             // I. EQUITY TRANSACTIONS
             self::CAPITAL_CONTRIBUTION_CASH => [
                 'debit' => [AccountPreset::CASH],
@@ -369,6 +369,7 @@ enum TransactionTemplate: string
     public function getAllAccounts(): array
     {
         $entries = $this->getEntries();
+
         return array_merge(
             $this->flattenAccounts($entries['debit']),
             $this->flattenAccounts($entries['credit'])
@@ -404,7 +405,7 @@ enum TransactionTemplate: string
     /**
      * Flatten accounts array, expanding any nested arrays from byCategory()
      *
-     * @param array $accounts Array that may contain AccountPreset enums or arrays of AccountPresets
+     * @param  array  $accounts  Array that may contain AccountPreset enums or arrays of AccountPresets
      * @return array Flat array of AccountPreset enums
      */
     private function flattenAccounts(array $accounts): array
@@ -451,7 +452,7 @@ enum TransactionTemplate: string
 
         // Check which categories are used by comparing with known categories
         $knownCategories = ['current_assets', 'fixed_assets', 'current_liabilities',
-                           'operating_revenue', 'operating_expenses', 'tax_accounts'];
+            'operating_revenue', 'operating_expenses', 'tax_accounts'];
 
         foreach ($knownCategories as $category) {
             $categoryAccounts = AccountPreset::byCategory($category);
@@ -474,7 +475,7 @@ enum TransactionTemplate: string
      */
     public function getDescription(): string
     {
-        return match($this) {
+        return match ($this) {
             // I. EQUITY TRANSACTIONS
             self::CAPITAL_CONTRIBUTION_CASH => 'Capital Contribution (Cash) - Owner invests cash into business',
             self::CAPITAL_CONTRIBUTION_NON_CASH => 'Capital Contribution (Non-Cash) - Owner contributes assets to business',

@@ -25,41 +25,26 @@ class LaravelAccounting
         return app(AccountService::class);
     }
 
-    /**
-     * @return BalanceService
-     */
     public function balances(): BalanceService
     {
         return app(BalanceService::class);
     }
 
-    /**
-     * @return JournalService
-     */
     public function journals(): JournalService
     {
         return app(JournalService::class);
     }
 
-    /**
-     * @return ReportService
-     */
     public function reports(): ReportService
     {
         return app(ReportService::class);
     }
 
-    /**
-     * @return PostingService
-     */
     public function posting(): PostingService
     {
         return app(PostingService::class);
     }
 
-    /**
-     * @return TemplateRegistry
-     */
     public function templates(): TemplateRegistry
     {
         return app(TemplateRegistry::class);
@@ -71,26 +56,22 @@ class LaravelAccounting
     // - Balance and ledger queries
     // - Report data generation
 
-    /**
-     * @return Collection
-     */
     public function chartsOfAccounts(): Collection
     {
         return $this->accounts()->getChartOfAccounts();
     }
 
     /**
-     * @param PostableModel $model
      * @return JournalEntry
      */
     public function postModel(PostableModel $model)
     {
         $voucherData = $model->toVoucher();
+
         return $this->journals()->create($voucherData);
     }
 
     /**
-     * @param VoucherData $voucher
      * @return JournalEntry
      */
     public function postRaw(VoucherData $voucher) {}

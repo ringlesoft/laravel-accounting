@@ -157,6 +157,17 @@ class ChartOfAccountsSeeder extends Seeder
         ]);
 
         $this->createAccount([
+            'code' => '10203',
+            'name' => 'Other Receivables',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $receivablesParent->id,
+            'preset' => AccountPreset::OTHER_RECEIVABLES->value,
+            'category' => 'Current Assets',
+            'report_section' => 'Assets',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
             'code' => '10210',
             'name' => 'Allowance for Doubtful Accounts',
             'account_type_id' => $assetType->id,
@@ -441,6 +452,28 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'DEBIT',
         ]);
 
+        $this->createAccount([
+            'code' => '15108',
+            'name' => 'Leasehold Improvements',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $ppeParent->id,
+            'preset' => AccountPreset::LEASEHOLD_IMPROVEMENTS->value,
+            'category' => 'Non-Current Assets',
+            'report_section' => 'Assets',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '15109',
+            'name' => 'Construction in Progress',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $ppeParent->id,
+            'preset' => AccountPreset::CONSTRUCTION_IN_PROGRESS->value,
+            'category' => 'Non-Current Assets',
+            'report_section' => 'Assets',
+            'normal_balance' => 'DEBIT',
+        ]);
+
         // 15200 - Accumulated Depreciation (Contra Asset)
         $accumDepreciation = $this->createAccount([
             'code' => '15200',
@@ -524,6 +557,17 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'CREDIT',
         ]);
 
+        $this->createAccount([
+            'code' => '15207',
+            'name' => 'Accumulated Depreciation - Leasehold Improvements',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $accumDepreciation->id,
+            'category' => 'Non-Current Assets',
+            'sub_category' => 'Contra Asset',
+            'report_section' => 'Assets',
+            'normal_balance' => 'CREDIT',
+        ]);
+
         // 15300 - Intangible Assets
         $intangibleParent = $this->createAccount([
             'code' => '15300',
@@ -532,7 +576,7 @@ class ChartOfAccountsSeeder extends Seeder
             'parent_id' => $nonCurrentAssets->id,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'DEBIT',
+            'normal_balance' => 'CREDIT',
             'allows_manual_entries' => false,
         ]);
 
@@ -544,7 +588,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::GOODWILL->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'DEBIT',
+            'normal_balance' => 'CREDIT',
         ]);
 
         $this->createAccount([
@@ -555,7 +599,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::PATENTS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'DEBIT',
+            'normal_balance' => 'CREDIT',
         ]);
 
         $this->createAccount([
@@ -566,7 +610,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::SOFTWARE->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'DEBIT',
+            'normal_balance' => 'CREDIT',
         ]);
 
         $this->createAccount([
@@ -577,7 +621,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::TRADEMARKS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'DEBIT',
+            'normal_balance' => 'CREDIT',
         ]);
 
         $this->createAccount([
@@ -588,7 +632,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::COPYRIGHTS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'DEBIT',
+            'normal_balance' => 'CREDIT',
         ]);
 
         $this->createAccount([
@@ -659,6 +703,18 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'DEBIT',
         ]);
 
+        // 15450 - Security Deposits (Non-Current)
+        $this->createAccount([
+            'code' => '15450',
+            'name' => 'Security Deposits',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $nonCurrentAssets->id,
+            'preset' => AccountPreset::SECURITY_DEPOSITS->value,
+            'category' => 'Non-Current Assets',
+            'report_section' => 'Assets',
+            'normal_balance' => 'DEBIT',
+        ]);
+
         // 15500 - Right-of-Use Assets (IFRS 16/ASC 842)
         $this->createAccount([
             'code' => '15500',
@@ -668,7 +724,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::RIGHT_OF_USE_ASSETS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'DEBIT',
+            'normal_balance' => 'CREDIT',
         ]);
     }
 
@@ -878,6 +934,7 @@ class ChartOfAccountsSeeder extends Seeder
             'parent_id' => $currentLiabilities->id,
             'category' => 'Current Liabilities',
             'report_section' => 'Liabilities',
+            'normal_balance' => 'CREDIT',
             'allows_manual_entries' => false,
         ]);
 
@@ -944,6 +1001,7 @@ class ChartOfAccountsSeeder extends Seeder
             'parent_id' => $currentLiabilities->id,
             'category' => 'Current Liabilities',
             'report_section' => 'Liabilities',
+            'normal_balance' => 'CREDIT',
             'allows_manual_entries' => false,
         ]);
 
@@ -1215,7 +1273,7 @@ class ChartOfAccountsSeeder extends Seeder
             'category' => 'Equity',
             'sub_category' => 'Contra Equity',
             'report_section' => 'Equity',
-            'normal_balance' => 'DEBIT',
+            'normal_balance' => 'CREDIT',
         ]);
 
         // 4300 - Dividends
@@ -1228,7 +1286,7 @@ class ChartOfAccountsSeeder extends Seeder
             'category' => 'Equity',
             'sub_category' => 'Contra Equity',
             'report_section' => 'Equity',
-            'normal_balance' => 'DEBIT',
+            'normal_balance' => 'CREDIT',
         ]);
 
         // 30700 - Treasury Stock (Contra Equity)
@@ -1418,6 +1476,7 @@ class ChartOfAccountsSeeder extends Seeder
             'category' => 'Revenue',
             'sub_category' => 'Contra Revenue',
             'report_section' => 'Income',
+            'normal_balance' => 'DEBIT',
             'allows_manual_entries' => false,
         ]);
 
@@ -1531,6 +1590,39 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'DEBIT',
         ]);
 
+        $this->createAccount([
+            'code' => '50006',
+            'name' => 'Freight In',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $cogs->id,
+            'preset' => AccountPreset::FREIGHT_IN->value,
+            'category' => 'Cost of Sales',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '50007',
+            'name' => 'Inventory Adjustments',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $cogs->id,
+            'preset' => AccountPreset::INVENTORY_ADJUSTMENTS->value,
+            'category' => 'Cost of Sales',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '50008',
+            'name' => 'Manufacturing Overhead',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $cogs->id,
+            'preset' => AccountPreset::MANUFACTURING_OVERHEAD->value,
+            'category' => 'Cost of Sales',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
         // 7000 - Operating Expenses (Parent)
         $operatingExpenses = $this->createAccount([
             'code' => '60000',
@@ -1629,6 +1721,7 @@ class ChartOfAccountsSeeder extends Seeder
             'name' => 'Occupancy Expenses',
             'account_type_id' => $expenseType->id,
             'parent_id' => $operatingExpenses->id,
+            'preset' => AccountPreset::OCCUPANCY_EXPENSES->value,
             'category' => 'Operating Expenses',
             'report_section' => 'Expenses',
             'normal_balance' => 'DEBIT',
@@ -1740,6 +1833,29 @@ class ChartOfAccountsSeeder extends Seeder
             'name' => 'Software & SaaS Subscription',
             'account_type_id' => $expenseType->id,
             'parent_id' => $officeExpenses->id,
+            'preset' => AccountPreset::SUBSCRIPTION_EXPENSE->value,
+            'category' => 'Operating Expenses',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '60308',
+            'name' => 'Dues and Memberships',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $officeExpenses->id,
+            'preset' => AccountPreset::DUES_AND_MEMBERSHIPS->value,
+            'category' => 'Operating Expenses',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '60309',
+            'name' => 'Taxes and Licenses',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $officeExpenses->id,
+            'preset' => AccountPreset::TAXES_AND_LICENSES->value,
             'category' => 'Operating Expenses',
             'report_section' => 'Expenses',
             'normal_balance' => 'DEBIT',
@@ -1998,6 +2114,7 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $expenseType->id,
             'category' => 'Other Expenses',
             'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
             'allows_manual_entries' => false,
         ]);
 
@@ -2014,6 +2131,28 @@ class ChartOfAccountsSeeder extends Seeder
 
         $this->createAccount([
             'code' => '70202',
+            'name' => 'Training and Development',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $otherExpenses->id,
+            'preset' => AccountPreset::TRAINING_EXPENSE->value,
+            'category' => 'Other Expenses',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '70203',
+            'name' => 'Research and Development',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $otherExpenses->id,
+            'preset' => AccountPreset::RESEARCH_AND_DEVELOPMENT->value,
+            'category' => 'Other Expenses',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '70204',
             'name' => 'Penalties and Fines',
             'account_type_id' => $expenseType->id,
             'parent_id' => $otherExpenses->id,

@@ -17,6 +17,7 @@ enum AccountPreset: string
     case PETTY_CASH = 'PETTY_CASH';
     case CASH_ON_HAND = 'CASH_ON_HAND';
     case CASH_IN_BANK = 'CASH_IN_BANK';
+    case CASH_AND_CASH_EQUIVALENT = 'CASH_AND_CASH_EQUIVALENT';
     case UNDEPOSITED_FUNDS = 'UNDEPOSITED_FUNDS';
 
     case ACCOUNTS_RECEIVABLE = 'ACCOUNTS_RECEIVABLE';
@@ -504,6 +505,24 @@ enum AccountPreset: string
             self::FIXED_ASSETS,
             self::EXPENSES,
             self::PAYROLL_EXPENSES,
+            self::OTHER_EXPENSES,
+            self::FINANCIAL_EXPENSES,
+            self::TRAVEL_EXPENSE,
+            self::PROFESSIONAL_FEES,
+            self::MARKETING_SALES_EXPENSES,
+            self::OFFICE_EXPENSES,
+            self::OCCUPANCY_EXPENSES,
+            self::PAYROLL_EXPENSES,
+            self::OPERATING_EXPENSES,
+            self::COST_OF_GOODS_SOLD,
+            self::ACCRUED_EXPENSES,
+            self::ACCOUNTS_PAYABLE,
+            self::ACCUMULATED_DEPRECIATION,
+            self::FIXED_ASSETS,
+            self::PREPAID_EXPENSES,
+            self::INVENTORY,
+            self::INVENTORY,
+            self::CASH_AND_CASH_EQUIVALENT
         ];
     }
 }

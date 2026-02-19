@@ -270,6 +270,7 @@ class AccountService
             'type' => $account->accountType->name,
             'category' => $account->category,
             'preset' => $account->preset,
+            'normal_balance' => $account->normal_balance,
             'is_active' => $account->is_active,
             'is_system_account' => $account->is_system_account,
             'allows_manual_entries' => $account->allows_manual_entries,

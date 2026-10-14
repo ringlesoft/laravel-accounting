@@ -151,6 +151,7 @@ abstract class AccountingTemplate implements PostableTemplate
     {
         $amount = $model->getAmount();
         $this->configure(); // Configure the template first
+        $this->validate($model); // Then let subclasses reject a bad model/parameter combo early
 
         $voucherEntries = [];
         $journalPresets = array_map(static fn(AccountTemplateEntry $entry) => $entry->account->value, $this->entries);
@@ -182,5 +183,19 @@ abstract class AccountingTemplate implements PostableTemplate
     public function getEntries(): array
     {
         return $this->entries;
+    }
+
+    /**
+     * Validate the template's own business rules against the model, after
+     * configure() has run but before entries are resolved to real accounts.
+     * A no-op by default - override to reject an invalid model/parameter
+     * combination (e.g. a rate outside 0-1) without needing to override
+     * make() itself.
+     *
+     * @throws InvalidVoucherException
+     */
+    public function validate(PostableModel $model): void
+    {
+        // Intentionally empty - override in a subclass to add checks.
     }
 }

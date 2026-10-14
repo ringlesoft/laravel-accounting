@@ -46,4 +46,14 @@ interface PostableTemplate
      * Generate a voucher data from the template
      */
     public function make(PostableModel $model): VoucherData;
+
+    /**
+     * Validate the template's own business rules against the model before its
+     * entries are resolved to real accounts. A no-op by default - override to
+     * reject an invalid model/parameter combination without needing to override
+     * make() itself.
+     *
+     * @throws \RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException
+     */
+    public function validate(PostableModel $model): void;
 }

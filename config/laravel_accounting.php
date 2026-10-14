@@ -49,11 +49,23 @@ return [
     'balance_cache_enabled' => true,
 
     /*
+     * Enable caching of generated reports (trial balance, balance sheet, etc.)
+     */
+    'report_cache_enabled' => true,
+
+    /*
      * Time-to-live for report cache in seconds
      * Set to 0 to disable report caching
      * Default: 3600 (1 hour)
      */
     'report_cache_ttl' => 3600,
+
+    /*
+     * Prefix used for this package's own cache entries (report cache and its key
+     * index). Keeping it distinct from the host app's cache keys lets us clear
+     * only this package's cache without touching unrelated application cache.
+     */
+    'cache_prefix' => 'laravel_accounting',
 
     /*
      * List of supported currency codes (ISO 4217)

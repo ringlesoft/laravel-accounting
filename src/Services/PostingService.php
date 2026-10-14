@@ -194,8 +194,10 @@ class PostingService
      */
     public function inventoryPurchase(PostableModel $model, bool $onAccount = false, string|int|null $userId = null): JournalEntry
     {
+        // purchase.on_account/purchase.cash default $expenseAccount to COST_OF_GOODS_SOLD;
+        // an inventory purchase needs it overridden to INVENTORY to match this method's own docblock.
         $templateKey = $onAccount ? 'purchase.on_account' : 'purchase.cash';
-        $template = TemplateRegistry::make($templateKey);
+        $template = TemplateRegistry::make($templateKey, [AccountPreset::INVENTORY]);
 
         return $this->postWithTemplate($model, $template, $userId);
     }

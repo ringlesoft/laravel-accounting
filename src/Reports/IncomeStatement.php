@@ -58,7 +58,10 @@ class IncomeStatement extends Report
 
         $totalRevenue = $revenueBalances->sum('balance');
         $totalExpenses = $expenseBalances->sum('balance');
-        $netIncome = abs($totalRevenue) - abs($totalExpenses);
+        // No abs(): both totals are already correctly signed (positive for normal
+        // activity, negative for a contra/credit-balance expense or debit-balance
+        // revenue account), and abs() would silently invert those edge cases.
+        $netIncome = $totalRevenue - $totalExpenses;
 
         $this->setData([
             'period' => [

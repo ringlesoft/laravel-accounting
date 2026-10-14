@@ -287,24 +287,21 @@ Multi-tenancy isn't a toggle — any model using the `MultiTenant` trait (Accoun
 
 ## Reporting
 
-Every report goes through `LaravelAccounting::reports()->{reportType}($params)->generate()`, then `->getData()` (or `->toArray()`/`->toJson()`). `$params` keys are snake_case and vary per report:
+Every report goes through `LaravelAccounting::reports()->{reportType}($params)`, which returns an already-generated report - call `->getData()` (or `->toArray()`/`->toJson()`) directly. `$params` keys are snake_case and vary per report:
 
 ```php
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 
 $trialBalance = LaravelAccounting::reports()
     ->trialBalance(['as_of_date' => now()])
-    ->generate()
     ->getData();
 
 $incomeStatement = LaravelAccounting::reports()
     ->incomeStatement(['start_date' => now()->startOfMonth(), 'end_date' => now()->endOfMonth()])
-    ->generate()
     ->getData();
 
 $ledger = LaravelAccounting::reports()
     ->accountLedger(['account_id' => $accountId, 'start_date' => '2026-01-01', 'end_date' => '2026-12-31'])
-    ->generate()
     ->getData();
 ```
 
@@ -318,7 +315,7 @@ $ledger = LaravelAccounting::reports()
 | Account Ledger | `account_id` (required), `start_date`, `end_date` |
 | Chart of Accounts | `include_inactive`, `account_type`, `show_balances`, `as_of_date` |
 
-Results are cached per `report_cache_ttl`; `LaravelAccounting::reports()->clearCache($reportType)` clears it.
+Results are cached per `report_cache_ttl`, keyed by report type + params, and invalidated automatically whenever a journal entry posts, reverses, or voids - `LaravelAccounting::reports()->clearCache($reportType)` clears it manually if needed. Calling `->generate()` again on a returned report is safe but recomputes live and bypasses the cache for that call, so there's no need to.
 
 ## Troubleshooting & FAQ
 
@@ -393,7 +390,7 @@ composer test-coverage
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Let me pave the way, I'll let you know when you can contribute. 
 
 ## Security
 
@@ -401,15 +398,18 @@ If you discover any security-related issues, please email ringunger@gmail.com or
 
 ## Credits
 
-- [David Ringle](https://github.com/ringlesoft)
-- [All Contributors](../../contributors)
+- [David Ringle](https://github.com/ringlesoft) - Developer
 
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
 
 ## Support
-
-- **Documentation**: [https://github.com/ringlesoft/laravel-accounting](https://github.com/ringlesoft/laravel-accounting)
 - **Issues**: [https://github.com/ringlesoft/laravel-accounting/issues](https://github.com/ringlesoft/laravel-accounting/issues)
-- **Email**: ringunger@gmail.com
+- [Buy me a Coffee](https://www.buymeacoffee.com/ringunger)
+- [Github Sponsors](https://github.com/sponsors/ringlesoft)
+
+## Contacts
+Follow me on <a href="https://x.com/ringunger">X</a>: <a href="https://x.com/ringunger">@ringunger</a><br>
+Email me: <a href="mailto:ringunger@gmail.com">ringunger@gmail.com</a><br>
+Website: [https://github.com/ringlesoft/laravel-accounting](https://github.com/ringlesoft/laravel-accounting)

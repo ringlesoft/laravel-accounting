@@ -273,24 +273,26 @@ class ReportService
      * Magic dispatch for the camelCase report-type shortcuts shown in the
      * README (`trialBalance()`, `incomeStatement()`, `accountLedger()`, ...).
      * Resolves the called method name to its snake_case registered key and
-     * instantiates that report class with the first argument as its params.
+     * routes through generate() - so the result is cached exactly like a
+     * direct generate($type, $params) call, and is already fully generated.
+     * Calling ->generate() again on the result is safe (setData() always
+     * overwrites, never accumulates) but recomputes live and bypasses the
+     * cache for that call, so it's no longer necessary.
      *
      * @example
-     * LaravelAccounting::reports()->trialBalance(['as_of_date' => now()])->generate()->getData();
+     * LaravelAccounting::reports()->trialBalance(['as_of_date' => now()])->getData();
      *
+     * @throws JsonException
+     * @throws InvalidArgumentException Unknown report type
      */
     public function __call(string $reportType, array $params = []): Report
     {
         $snakeCaseType = Str::of($reportType)->snake()->toString();
-        if (isset($this->reports[$snakeCaseType])) {
-            $reportClass = $this->reports[$snakeCaseType];
 
-            return new $reportClass(params: $params[0]);
+        if ($this->hasReport($snakeCaseType)) {
+            return $this->generate($snakeCaseType, $params[0] ?? []);
         }
-        // Todo: if the method isn't in this class throw error
-        if (! method_exists($this, $reportType)) {
-            throw new InvalidArgumentException("Report type {$reportType} does not exist");
-        }
+
         throw new InvalidArgumentException("Report type {$reportType} does not exist");
     }
 }

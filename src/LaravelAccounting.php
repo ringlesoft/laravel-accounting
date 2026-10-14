@@ -5,7 +5,8 @@ namespace RingleSoft\LaravelAccounting;
 use Illuminate\Support\Collection;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
-use RingleSoft\LaravelAccounting\Models\Account;
+use RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException;
+use RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Services\AccountService;
 use RingleSoft\LaravelAccounting\Services\BalanceService;
@@ -20,6 +21,7 @@ class LaravelAccounting
 {
     /**
      * Account Service
+     * @return AccountService
      */
     public function accounts(): AccountService
     {
@@ -74,12 +76,6 @@ class LaravelAccounting
         return app(TemplateRegistry::class);
     }
 
-    // - Journal creation and posting
-    // - Reversals and adjustments
-    // - Period validation and locking
-    // - Balance and ledger queries
-    // - Report data generation
-
     /**
      * @return Collection
      */
@@ -89,8 +85,11 @@ class LaravelAccounting
     }
 
     /**
-     * @param PostableModel $model
-     * @return JournalEntry
+     * Create and post a journal entry straight from the model's own toVoucher()/getTemplate() - equivalent to $model->post().
+     *
+     * @throws DuplicatePostingException
+     * @throws ParentAccountPostingException
+     * @throws Throwable
      */
     public function postModel(PostableModel $model): JournalEntry
     {
@@ -102,8 +101,11 @@ class LaravelAccounting
     }
 
     /**
-     * @param VoucherData $voucher
-     * @return JournalEntry
+     * Create and post a journal entry directly from a hand-built VoucherData, bypassing templates entirely.
+     *
+     * @throws DuplicatePostingException
+     * @throws ParentAccountPostingException
+     * @throws Throwable
      */
     public function postRaw(VoucherData $voucher): JournalEntry
     {
@@ -114,6 +116,8 @@ class LaravelAccounting
     }
 
     /**
+     * @param JournalEntry $journalEntry
+     * @return JournalEntry
      * @throws Throwable
      */
     public function reverse(JournalEntry $journalEntry): JournalEntry

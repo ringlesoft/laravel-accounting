@@ -40,6 +40,8 @@ class ReportService
 
     /**
      * Register a custom report type
+     *
+     * @throws InvalidArgumentException
      */
     public function register(string $key, string $reportClass): self
     {
@@ -103,6 +105,8 @@ class ReportService
 
     /**
      * Create report instance based on type
+     *
+     * @throws InvalidArgumentException
      */
     protected function createReportInstance(string $reportType): Report
     {
@@ -183,6 +187,7 @@ class ReportService
      * Export report to specific format
      *
      * @throws JsonException
+     * @throws InvalidArgumentException Unsupported $format
      */
     public function export(Report $report, string $format = 'array'): string|array|bool
     {
@@ -264,6 +269,16 @@ class ReportService
         ];
     }
 
+    /**
+     * Magic dispatch for the camelCase report-type shortcuts shown in the
+     * README (`trialBalance()`, `incomeStatement()`, `accountLedger()`, ...).
+     * Resolves the called method name to its snake_case registered key and
+     * instantiates that report class with the first argument as its params.
+     *
+     * @example
+     * LaravelAccounting::reports()->trialBalance(['as_of_date' => now()])->generate()->getData();
+     *
+     */
     public function __call(string $reportType, array $params = []): Report
     {
         $snakeCaseType = Str::of($reportType)->snake()->toString();

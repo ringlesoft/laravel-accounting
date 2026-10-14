@@ -4,9 +4,22 @@ namespace RingleSoft\LaravelAccounting\Services;
 
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
+use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Templates\TemplateRegistry;
+use Throwable;
 
+/**
+ * Named shortcuts for the standard transaction types, each wrapping the
+ * matching registered template plus JournalService::createDraft()+post()
+ * in one call. Every method here can throw whatever template resolution
+ * and posting can throw: AccountNotFoundException, InvalidVoucherException,
+ * JournalNotBalancedException, ParentAccountPostingException (from the
+ * template's make()), and PeriodClosedException, DuplicatePostingException
+ * (from JournalService). See postWithTemplate() for where these surface.
+ */
 class PostingService
 {
     protected JournalService $journalService;
@@ -225,6 +238,10 @@ class PostingService
      * Debit: Destination Bank Account
      * Credit: Source Bank Account
      * Note: This is a custom transaction that requires manual voucher creation
+     *
+     * @param int $fromAccountId Unused - $model->toVoucher() must already encode both legs; kept for signature clarity, not read by this method
+     * @param int $toAccountId Unused - see $fromAccountId
+     * @throws Throwable
      */
     public function bankTransfer(PostableModel $model, int $fromAccountId, int $toAccountId, string|int|null $userId = null): JournalEntry
     {
@@ -299,6 +316,8 @@ class PostingService
      * Post adjusting entry
      * Custom debit and credit accounts
      * Note: This is a custom transaction that requires the model to implement toVoucher()
+     *
+     * @throws Throwable
      */
     public function adjustingEntry(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
@@ -310,7 +329,17 @@ class PostingService
     }
 
     /**
-     * Post using a template
+     * Post using a template: resolve its entries against $model, then create
+     * and post the resulting journal entry in one step.
+     *
+     * @param  string|int|null  $userId  Attributed as created_by/posted_by; null if posting outside an authenticated context (e.g. a queued job)
+     *
+     * @throws \RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException
+     * @throws InvalidVoucherException
+     * @throws JournalNotBalancedException
+     * @throws \RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException
+     * @throws PeriodClosedException
+     * @throws \RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException
      */
     protected function postWithTemplate(PostableModel $model, $template, string|int|null $userId = null): JournalEntry
     {

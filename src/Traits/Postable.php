@@ -13,6 +13,7 @@ use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalEntryAlreadyExistsException;
+use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
 use RingleSoft\LaravelAccounting\Exceptions\LaravelAccountingException;
 use RingleSoft\LaravelAccounting\Exceptions\TemplateNotFoundException;
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
@@ -126,9 +127,10 @@ trait Postable
     }
 
     /**
-     * @throws TemplateNotFoundException
-     * @throws InvalidVoucherException
      * @throws AccountNotFoundException
+     * @throws InvalidVoucherException
+     * @throws JournalNotBalancedException
+     * @throws TemplateNotFoundException
      */
     public function toVoucher(): VoucherData
     {

@@ -10,11 +10,14 @@ use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\AccountType;
+use Throwable;
 
 class AccountService
 {
     /**
      * Create a new account
+     *
+     * @throws InvalidArgumentException|Throwable Missing/invalid required field, or duplicate code
      */
     public function create(array $data): Account
     {
@@ -41,10 +44,12 @@ class AccountService
 
     /**
      * Update an account
+     *
+     * @throws InvalidArgumentException|Throwable Attempting to change a system account's code
      */
     public function update(Account $account, array $data): Account
     {
-        return DB::transaction(function () use ($account, $data) {
+        return DB::transaction(static function () use ($account, $data) {
             if ($account->is_system_account && isset($data['code'])) {
                 throw new InvalidArgumentException('Cannot change code of system account');
             }
@@ -57,6 +62,8 @@ class AccountService
 
     /**
      * Deactivate an account
+     *
+     * @throws InvalidArgumentException System account, or account already has transactions
      */
     public function deactivate(Account $account): bool
     {
@@ -172,6 +179,8 @@ class AccountService
      * Get the last level child accounts by preset
      *
      * @return Collection<Account>
+     *
+     * @throws AccountNotFoundException No account carries this preset at all
      */
     public function getLastChildrenByPreset(AccountPreset $preset): Collection
     {
@@ -218,6 +227,8 @@ class AccountService
 
     /**
      * Get account with balance
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException No account with this id
      */
     public function getWithBalance(int $accountId, ?\DateTimeInterface $asOfDate = null): array
     {

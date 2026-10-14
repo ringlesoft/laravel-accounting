@@ -22,11 +22,13 @@ A double-entry accounting engine for Laravel. Any model can become a source of a
 - [Configuration](#configuration)
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
+- [Architecture](#architecture)
 - [Posting Transactions](#posting-transactions)
 - [Reversing and Voiding](#reversing-and-voiding)
 - [Fiscal Periods](#fiscal-periods)
 - [Multi-Currency & Multi-Tenancy](#multi-currency--multi-tenancy)
 - [Reporting](#reporting)
+- [Troubleshooting & FAQ](#troubleshooting--faq)
 - [API Reference](#api-reference)
 - [Testing](#testing)
 - [Contributing](#contributing)
@@ -176,6 +178,30 @@ $child = Account::create([
 echo $child->getFullCode(); // hierarchical code, e.g. "1000.1010"
 ```
 
+## Architecture
+
+```
+Your Model (implements PostableModel, uses Postable trait)
+        │
+        │  post()  /  postWithTemplate($template)  /  createJournal()
+        ▼
+AccountingTemplate                  ← configure() declares debit()/credit() lines by AccountPreset
+        │
+        │  make($model): resolves each preset to a real Account id
+        │  (explicit resolveAccount() → model's ResolvesAccountPresets → auto/fail-fast)
+        ▼
+VoucherData + VoucherDataItem[]     ← balanced DTO: debits, credits, date, description, currency
+        │
+        │  JournalService::createDraft() → post()
+        ▼
+JournalEntry + JournalEntryItem[]   ← immutable once posted; only reverse()/void(), never edit
+        │
+        ▼
+BalanceService / ReportService      ← cached balances, financial reports
+```
+
+Templates never touch the database directly — they only describe *which* presets to debit/credit and *how much*. `AccountingTemplate::make()` is the one place a preset becomes a real account id. `JournalService` is the only place a `JournalEntry` is created, posted, reversed, or voided; everything else (`Postable` trait, `PostingService`) is a convenience wrapper around it.
+
 ## Posting Transactions
 
 ### Via a template directly
@@ -294,6 +320,41 @@ $ledger = LaravelAccounting::reports()
 
 Results are cached per `report_cache_ttl`; `LaravelAccounting::reports()->clearCache($reportType)` clears it.
 
+## Troubleshooting & FAQ
+
+**"Failed to post to journal. The fiscal period id field is required."**
+No fiscal period covers the transaction date. Seed one (`FiscalPeriodSeeder`) or create it directly: `app(PeriodService::class)->createPeriodsForYear($fiscalYear)`.
+
+**`ArgumentCountError` when calling `TemplateRegistry::make('key')` or `YourTemplate::getPostableAccounts()`**
+Both call `new $class()` with zero arguments. Every constructor parameter on a template needs a default value — see **Gotchas** in [docs/available-templates.md](docs/available-templates.md).
+
+**`ParentAccountPostingException`**
+A preset (e.g. `COST_OF_GOODS_SOLD`, `ACCOUNTS_RECEIVABLE`) resolved to a parent/category account with more than one child, so the package refuses to guess which one to post to — accounts are never posted to a parent. Pick one with `resolveAccount()`, or implement `ResolvesAccountPresets` on the model — see [Posting Transactions](#posting-transactions) above.
+
+**`AccountNotFoundException`**
+No seeded account carries the preset a template needs. Check your chart of accounts, or verify with `YourTemplate::getPostableAccounts()`.
+
+**`JournalNotBalancedException`**
+Debits ≠ credits. Common causes: a template's `configure()` was called twice (entries only ever append, never replace — never call `->configure()` yourself), or a closure-based amount produced an unexpected value.
+
+**Why doesn't my Balance Sheet balance at year-end?**
+There's no automated closing-entries mechanism yet (see [roadmap.md](roadmap.md)) — the current period's net income has to be accounted for manually until a period is closed. `BalanceService::calculateUnclosedEarnings()` exists for this but isn't wired into any report automatically yet.
+
+**Is multi-tenancy optional?**
+No — it's not a config toggle. Any model using the `MultiTenant` trait (`Account`, `JournalEntry`, `FiscalYear`, `FiscalPeriod`, `AccountBalance`) is always scoped to `tenant_id` via a global scope. `multi_tenancy_field` only controls which attribute is read off the authenticated user to populate it.
+
+**Can I use cash-basis instead of accrual accounting?**
+The `cash_basis` config flag is informational only — it isn't enforced anywhere. All shipped templates post on an accrual basis (revenue/expense recognized when earned/incurred, not when cash moves). See **Accounting Basis: Accrual vs Cash** in [docs/available-templates.md](docs/available-templates.md) before building cash-basis behavior yourself.
+
+**UUIDs or auto-incrementing IDs?**
+A one-time choice at install (`config('laravel_accounting.use_uuid')`). Switching after you have real data requires a manual data migration — decide before going to production.
+
+**How do I write my own template?**
+See **Creating Custom Templates** in [docs/available-templates.md](docs/available-templates.md) — covers registration, `validate()`, testing it without a database, and common gotchas.
+
+**Does the package handle authorization (who's allowed to post, close a period, etc.)?**
+No — that's left entirely to your application. There are no policy classes or permission checks anywhere in the package; wrap calls into `PostingService`/`PeriodService`/`JournalService` with your own authorization logic (a policy, a middleware, a form request) before invoking them.
+
 ## API Reference
 
 ### Facade
@@ -336,7 +397,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for det
 
 ## Security
 
-If you discover any security-related issues, please email ringunger@gmail.com instead of using the issue tracker.
+If you discover any security-related issues, please email ringunger@gmail.com or use the issue tracker.
 
 ## Credits
 

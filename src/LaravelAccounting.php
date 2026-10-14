@@ -10,6 +10,7 @@ use RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Services\AccountService;
 use RingleSoft\LaravelAccounting\Services\BalanceService;
+use RingleSoft\LaravelAccounting\Services\ClosingService;
 use RingleSoft\LaravelAccounting\Services\JournalService;
 use RingleSoft\LaravelAccounting\Services\PeriodService;
 use RingleSoft\LaravelAccounting\Services\PostingService;
@@ -74,6 +75,14 @@ class LaravelAccounting
     public function templates(): TemplateRegistry
     {
         return app(TemplateRegistry::class);
+    }
+
+    /**
+     * @return ClosingService
+     */
+    public function closing(): ClosingService
+    {
+        return app(ClosingService::class);
     }
 
     /**

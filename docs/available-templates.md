@@ -321,7 +321,17 @@ Then confirm every preset you referenced actually resolves to a seeded account: 
 - **Never call `->configure()` yourself.** `make()` (invoked by `postWithTemplate()`/`createJournal()`) already calls it internally. Calling it again first will duplicate every line, since entries are only ever appended, never replaced.
 - **Calling `debit()`/`credit()` twice for the same account appends two lines, it doesn't merge them.** That's usually what you want (e.g. two differently-memo'd lines), but if you want one combined line instead, call `$this->deDuplicate()` at the end of `configure()`.
 - **A preset with no matching seeded account throws `AccountNotFoundException` at posting time, not at template-definition time.** Always verify with `YourTemplate::getPostableAccounts()` before shipping a default.
-- **A preset pointing at a parent/rollup account (one with children) posts successfully through `make()`/`createDraft()`, then fails at `post()`** with `ParentAccountPostingException` (unless `allow_posting_on_parents` is `true`). Prefer a specific leaf preset, or resolve one dynamically — see `getLastChildrenByPreset()` on `AccountService`.
+- **A preset that resolves to a parent/category account with more than one child is ambiguous and `make()` rejects it immediately** with `ParentAccountPostingException` (unless `allow_posting_on_parents` is `true`) — never silently posting to the parent. Many shipped templates default to a category preset (e.g. `COST_OF_GOODS_SOLD`, `ACCOUNTS_RECEIVABLE`) on purpose, since which specific sub-account to use is a business decision only you can make. Pick one with `->resolveAccount(AccountPreset::COST_OF_GOODS_SOLD, $account)` on the template instance — `$account` can be an `Account` model, an id, or a UUID, and does not need to carry a preset at all:
+
+  ```php
+  $cogsAccount = Account::where('code', '50010')->first(); // your own sub-account
+
+  $template = (new CashPurchaseTemplate())->resolveAccount(AccountPreset::COST_OF_GOODS_SOLD, $cogsAccount);
+
+  $purchase->postWithTemplate($template);
+  ```
+
+  A preset resolving to a parent with exactly one child is unambiguous and resolves to that child automatically, no override needed.
 - **There's no built-in way to extend `PostingService`** with a convenience method for your own template — it's a fixed class with one method per shipped template. Call `postWithTemplate()` directly, or register your template with `TemplateRegistry` and call `TemplateRegistry::make('your.key')`.
 
 ## Best Practices

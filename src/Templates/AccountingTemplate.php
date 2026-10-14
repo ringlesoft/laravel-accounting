@@ -4,6 +4,8 @@ namespace RingleSoft\LaravelAccounting\Templates;
 
 use Closure;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Contracts\PostableTemplate;
 use RingleSoft\LaravelAccounting\DTOs\AccountTemplateEntry;
@@ -14,6 +16,7 @@ use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
+use RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException;
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Models\Account as AccountAlias;
 
@@ -51,6 +54,11 @@ abstract class AccountingTemplate implements PostableTemplate
      * @var Closure(PostableModel): CurrencyCode|CurrencyCOde
      */
     protected Closure|CurrencyCode $currency = CurrencyCode::USD;
+
+    /**
+     * @var array<string, int|string> Preset value => explicit account id/UUID
+     */
+    protected array $accountOverrides = [];
 
     protected function addEntry(AccountTemplateEntry $entry): void
     {
@@ -105,6 +113,54 @@ abstract class AccountingTemplate implements PostableTemplate
     }
 
     /**
+     * Explicitly resolve a preset to a specific account, bypassing the
+     * default preset lookup for that entry. Use this to pick one child
+     * account under an ambiguous parent/category preset (e.g.
+     * COST_OF_GOODS_SOLD with several children), or to target a fully
+     * custom account that carries no preset at all.
+     *
+     * @param AccountAlias|int|string $account An Account instance, or its id/UUID
+     * @return $this
+     */
+    public function resolveAccount(AccountPreset $preset, AccountAlias|int|string $account): self
+    {
+        $accountModel = $account instanceof AccountAlias ? $account : AccountAlias::find($account);
+        $this->accountOverrides[$preset->value] = $accountModel ? $accountModel->getKey() : $account;
+
+        if ($accountModel) {
+            $this->warnIfNotChildOfPreset($preset, $accountModel);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Log a warning (without rejecting the override) when the account given
+     * to resolveAccount() isn't actually a child of the preset's account -
+     * most likely a typo or a preset/account mismatch, but still allowed
+     * since the developer may have a deliberate reason (e.g. a flatter COA).
+     */
+    protected function warnIfNotChildOfPreset(AccountPreset $preset, AccountAlias $account): void
+    {
+        $presetAccount = AccountAlias::where('preset', $preset->value)->first();
+
+        if (! $presetAccount || $account->getKey() === $presetAccount->getKey()) {
+            return;
+        }
+
+        if ($account->parent_id !== $presetAccount->getKey()) {
+            Log::warning(sprintf(
+                "resolveAccount(): account '%s' (code %s) is not a child of preset %s's account '%s' (code %s). Proceeding anyway.",
+                $account->name,
+                $account->code,
+                $preset->value,
+                $presetAccount->name,
+                $presetAccount->code
+            ));
+        }
+    }
+
+    /**
      * De-duplicate entries by account and type
      * @return $this
      */
@@ -155,12 +211,9 @@ abstract class AccountingTemplate implements PostableTemplate
 
         $voucherEntries = [];
         $journalPresets = array_map(static fn(AccountTemplateEntry $entry) => $entry->account->value, $this->entries);
-        $accounts = AccountAlias::whereIn('preset', $journalPresets)->get()->pluck('id', 'preset');
+        $presetAccounts = AccountAlias::whereIn('preset', $journalPresets)->with('children')->get()->keyBy('preset');
         foreach ($this->entries as $entry) {
-            $accountId = $accounts->get($entry->account->value);
-            if (!$accountId) {
-                throw new AccountNotFoundException('Account not found for preset: ' . $entry->account->value);
-            }
+            $accountId = $this->resolveEntryAccountId($entry->account, $presetAccounts);
             $entryAmount = $entry->getAmount($amount);
             $voucherEntries[] = new VoucherDataItem($entry->type, $accountId, $entryAmount, $entry->memo);
         }
@@ -174,6 +227,48 @@ abstract class AccountingTemplate implements PostableTemplate
         $voucher->validate();
 
         return $voucher;
+    }
+
+    /**
+     * Resolve a template entry's preset to the id of the account to actually
+     * post to: an explicit override wins, then a preset with no children (a
+     * real postable account) or exactly one child (unambiguous) resolves
+     * directly; a preset with multiple children is ambiguous and fails fast
+     * unless posting on parents is explicitly allowed.
+     *
+     * @param Collection<string, AccountAlias> $presetAccounts Keyed by preset value
+     * @throws AccountNotFoundException|ParentAccountPostingException
+     */
+    protected function resolveEntryAccountId(AccountPreset $preset, Collection $presetAccounts): int|string
+    {
+        if (array_key_exists($preset->value, $this->accountOverrides)) {
+            return $this->accountOverrides[$preset->value];
+        }
+
+        $account = $presetAccounts->get($preset->value);
+        if (! $account) {
+            throw new AccountNotFoundException('Account not found for preset: '.$preset->value);
+        }
+
+        if ($account->children->isEmpty()) {
+            return $account->getKey();
+        }
+
+        if ($account->children->count() === 1) {
+            return $account->children->first()->getKey();
+        }
+
+        if (config('laravel_accounting.allow_posting_on_parents', false)) {
+            return $account->getKey();
+        }
+
+        throw new ParentAccountPostingException(
+            "Preset {$preset->value} resolves to '{$account->name}' (code {$account->code}), which has ".
+            "{$account->children->count()} child accounts, so it's ambiguous which one to post to. Call ".
+            "->resolveAccount(AccountPreset::{$preset->name}, \$account) on the template to pick one, override ".
+            'the relevant constructor parameter with a more specific preset, or inspect '.
+            static::class.'::getPostableAccounts() to see the available options.'
+        );
     }
 
     /**

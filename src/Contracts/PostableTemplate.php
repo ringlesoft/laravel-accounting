@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Support\Carbon;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Models\Account;
 
 interface PostableTemplate
 {
@@ -27,6 +28,17 @@ interface PostableTemplate
      * @param  Closure(float): float|null  $amount
      */
     public function credit(AccountPreset $account, ?Closure $amount, Closure|string|null $memo = null): self;
+
+    /**
+     * Explicitly resolve a preset to a specific account, bypassing the
+     * default preset lookup for that entry. Use this to pick one child
+     * account under an ambiguous parent/category preset (e.g.
+     * COST_OF_GOODS_SOLD with several children), or to target a fully
+     * custom account that carries no preset at all.
+     *
+     * @param  Account|int|string  $account  An Account instance, or its id/UUID
+     */
+    public function resolveAccount(AccountPreset $preset, Account|int|string $account): self;
 
     /**
      * Set the description of the voucher

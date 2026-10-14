@@ -3,6 +3,7 @@
 namespace RingleSoft\LaravelAccounting\Services;
 
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
+use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Templates\TemplateRegistry;
 
@@ -104,8 +105,22 @@ class PostingService
      * Post payroll
      * Debit: Salary Expense
      * Credit: Cash
+     * Note: This expenses and pays wages in one step, without an accrual.
+     * For payroll that was previously accrued via accruedExpense(), use payWages() instead.
      */
     public function payroll(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('payroll.expense');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post payment of previously accrued wages
+     * Debit: Wages Payable
+     * Credit: Cash
+     */
+    public function payWages(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('payroll.payment');
 
@@ -192,7 +207,13 @@ class PostingService
      */
     public function costOfGoodsSold(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
-        $template = TemplateRegistry::make('inventory.adjustment');
+        // inventory.adjustment defaults to the generic INVENTORY_ADJUSTMENTS (shrinkage)
+        // preset; COGS recognition needs the dedicated COST_OF_GOODS_SOLD expense account.
+        $template = TemplateRegistry::make('inventory.adjustment', [
+            AccountPreset::INVENTORY,
+            AccountPreset::COST_OF_GOODS_SOLD,
+            false,
+        ]);
 
         return $this->postWithTemplate($model, $template, $userId);
     }
@@ -231,6 +252,18 @@ class PostingService
      */
     public function prepaidExpense(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
+        $template = TemplateRegistry::make('expense.prepaid.payment');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post amortization of a previously prepaid expense
+     * Debit: Expense Account
+     * Credit: Prepaid Expense
+     */
+    public function amortizePrepaidExpense(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
         $template = TemplateRegistry::make('expense.prepaid');
 
         return $this->postWithTemplate($model, $template, $userId);
@@ -242,6 +275,18 @@ class PostingService
      * Credit: Unearned Revenue
      */
     public function unearnedRevenue(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('revenue.unearned');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post recognition of revenue earned but not yet billed/collected
+     * Debit: Accrued Revenue
+     * Credit: Sales Revenue
+     */
+    public function recognizeAccruedRevenue(PostableModel $model, string|int|null $userId = null): JournalEntry
     {
         $template = TemplateRegistry::make('revenue.accrued');
 

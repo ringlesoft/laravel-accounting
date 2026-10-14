@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\DB;
 use RingleSoft\LaravelAccounting\Exceptions\LaravelAccountingException;
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Services\JournalService;
@@ -222,10 +223,19 @@ class JournalEntry extends Model
         $prefix = config('laravel_accounting.transaction_number_prefix', 'JE');
         $date = now()->format('Ymd');
 
-        $lastEntry = static::whereDate('created_at', now())
-            ->orderBy('id', 'desc')
-            ->first();
-        $sequence = $lastEntry ? (int) substr($lastEntry->transaction_number, -6) + 1 : 1;
+        // lockForUpdate() serializes concurrent callers against the same row(s) for the
+        // rest of the enclosing transaction (e.g. JournalService::createDraft()'s
+        // DB::transaction()), so only one caller can compute a given sequence number.
+        // It cannot lock anything when no row exists yet for today; that remaining race
+        // (the first entry of the day) is caught by the retry in JournalService::createDraft().
+        $sequence = DB::transaction(function () use ($date) {
+            $lastEntry = static::whereDate('created_at', now())
+                ->lockForUpdate()
+                ->orderBy('id', 'desc')
+                ->first();
+
+            return $lastEntry ? (int) substr($lastEntry->transaction_number, -6) + 1 : 1;
+        });
 
         return sprintf('%s-%s-%06d', $prefix, $date, $sequence);
     }

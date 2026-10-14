@@ -4,6 +4,7 @@ namespace RingleSoft\LaravelAccounting\Services;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
@@ -31,7 +32,23 @@ class JournalService
      */
     public function createDraft(VoucherData $voucher, int|string|null $userId = null): JournalEntry
     {
+        // Retried because the transaction_number race (two requests creating the
+        // very first entry of the day with nothing yet to lock) surfaces as a
+        // unique constraint violation on transaction_number rather than a deadlock,
+        // so Laravel's own DB::transaction() retry logic won't catch it.
+        return retry(3, function () use ($voucher, $userId) {
+            return $this->createDraftOnce($voucher, $userId);
+        }, 0, function (Throwable $exception) {
+            return $exception instanceof QueryException
+                && str_contains($exception->getMessage(), 'transaction_number');
+        });
+    }
 
+    /**
+     * @throws Throwable
+     */
+    protected function createDraftOnce(VoucherData $voucher, int|string|null $userId = null): JournalEntry
+    {
         return DB::transaction(function () use ($voucher, $userId) {
             $this->validateVoucher($voucher);
 

@@ -16,6 +16,12 @@ return [
     'date_format' => 'Y-m-d',
 
     /*
+     * Prefix used when auto-generating journal entry transaction numbers
+     * (e.g. "JE-20260101-000001")
+     */
+    'transaction_number_prefix' => 'JE',
+
+    /*
      * Use UUIDs instead of auto-incrementing IDs for primary keys
      * This can be set during installation via the laravel-accounting:install command
      */

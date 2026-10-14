@@ -6,20 +6,15 @@
 <a href="https://github.com/ringlesoft/laravel-accounting/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square" alt="License"></a>
 </p>
 
-A robust, double-entry accounting engine for Laravel applications. Laravel Accounting provides a journal-centric, immutable accounting system that seamlessly integrates with your existing Laravel models through traits and templates.
+A double-entry accounting engine for Laravel. Any model can become a source of accounting transactions — attach a `Postable` trait, map it to an `AccountingTemplate`, and posting produces a balanced, immutable journal entry.
 
-## Overview
+- **Double-entry bookkeeping** — every transaction maintains balanced debits and credits
+- **Immutable records** — posted entries can't be edited, only reversed or voided
+- **Template-based posting** — 23 ready-made templates for common transactions (sales, purchases, payroll, depreciation, loans, equity...), or write your own
+- **Multi-currency**, **multi-tenancy**, and **fiscal period** support
+- **Reports**: Trial Balance, Balance Sheet, Income Statement, Cash Flow Statement, General Ledger, Account Ledger, Chart of Accounts
 
-Laravel Accounting is a framework-agnostic accounting core designed to handle all fundamental accounting operations while remaining flexible and developer-driven. It provides:
-
-- **Double-entry bookkeeping** - Every transaction maintains balanced debits and credits
-- **Immutable accounting records** - Posted entries cannot be modified, only reversed or voided
-- **Flexible integration** - Transform any Laravel model into an accounting event using the `Postable` trait
-- **Template-based posting** - Define accounting templates to automatically generate journal entries
-- **Multi-currency support** - Handle transactions in multiple currencies with exchange rates
-- **Fiscal period management** - Organize transactions by fiscal periods with period locking
-- **Comprehensive reporting** - Generate trial balances, ledgers, and financial statements
-- **Multi-tenancy ready** - Built-in support for multi-tenant applications
+> **Project status**: functional and under active development, not yet 1.0 (currently `1.0.0-alpha`). See [roadmap.md](roadmap.md) for what's done and what's planned — in particular, there's no closing-entries mechanism yet, so Balance Sheet won't balance until the current period's net income is manually accounted for, and automated test coverage is thin. Treat this as a solid engine to build on, not a finished product.
 
 ## Table of Contents
 
@@ -27,23 +22,10 @@ Laravel Accounting is a framework-agnostic accounting core designed to handle al
 - [Configuration](#configuration)
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
-  - [Chart of Accounts](#chart-of-accounts)
-  - [Journal Entries](#journal-entries)
-  - [Postable Models](#postable-models)
-  - [Accounting Templates](#accounting-templates)
-  - [Vouchers](#vouchers)
-- [Usage Guide](#usage-guide)
-  - [Setting Up Accounts](#setting-up-accounts)
-  - [Creating Journal Entries](#creating-journal-entries)
-  - [Making Models Postable](#making-models-postable)
-  - [Working with Templates](#working-with-templates)
-  - [Posting Transactions](#posting-transactions)
-  - [Reversing and Voiding](#reversing-and-voiding)
-- [Advanced Features](#advanced-features)
-  - [Fiscal Periods](#fiscal-periods)
-  - [Multi-Currency](#multi-currency)
-  - [Multi-Tenancy](#multi-tenancy)
-  - [Account Balances](#account-balances)
+- [Posting Transactions](#posting-transactions)
+- [Reversing and Voiding](#reversing-and-voiding)
+- [Fiscal Periods](#fiscal-periods)
+- [Multi-Currency & Multi-Tenancy](#multi-currency--multi-tenancy)
 - [Reporting](#reporting)
 - [API Reference](#api-reference)
 - [Testing](#testing)
@@ -52,709 +34,273 @@ Laravel Accounting is a framework-agnostic accounting core designed to handle al
 
 ## Installation
 
-You can install the package via composer:
-
 ```bash
 composer require ringlesoft/laravel-accounting
 ```
 
-Publish and run the migrations:
+Run the installer — it publishes the config, migrations and seeders, offers to run migrations, and offers to seed account types + a full chart of accounts + fiscal periods for the current year:
 
 ```bash
-php artisan vendor:publish --tag="laravel-accounting-migrations"
+php artisan laravel-accounting:install
+```
+
+Or do it manually:
+
+```bash
+php artisan vendor:publish --tag="accounting-config"
+php artisan vendor:publish --tag="accounting-migrations"
 php artisan migrate
+
+php artisan db:seed --class=AccountTypeSeeder
+php artisan db:seed --class=ChartOfAccountsSeeder
+php artisan db:seed --class=FiscalPeriodSeeder
 ```
 
-Publish the configuration file:
-
-```bash
-php artisan vendor:publish --tag="laravel-accounting-config"
-```
+Posting fails with a validation error ("the fiscal period id field is required") if no fiscal period covers today — make sure `FiscalPeriodSeeder` has run, or create one via `app(PeriodService::class)->createPeriodsForYear($fiscalYear)`.
 
 ## Configuration
 
-The configuration file `config/laravel_accounting.php` allows you to customize:
+`config/laravel_accounting.php`, published above:
 
 ```php
 return [
-    // Database table prefix
-    'table_prefix' => env('LARAVEL_ACCOUNTING_TABLE_PREFIX', 'la'),
-    
-    // Default currency code (ISO 4217)
-    'default_currency_code' => env('LARAVEL_ACCOUNTING_CURRENCY', 'USD'),
-    
-    // Transaction number prefix
-    'transaction_number_prefix' => env('LARAVEL_ACCOUNTING_TX_PREFIX', 'JE'),
-    
-    // Multi-tenancy settings
-    'multi_tenancy' => [
-        'enabled' => false,
-        'tenant_id_column' => 'tenant_id',
-    ],
-    
-    // Fiscal year settings
-    'fiscal_year_start_month' => 1, // January
+    'table_prefix' => 'la',                 // DB table prefix for this package's tables
+    'multi_tenancy_field' => 'tenant_id',
+    'default_currency_code' => 'USD',
+    'transaction_number_prefix' => 'JE',    // e.g. JE-20260101-000001
+    'use_uuid' => false,                    // UUID vs auto-increment primary keys
+    'default_fiscal_year_start' => ['month' => 1, 'day' => 1],
+    'fiscal_periods_count' => 2,            // 12 monthly, 4 quarterly, 2 semi-annual, 1 annual
+    'cash_basis' => false,                  // informational only, not enforced - see docs/available-templates.md
+    'auto_post' => false,
+    'balance_cache_enabled' => true,
+    'report_cache_enabled' => true,
+    'report_cache_ttl' => 3600,
+    'cache_prefix' => 'laravel_accounting',
+    'supported_currencies' => [],           // empty = allow any ISO 4217 code
+    'account_code_format' => '/^[0-9]{4}(-[0-9]{2})?$/',
+    'allow_posting_on_parents' => false,
 ];
 ```
 
 ## Quick Start
 
-### 1. Set Up Your Chart of Accounts
-
-```bash
-php artisan accounting:seed-accounts
-```
-
-This command seeds your database with a standard chart of accounts based on IFRS/US GAAP.
-
-### 2. Create a Postable Model
-
-Make any Laravel model postable by implementing the `PostableModel` interface and using the `Postable` trait:
+### 1. Make a model postable
 
 ```php
-use Illuminate\Database\Eloquent\Model;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Traits\Postable;
+use RingleSoft\LaravelAccounting\Attributes\DefaultAccountingTemplate;
+use RingleSoft\LaravelAccounting\Templates\CreditSaleTemplate;
 
+#[DefaultAccountingTemplate(CreditSaleTemplate::class)]
 class Invoice extends Model implements PostableModel
 {
     use Postable;
-    
+
     public function getAmount(): float
     {
         return $this->total;
     }
-    
-    public function getReference(): ?string
-    {
-        return $this->invoice_number;
-    }
 }
 ```
 
-### 3. Create an Accounting Template
-
-Define how your model should be posted to the journal:
+### 2. Post it
 
 ```php
-use RingleSoft\LaravelAccounting\Templates\AccountingTemplate;
+$invoice = Invoice::create(['total' => 5000]);
+$invoice->post(); // Dr Accounts Receivable, Cr Sales Revenue — using CreditSaleTemplate
+
+echo $invoice->journalEntry->transaction_number;
+```
+
+Or post with an explicit template and overridden accounts instead of the default attribute:
+
+```php
+use RingleSoft\LaravelAccounting\Templates\CashSaleTemplate;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
-class InvoiceTemplate extends AccountingTemplate
-{
-    public function configure(): void
-    {
-        $this->debit(AccountPreset::ACCOUNTS_RECEIVABLE)
-             ->credit(AccountPreset::SALES_REVENUE)
-             ->describe('Invoice payment received');
-    }
-}
+$invoice->postWithTemplate(new CashSaleTemplate(
+    cashAccount: AccountPreset::PETTY_CASH,
+    taxRate: 0.15,
+));
 ```
 
-### 4. Post to the Journal
-
-```php
-$invoice = Invoice::find(1);
-$invoice->postWithTemplate(new InvoiceTemplate());
-
-// Or if you've set a default template via attribute
-$invoice->post();
-```
+See **[docs/available-templates.md](docs/available-templates.md)** for the full catalog of 23 templates (sales, purchases, payroll, depreciation, loans, equity, inventory, bad debt) with their exact debit/credit accounts and parameters, and **[docs/financial-transactions.md](docs/financial-transactions.md)** for ~100 standard accounting transactions cross-referenced against what's actually implemented today.
 
 ## Core Concepts
 
-### Chart of Accounts
-
-The Chart of Accounts is the foundation of your accounting system. Each account has:
-
-- **Code** - Unique identifier (e.g., "1010", "4000")
-- **Name** - Descriptive name (e.g., "Cash", "Sales Revenue")
-- **Type** - Asset, Liability, Equity, Income, or Expense
-- **Preset** - Standardized account identifier for templates
+- **Account** — a chart-of-accounts entry (`code`, `name`, `account_type_id`, optional `parent_id` for hierarchy, optional `preset` to tag it for template lookup).
+- **AccountPreset** — an enum of ~250 standard account roles (`CASH`, `ACCOUNTS_RECEIVABLE`, `SALES_REVENUE`, ...) that templates reference instead of hardcoded IDs, so the same template works against any chart of accounts.
+- **JournalEntry** / **JournalEntryItem** — the immutable ledger: a header plus its balanced debit/credit lines. Posted entries can only be reversed or voided, never edited.
+- **VoucherData** — the intermediate DTO a template (or your own code) builds before it becomes a journal entry.
+- **AccountingTemplate** — encapsulates the debit/credit pattern for a transaction type. Supports any number of lines per side (not just one-to-one), optional conditional lines (e.g. tax), and dynamic amounts via closures.
+- **Postable trait** — gives any Eloquent model `toVoucher()`, `post()`, `postWithTemplate()`, `isPosted()`, `journalEntry()`.
 
 ```php
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
-// Find an account by preset
-$cashAccount = Account::where('preset', AccountPreset::CASH->value)->first();
+$cash = Account::where('preset', AccountPreset::CASH->value)->first();
 
-// Create a custom account
-Account::create([
-    'code' => '1015',
-    'name' => 'Petty Cash',
-    'account_type_id' => $assetType->id,
-    'currency_code' => 'USD',
-    'is_active' => true,
-    'allows_manual_entries' => true,
+$child = Account::create([
+    'code' => '1010', 'name' => 'Petty Cash', 'parent_id' => $parent->id,
+    'account_type_id' => $assetType->id, 'currency_code' => 'USD',
 ]);
+echo $child->getFullCode(); // hierarchical code, e.g. "1000.1010"
 ```
 
-### Journal Entries
+## Posting Transactions
 
-Journal entries are the core of double-entry bookkeeping. Each entry contains:
-
-- **Transaction Date** - When the transaction occurred
-- **Description** - What the transaction represents
-- **Items** - Individual debit and credit lines
-- **Status** - Draft, Posted, Voided, or Reversed
-
-```php
-use RingleSoft\LaravelAccounting\Models\JournalEntry;
-
-// Query journal entries
-$entries = JournalEntry::posted()
-    ->notVoided()
-    ->byDateRange('2024-01-01', '2024-12-31')
-    ->get();
-
-// Check if balanced
-if ($entry->isBalanced()) {
-    $entry->post();
-}
-```
-
-### Postable Models
-
-Any Laravel model can become a source of accounting transactions by implementing `PostableModel`:
-
-```php
-interface PostableModel
-{
-    public function getAmount(): float;        // Transaction amount
-    public function getReference(): ?string;   // Reference number
-    public function toVoucher(): VoucherData; // Convert to voucher
-    public function post(): bool;              // Post to journal
-    public function isPosted(): bool;          // Check if posted
-}
-```
-
-The `Postable` trait provides default implementations for most methods.
-
-### Accounting Templates
-
-Templates define the accounting logic for posting transactions. They map business events to journal entries:
-
-```php
-class PaymentTemplate extends AccountingTemplate
-{
-    public function configure(): void
-    {
-        $this->debit(AccountPreset::CASH, fn($amount) => $amount)
-             ->credit(AccountPreset::ACCOUNTS_RECEIVABLE, fn($amount) => $amount)
-             ->describe(fn($model) => "Payment received for {$model->reference}")
-             ->date(fn($model) => $model->payment_date);
-    }
-}
-```
-
-Templates support:
-- **Dynamic amounts** - Use closures to calculate amounts
-- **Conditional logic** - Add entries based on model state
-- **Multiple entries** - Complex transactions with many lines
-- **Metadata** - Attach additional data to entries
-
-### Vouchers
-
-Vouchers are intermediate data structures that represent accounting transactions before they're posted:
-
-```php
-use RingleSoft\LaravelAccounting\DTOs\VoucherData;
-
-$voucher = VoucherData::make()
-    ->debit($cashAccountId, 1000.00, 'Payment received')
-    ->credit($receivableAccountId, 1000.00, 'Clear receivable')
-    ->on(now())
-    ->describe('Customer payment')
-    ->reference('PMT-001');
-
-// Validate the voucher
-$voucher->validate();
-
-// Create journal entry from voucher
-LaravelAccounting::journals()->createDraft($voucher);
-```
-
-## Usage Guide
-
-### Setting Up Accounts
-
-#### Seed Standard Accounts
-
-```bash
-php artisan accounting:seed-accounts
-```
-
-#### Create Custom Accounts
-
-```php
-use RingleSoft\LaravelAccounting\Models\Account;
-use RingleSoft\LaravelAccounting\Models\AccountType;
-
-$accountType = AccountType::where('name', 'Asset')->first();
-
-Account::create([
-    'code' => '1020',
-    'name' => 'Business Checking Account',
-    'account_type_id' => $accountType->id,
-    'category' => 'Current Assets',
-    'currency_code' => 'USD',
-    'is_active' => true,
-    'allows_manual_entries' => true,
-    'preset' => 'CASH_IN_BANK',
-]);
-```
-
-#### Hierarchical Accounts
-
-```php
-$parentAccount = Account::create([
-    'code' => '1000',
-    'name' => 'Current Assets',
-    // ...
-]);
-
-$childAccount = Account::create([
-    'code' => '1010',
-    'name' => 'Cash',
-    'parent_id' => $parentAccount->id,
-    // ...
-]);
-
-// Get full hierarchical code
-echo $childAccount->getFullCode(); // "1000.1010"
-```
-
-### Creating Journal Entries
-
-#### Manual Journal Entry
+### Via a template directly
 
 ```php
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 
 $voucher = VoucherData::make()
-    ->debit($expenseAccountId, 500.00, 'Office supplies')
-    ->credit($cashAccountId, 500.00, 'Payment for supplies')
-    ->on(now())
+    ->debit($cashAccountId, 500.00, 'Office supplies')
+    ->credit($expenseAccountId, 500.00)
     ->describe('Office supplies purchase')
     ->reference('EXP-001');
 
-$journalEntry = LaravelAccounting::journals()->createDraft($voucher);
-$journalEntry->post();
+$entry = LaravelAccounting::journals()->createDraft($voucher);
+LaravelAccounting::journals()->post($entry, auth()->id());
 ```
 
-#### Using the Journal Service
+### Via `PostingService`
+
+For common transactions, `PostingService` wraps the right template plus `createDraft()` + `post()` in one call:
 
 ```php
-use RingleSoft\LaravelAccounting\Services\JournalService;
+use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 
-$journalService = app(JournalService::class);
-
-// Create and post in one step
-$entry = $journalService->createAndPost($voucherData, auth()->id());
-
-// Reverse an entry
-$reversalEntry = $journalService->reverse($originalEntry, 'Correction needed');
-
-// Void an entry
-$journalService->void($entry, 'Duplicate entry', auth()->id());
+LaravelAccounting::posting()->cashSale($sale, auth()->id());
+LaravelAccounting::posting()->purchaseOnAccount($purchase, auth()->id());
+LaravelAccounting::posting()->payroll($payrollRun, auth()->id());
 ```
 
-### Making Models Postable
+See the **PostingService Method** column in [docs/available-templates.md](docs/available-templates.md) for every available method.
 
-#### Basic Implementation
-
-```php
-use Illuminate\Database\Eloquent\Model;
-use RingleSoft\LaravelAccounting\Contracts\PostableModel;
-use RingleSoft\LaravelAccounting\Traits\Postable;
-
-class Sale extends Model implements PostableModel
-{
-    use Postable;
-    
-    public function getAmount(): float
-    {
-        return $this->total_amount;
-    }
-    
-    public function getReference(): ?string
-    {
-        return $this->sale_number;
-    }
-}
-```
-
-#### With Default Template
+### Two-step posting (review before posting)
 
 ```php
-use RingleSoft\LaravelAccounting\Attributes\DefaultAccountingTemplate;
-
-#[DefaultAccountingTemplate(SaleTemplate::class)]
-class Sale extends Model implements PostableModel
-{
-    use Postable;
-    
-    public function getAmount(): float
-    {
-        return $this->total_amount;
-    }
-}
-
-// Now you can post without specifying template
-$sale->post();
-```
-
-#### Check Posting Status
-
-```php
-if ($sale->isPosted()) {
-    echo "Already posted to journal";
-}
-
-if ($sale->hasJournalEntry()) {
-    $journalEntry = $sale->journalEntry;
-    echo "Transaction #: {$journalEntry->transaction_number}";
-}
-```
-
-### Working with Templates
-
-#### Simple Template
-
-```php
-use RingleSoft\LaravelAccounting\Templates\AccountingTemplate;
-use RingleSoft\LaravelAccounting\Enums\AccountPreset;
-
-class SimpleInvoiceTemplate extends AccountingTemplate
-{
-    public function configure(): void
-    {
-        $this->debit(AccountPreset::ACCOUNTS_RECEIVABLE)
-             ->credit(AccountPreset::SALES_REVENUE);
-    }
-}
-```
-
-#### Template with Dynamic Amounts
-
-```php
-class InvoiceWithTaxTemplate extends AccountingTemplate
-{
-    public function configure(): void
-    {
-        // Main sale amount (90% of total)
-        $this->debit(AccountPreset::ACCOUNTS_RECEIVABLE)
-             ->credit(AccountPreset::SALES_REVENUE, fn($amount) => $amount * 0.9)
-             ->credit(AccountPreset::SALES_TAX_PAYABLE, fn($amount) => $amount * 0.1);
-    }
-}
-```
-
-#### Template with Conditional Logic
-
-```php
-class PaymentTemplate extends AccountingTemplate
-{
-    public function configure(): void
-    {
-        $this->debit(AccountPreset::CASH)
-             ->credit(AccountPreset::ACCOUNTS_RECEIVABLE);
-    }
-    
-    public function make(PostableModel $model): VoucherData
-    {
-        // Add discount if applicable
-        if ($model->discount_amount > 0) {
-            $this->debit(AccountPreset::SALES_DISCOUNTS, 
-                fn($amount) => $model->discount_amount);
-        }
-        
-        return parent::make($model);
-    }
-}
-```
-
-#### Template with Custom Description
-
-```php
-class ExpenseTemplate extends AccountingTemplate
-{
-    public function configure(): void
-    {
-        $this->debit(AccountPreset::RENT_EXPENSE)
-             ->credit(AccountPreset::CASH)
-             ->describe(fn($model) => "Rent payment for {$model->period}")
-             ->date(fn($model) => $model->payment_date);
-    }
-}
-```
-
-### Posting Transactions
-
-#### Post with Template
-
-```php
-$invoice = Invoice::find(1);
-$template = new InvoiceTemplate();
-
-if ($invoice->postWithTemplate($template)) {
-    echo "Posted successfully!";
-}
-```
-
-#### Post with Default Template
-
-```php
-try {
-    $invoice->post();
-    echo "Posted to journal entry: {$invoice->journalEntry->transaction_number}";
-} catch (LaravelAccountingException $e) {
-    echo "Failed to post: {$e->getMessage()}";
-}
-```
-
-#### Two-Step Posting
-
-```php
-// Step 1: Create draft journal entry
-$invoice->createJournal();
-
-// Review the draft
+$invoice->createJournal();           // draft only
 $draft = $invoice->journalEntry;
-echo "Total Debits: {$draft->getTotalDebits()}";
-echo "Total Credits: {$draft->getTotalCredits()}";
-
-// Step 2: Post the journal entry
 if ($draft->canBePosted()) {
     $invoice->postJournal();
 }
 ```
 
-### Reversing and Voiding
+## Reversing and Voiding
 
-#### Reverse a Journal Entry
-
-Reversing creates a new entry with opposite debits/credits:
+Posted entries are immutable — correct them by reversing (creates an offsetting entry, full audit trail) rather than editing:
 
 ```php
-$originalEntry = JournalEntry::find(1);
+$entry = JournalEntry::find(1);
 
-if ($originalEntry->canBeReversed()) {
-    $reversalEntry = $originalEntry->reverse('Correction needed');
-    echo "Created reversal: {$reversalEntry->transaction_number}";
+if ($entry->canBeReversed()) {       // true once posted
+    $reversal = $entry->reverse('Correction needed');
 }
 ```
 
-#### Void a Journal Entry
+`void()` only applies to a **draft, unposted** entry (cancelling it before it's ever posted) — once posted, `canBeVoided()` returns `false` and you must `reverse()` instead.
 
-Voiding marks an entry as cancelled without creating a reversal:
-
-```php
-use RingleSoft\LaravelAccounting\Services\JournalService;
-
-$journalService = app(JournalService::class);
-$journalService->void($entry, 'Duplicate entry', auth()->id());
-```
-
-## Advanced Features
-
-### Fiscal Periods
-
-Organize transactions by fiscal periods and control when periods can accept new entries:
+## Fiscal Periods
 
 ```php
-use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
+use RingleSoft\LaravelAccounting\Services\PeriodService;
+use RingleSoft\LaravelAccounting\Models\FiscalYear;
 
-// Create a fiscal period
-$period = FiscalPeriod::create([
-    'name' => 'Q1 2024',
-    'start_date' => '2024-01-01',
-    'end_date' => '2024-03-31',
-    'is_closed' => false,
-]);
+$year = FiscalYear::create(['name' => '2026', 'start_date' => '2026-01-01', 'end_date' => '2026-12-31']);
+$periods = app(PeriodService::class)->createPeriodsForYear($year); // generates periods per fiscal_periods_count
 
-// Close a period (prevents new entries)
-$period->close();
-
-// Lock a period (prevents any modifications)
-$period->lock();
-
-// Query entries by period
-$entries = JournalEntry::byPeriod($period->id)->get();
+app(PeriodService::class)->closePeriod($periods[0]); // recalculates & caches balances, then closes
+app(PeriodService::class)->lockPeriod($periods[0]);  // freezes it completely (only unlock() can undo)
 ```
 
-### Multi-Currency
+Posting validates the fiscal period is open; closing validates every entry in it is posted and the trial balance is in balance.
 
-Handle transactions in multiple currencies:
+## Multi-Currency & Multi-Tenancy
 
 ```php
 $voucher = VoucherData::make()
     ->debit($accountId, 1000.00)
     ->credit($accountId, 1000.00)
-    ->currency(CurrencyCode::EUR)
+    ->currency(\RingleSoft\LaravelAccounting\Enums\CurrencyCode::EUR)
     ->withMetadata(['exchange_rate' => 1.18]);
-
-// Journal entries store currency and exchange rate
-$entry = JournalEntry::create([
-    'currency_code' => 'EUR',
-    'exchange_rate' => 1.18,
-    // ...
-]);
 ```
 
-### Multi-Tenancy
-
-Enable multi-tenancy in configuration:
-
-```php
-// config/laravel_accounting.php
-'multi_tenancy' => [
-    'enabled' => true,
-    'tenant_id_column' => 'tenant_id',
-],
-```
-
-All accounting models will automatically scope to the current tenant:
-
-```php
-// Queries automatically filtered by tenant
-$accounts = Account::all(); // Only current tenant's accounts
-
-// Explicitly query by tenant
-$entries = JournalEntry::byTenant($tenantId)->get();
-```
-
-### Account Balances
-
-Track account balances by period:
-
-```php
-use RingleSoft\LaravelAccounting\Models\AccountBalance;
-
-// Get balance for an account in a period
-$balance = AccountBalance::where('account_id', $accountId)
-    ->where('fiscal_period_id', $periodId)
-    ->first();
-
-echo "Debit: {$balance->debit_balance}";
-echo "Credit: {$balance->credit_balance}";
-echo "Net: {$balance->net_balance}";
-
-// Recalculate balances
-$accountBalance->recalculate();
-```
+Multi-tenancy isn't a toggle — any model using the `MultiTenant` trait (Account, JournalEntry, FiscalYear, FiscalPeriod, AccountBalance all do) is always scoped to a `tenant_id` column via a global scope. `multi_tenancy_field` only controls which attribute is read off the authenticated user to populate it on create (defaults to `tenant_id`); if there's no authenticated user (queues, CLI) it's left unset.
 
 ## Reporting
 
-### Trial Balance
-
-```php
-use RingleSoft\LaravelAccounting\Services\ReportService;
-
-$reportService = app(ReportService::class);
-
-$trialBalance = $reportService->trialBalance(
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
-    tenantId: auth()->user()->tenant_id
-);
-
-foreach ($trialBalance as $item) {
-    echo "{$item['account_name']}: Debit {$item['debit']} | Credit {$item['credit']}";
-}
-```
-
-### General Ledger
-
-```php
-$ledger = $reportService->generalLedger(
-    accountId: $accountId,
-    startDate: '2024-01-01',
-    endDate: '2024-12-31'
-);
-```
-
-### Balance Sheet
-
-```php
-$balanceSheet = $reportService->balanceSheet(
-    asOfDate: '2024-12-31',
-    tenantId: $tenantId
-);
-```
-
-### Income Statement
-
-```php
-$incomeStatement = $reportService->incomeStatement(
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
-    tenantId: $tenantId
-);
-```
-
-## API Reference
-
-### Facades
+Every report goes through `LaravelAccounting::reports()->{reportType}($params)->generate()`, then `->getData()` (or `->toArray()`/`->toJson()`). `$params` keys are snake_case and vary per report:
 
 ```php
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 
-// Access journal service
-LaravelAccounting::journals()->createDraft($voucher);
-LaravelAccounting::journals()->post($entry, $userId);
+$trialBalance = LaravelAccounting::reports()
+    ->trialBalance(['as_of_date' => now()])
+    ->generate()
+    ->getData();
 
-// Access account service
-LaravelAccounting::accounts()->findByPreset(AccountPreset::CASH);
+$incomeStatement = LaravelAccounting::reports()
+    ->incomeStatement(['start_date' => now()->startOfMonth(), 'end_date' => now()->endOfMonth()])
+    ->generate()
+    ->getData();
+
+$ledger = LaravelAccounting::reports()
+    ->accountLedger(['account_id' => $accountId, 'start_date' => '2026-01-01', 'end_date' => '2026-12-31'])
+    ->generate()
+    ->getData();
+```
+
+| Report | Key params |
+|---|---|
+| Trial Balance | `as_of_date` |
+| Balance Sheet | `as_of_date` |
+| Income Statement | `start_date`, `end_date` |
+| Cash Flow Statement | `start_date`, `end_date` |
+| General Ledger | `start_date`, `end_date`, optional `account_id` |
+| Account Ledger | `account_id` (required), `start_date`, `end_date` |
+| Chart of Accounts | `include_inactive`, `account_type`, `show_balances`, `as_of_date` |
+
+Results are cached per `report_cache_ttl`; `LaravelAccounting::reports()->clearCache($reportType)` clears it.
+
+## API Reference
+
+### Facade
+
+```php
+use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
+
+LaravelAccounting::accounts();   // AccountService
+LaravelAccounting::balances();   // BalanceService
+LaravelAccounting::journals();   // JournalService
+LaravelAccounting::reports();    // ReportService
+LaravelAccounting::posting();    // PostingService
+LaravelAccounting::periods();    // PeriodService
+LaravelAccounting::templates();  // TemplateRegistry
+LaravelAccounting::chartsOfAccounts();
 ```
 
 ### Models
 
-- `Account` - Chart of accounts
-- `AccountType` - Account type classification
-- `AccountBalance` - Period-based account balances
-- `JournalEntry` - Journal entry header
-- `JournalEntryItem` - Individual debit/credit lines
-- `FiscalPeriod` - Fiscal period management
+`Account`, `AccountType`, `AccountBalance` (cached per-period balances), `JournalEntry`, `JournalEntryItem`, `FiscalYear`, `FiscalPeriod`, `ExchangeRate`.
 
 ### Services
 
-- `JournalService` - Journal entry operations
-- `AccountService` - Account management
-- `ReportService` - Financial reporting
-- `BalanceService` - Balance calculations
+`JournalService` (create/validate/post/reverse/void), `AccountService` (CRUD, hierarchy, preset lookup), `BalanceService` (balance calculation, trial balance, net income), `ReportService`, `PostingService` (named transaction shortcuts), `PeriodService` (open/close/lock fiscal periods).
 
-### Enums
+### Key Exceptions
 
-- `AccountPreset` - Standard chart of accounts
-- `AccountType` - Asset, Liability, Equity, Income, Expense
-- `EntryType` - Debit or Credit
-- `CurrencyCode` - ISO 4217 currency codes
-- `NormalBalance` - Debit or Credit normal balance
-
-### Exceptions
-
-All exceptions extend `LaravelAccountingException`:
-
-- `AccountNotFoundException`
-- `AccountInactiveException`
-- `AccountNotPostableException`
-- `JournalNotBalancedException`
-- `DuplicatePostingException`
-- `PeriodClosedException`
-- `InvalidVoucherException`
+All extend `LaravelAccountingException`: `AccountNotFoundException`, `AccountInactiveException`, `JournalNotBalancedException`, `DuplicatePostingException`, `PeriodClosedException`, `InvalidVoucherException`, `TemplateNotFoundException`. See `src/Exceptions/` for the full list.
 
 ## Testing
 
 ```bash
 composer test
-```
-
-Run tests with coverage:
-
-```bash
 composer test-coverage
 ```
 

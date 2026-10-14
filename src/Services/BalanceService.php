@@ -5,6 +5,7 @@ namespace RingleSoft\LaravelAccounting\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Enums\NormalBalance;
 use RingleSoft\LaravelAccounting\Events\BalanceRecalculated;
@@ -385,5 +386,81 @@ class BalanceService
                 'total_credits' => (float) $item->total_credits,
             ];
         });
+    }
+
+    /**
+     * Get the accounts grouped under a "rollup" preset (e.g. Cash and Cash
+     * Equivalents, Fixed Assets): the parent account's direct children when it
+     * has any (the real transactional accounts), or the parent itself when it
+     * doesn't (e.g. a flatter chart of accounts with no sub-accounts for that
+     * preset). Mirrors AccountService::getLastChildrenByPreset()'s fallback.
+     */
+    public function getAccountsForPresetGroup(AccountPreset $parentPreset): Collection
+    {
+        $account = Account::where('preset', $parentPreset->value)->with('children')->first();
+
+        if (! $account) {
+            return collect();
+        }
+
+        return $account->children->isNotEmpty() ? $account->children : collect([$account]);
+    }
+
+    /**
+     * Sum the balance of every account grouped under the Cash and Cash
+     * Equivalents preset (Cash, Petty Cash, Cash in Bank, Undeposited Funds, ...)
+     * as of a date. Reusable wherever "cash on hand" is needed and a single Cash
+     * account can't be assumed - e.g. Cash Flow Statement's beginning/ending cash.
+     */
+    public function getCashAndCashEquivalentsBalance(?Carbon $asOfDate = null): float
+    {
+        $asOfDate = $asOfDate ?? now();
+
+        return $this->getAccountsForPresetGroup(AccountPreset::CASH_AND_CASH_EQUIVALENT)
+            ->sum(fn (Account $account) => $this->getAccountBalance($account, $asOfDate));
+    }
+
+    /**
+     * Calculate net income (Revenue - Expenses) for a date range using the
+     * accounts' true signed balances. This is the single canonical net-income
+     * formula: Income Statement and Cash Flow Statement both derive net income
+     * from this method so the two can never diverge.
+     */
+    public function calculateNetIncome(Carbon $startDate, Carbon $endDate): float
+    {
+        $incomeType = AccountTypeEnum::INCOME->accountType();
+        $expenseType = AccountTypeEnum::EXPENSE->accountType();
+
+        if (! $incomeType || ! $expenseType) {
+            return 0.0;
+        }
+
+        $totalRevenue = $this->getPeriodBalancesByAccountType($incomeType, $startDate, $endDate)->sum('balance');
+        $totalExpenses = $this->getPeriodBalancesByAccountType($expenseType, $startDate, $endDate)->sum('balance');
+
+        return $totalRevenue - $totalExpenses;
+    }
+
+    /**
+     * Calculate earnings accumulated since inception that have not yet been
+     * closed to equity via closing entries. The package has no closing-entries
+     * mechanism yet, so every revenue/expense balance is currently "unclosed" -
+     * this is a reusable primitive for when closing entries (or a synthetic
+     * "Current Year Earnings" equity line on the Balance Sheet) are implemented.
+     * Deliberately not wired into any report yet.
+     */
+    public function calculateUnclosedEarnings(?Carbon $asOfDate = null): float
+    {
+        $incomeType = AccountTypeEnum::INCOME->accountType();
+        $expenseType = AccountTypeEnum::EXPENSE->accountType();
+
+        if (! $incomeType || ! $expenseType) {
+            return 0.0;
+        }
+
+        $totalIncome = $this->getBalancesByAccountType($incomeType, $asOfDate)->sum('balance');
+        $totalExpenses = $this->getBalancesByAccountType($expenseType, $asOfDate)->sum('balance');
+
+        return $totalIncome - $totalExpenses;
     }
 }

@@ -226,6 +226,15 @@ class BalanceService
     /**
      * Get balances for multiple accounts by AccountType model as of a specific date
      * Optimized for bulk retrieval in reports like Balance Sheet
+     *
+     * Both joins below must stay `join`, not `leftJoin`: with a left join,
+     * an account's journal_entry_items row still appears in the result even
+     * when its journal_entries row fails the date/posted/voided filter in
+     * the second join's ON clause (that filter only nulls out je.*, it
+     * doesn't drop the row) - so the SUM silently includes every debit/
+     * credit the account ever had, ignoring $asOfDate entirely. An inner
+     * join actually excludes those rows, which is the whole point of this
+     * being an "as of a date" query rather than an all-time one.
      */
     public function getBalancesByAccountType(AccountType $accountType, ?Carbon $asOfDate = null): Collection
     {
@@ -239,8 +248,8 @@ class BalanceService
         $accountTypesTable = (new AccountType)->getTable();
 
         $results = DB::table("$accountsTable as acc")
-            ->leftJoin("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
-            ->leftJoin("$journalEntriesTable as je", function ($join) use ($asOfDate) {
+            ->join("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
+            ->join("$journalEntriesTable as je", function ($join) use ($asOfDate) {
                 $join->on('jei.journal_entry_id', '=', 'je.id')
                     ->where('je.is_posted', '=', true)
                     ->where('je.is_voided', '=', false)
@@ -286,6 +295,9 @@ class BalanceService
     /**
      * Get balances for multiple accounts by AccountType model for a specific period
      * Optimized for period-based reports like Income Statement
+     *
+     * Both joins must stay `join`, not `leftJoin` - see getBalancesByAccountType()'s
+     * docblock for why; same bug, same fix, here scoped to a date range instead of "as of".
      */
     public function getPeriodBalancesByAccountType(AccountType $accountType, Carbon $startDate, Carbon $endDate): Collection
     {
@@ -297,8 +309,8 @@ class BalanceService
         $journalEntriesTable = (new JournalEntry)->getTable();
 
         $results = DB::table("$accountsTable as acc")
-            ->leftJoin("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
-            ->leftJoin("$journalEntriesTable as je", function ($join) use ($startDate, $endDate) {
+            ->join("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
+            ->join("$journalEntriesTable as je", function ($join) use ($startDate, $endDate) {
                 $join->on('jei.journal_entry_id', '=', 'je.id')
                     ->where('je.is_posted', '=', true)
                     ->where('je.is_voided', '=', false)
@@ -337,6 +349,8 @@ class BalanceService
     /**
      * Get balances for accounts matching a code pattern by type ID for a specific period
      * Useful for Cash Flow Statement subcategories
+     *
+     * Both joins must stay `join`, not `leftJoin` - see getBalancesByAccountType()'s docblock for why.
      */
     public function getPeriodBalancesByAccountTypeIdAndCodePattern(
         int $accountTypeId,
@@ -351,8 +365,8 @@ class BalanceService
         $accountTypesTable = (new AccountType)->getTable();
 
         $query = DB::table("$accountsTable as acc")
-            ->leftJoin("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
-            ->leftJoin("$journalEntriesTable as je", function ($join) use ($startDate, $endDate) {
+            ->join("$journalEntryItemsTable as jei", 'acc.id', '=', 'jei.account_id')
+            ->join("$journalEntriesTable as je", function ($join) use ($startDate, $endDate) {
                 $join->on('jei.journal_entry_id', '=', 'je.id')
                     ->where('je.is_posted', '=', true)
                     ->where('je.is_voided', '=', false)

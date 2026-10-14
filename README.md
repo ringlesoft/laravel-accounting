@@ -274,6 +274,22 @@ app(PeriodService::class)->lockPeriod($periods[0]);  // freezes it completely (o
 
 Posting validates the fiscal period is open; closing validates every entry in it is posted and the trial balance is in balance.
 
+### Closing entries
+
+`PeriodService::closePeriod()` doesn't post anything by itself — it just validates and locks. To actually zero out Revenue/Expense into Retained Earnings before closing a period (the step that was missing before, and why the Balance Sheet wouldn't balance at year-end), use `ClosingService`:
+
+```php
+use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
+
+$preview = LaravelAccounting::closing()->preview($period); // pure read, nothing posted
+$preview->netIncome;        // signed: positive = profit, negative = loss
+$preview->closeRevenue;     // the exact VoucherData that would be posted, or null if nothing to close
+
+$result = LaravelAccounting::closing()->commit($period); // posts all four steps, through the normal JournalService path, in one transaction
+```
+
+Each of the four steps (close Revenue, close Expenses, close Income Summary → Retained Earnings, close Dividends → Retained Earnings) also has its own `previewCloseX()`/`commitCloseX()` pair if you want to run them independently rather than all at once — e.g. `commitCloseRevenue($period)`. Every step reads the ledger's actual current state, not a cached calculation, so calling them in any order, or calling the same one twice, is safe: a step with nothing left to close just returns `null`. Requires `INCOME_SUMMARY` and `RETAINED_EARNINGS` accounts to be seeded (throws `AccountNotFoundException` if not); a missing `DIVIDENDS_DECLARED` account just means that step is skipped, since most businesses never declare dividends at all. Must run before `PeriodService::closePeriod()`, since posting is rejected once a period is closed.
+
 ## Multi-Currency & Multi-Tenancy
 
 ```php
@@ -340,7 +356,7 @@ No seeded account carries the preset a template needs. Check your chart of accou
 Debits ≠ credits. Common causes: a template's `configure()` was called twice (entries only ever append, never replace — never call `->configure()` yourself), or a closure-based amount produced an unexpected value.
 
 **Why doesn't my Balance Sheet balance at year-end?**
-There's no automated closing-entries mechanism yet (see [roadmap.md](roadmap.md)) — the current period's net income has to be accounted for manually until a period is closed. `BalanceService::calculateUnclosedEarnings()` exists for this but isn't wired into any report automatically yet.
+Run `LaravelAccounting::closing()->commit($period)` before closing the period — see **Closing entries** under [Fiscal Periods](#fiscal-periods) above. Nothing runs this automatically; `PeriodService::closePeriod()` won't do it for you. `BalanceService::calculateUnclosedEarnings()` still exists as a lower-level primitive if you need the unclosed-earnings figure without actually posting anything.
 
 **Is multi-tenancy optional?**
 No — it's not a config toggle. Any model using the `MultiTenant` trait (`Account`, `JournalEntry`, `FiscalYear`, `FiscalPeriod`, `AccountBalance`) is always scoped to `tenant_id` via a global scope. `multi_tenancy_field` only controls which attribute is read off the authenticated user to populate it.
@@ -377,6 +393,7 @@ LaravelAccounting::reports();    // ReportService
 LaravelAccounting::posting();    // PostingService
 LaravelAccounting::periods();    // PeriodService
 LaravelAccounting::templates();  // TemplateRegistry
+LaravelAccounting::closing();    // ClosingService
 LaravelAccounting::chartsOfAccounts();
 ```
 
@@ -386,7 +403,7 @@ LaravelAccounting::chartsOfAccounts();
 
 ### Services
 
-`JournalService` (create/validate/post/reverse/void), `AccountService` (CRUD, hierarchy, preset lookup), `BalanceService` (balance calculation, trial balance, net income), `ReportService`, `PostingService` (named transaction shortcuts), `PeriodService` (open/close/lock fiscal periods).
+`JournalService` (create/validate/post/reverse/void), `AccountService` (CRUD, hierarchy, preset lookup), `BalanceService` (balance calculation, trial balance, net income), `ReportService`, `PostingService` (named transaction shortcuts), `PeriodService` (open/close/lock fiscal periods), `ClosingService` (preview/commit period-end closing entries).
 
 ### Key Exceptions
 

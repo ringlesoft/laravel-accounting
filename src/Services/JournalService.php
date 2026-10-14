@@ -208,6 +208,12 @@ class JournalService
                 'posted_by_user_id' => $userId,
             ]);
 
+            // $entry is a different PHP instance than $locked (fetched
+            // separately to establish the lock) - sync the new state back
+            // onto it so the caller's own reference reflects the posting,
+            // not just the DB row.
+            $entry->setRawAttributes($locked->getAttributes(), true);
+
             event(new JournalEntryPosted($locked, $userId));
 
             return true;
@@ -274,6 +280,10 @@ class JournalService
                 'is_reversed' => true,
             ]);
 
+            // Sync back onto the caller's own $entry reference - see post()
+            // for why this is needed.
+            $entry->setRawAttributes($locked->getAttributes(), true);
+
             $reversalEntry->load('items');
 
             event(new JournalEntryReversed($locked, $reversalEntry, $reason, $userId));
@@ -312,6 +322,10 @@ class JournalService
                 'voided_by_user_id' => $userId,
                 'metadata' => array_merge($locked->metadata ?? [], ['void_reason' => $reason]),
             ]);
+
+            // Sync back onto the caller's own $entry reference - see post()
+            // for why this is needed.
+            $entry->setRawAttributes($locked->getAttributes(), true);
 
             event(new JournalEntryVoided($locked, $reason, $userId));
 

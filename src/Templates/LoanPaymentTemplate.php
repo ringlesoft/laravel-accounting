@@ -2,7 +2,9 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 
 class LoanPaymentTemplate extends AccountingTemplate
 {
@@ -23,5 +25,18 @@ class LoanPaymentTemplate extends AccountingTemplate
         }
 
         $this->credit($this->cashAccount);
+    }
+
+    public function validate(PostableModel $model): void
+    {
+        if ($this->interestAmount < 0) {
+            throw new InvalidVoucherException("interestAmount must be >= 0, got {$this->interestAmount}");
+        }
+
+        if ($this->interestAmount > $model->getAmount()) {
+            throw new InvalidVoucherException(
+                "interestAmount ({$this->interestAmount}) cannot exceed the total payment amount ({$model->getAmount()})"
+            );
+        }
     }
 }

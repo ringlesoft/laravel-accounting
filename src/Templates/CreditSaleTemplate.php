@@ -2,7 +2,9 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 
 class CreditSaleTemplate extends AccountingTemplate
 {
@@ -20,6 +22,13 @@ class CreditSaleTemplate extends AccountingTemplate
 
         if ($this->taxRate > 0 && $this->taxAccount) {
             $this->credit($this->taxAccount, fn ($amount) => ($amount * $this->taxRate / (1 + $this->taxRate)));
+        }
+    }
+
+    public function validate(PostableModel $model): void
+    {
+        if ($this->taxRate < 0) {
+            throw new InvalidVoucherException("taxRate must be >= 0, got {$this->taxRate}");
         }
     }
 }

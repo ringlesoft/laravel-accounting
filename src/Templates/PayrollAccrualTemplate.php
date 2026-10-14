@@ -2,7 +2,9 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 
 class PayrollAccrualTemplate extends AccountingTemplate
 {
@@ -21,6 +23,13 @@ class PayrollAccrualTemplate extends AccountingTemplate
 
         if ($this->taxWithholdingRate > 0 && $this->taxPayableAccount) {
             $this->credit($this->taxPayableAccount, fn ($amount) => $amount * $this->taxWithholdingRate);
+        }
+    }
+
+    public function validate(PostableModel $model): void
+    {
+        if ($this->taxWithholdingRate < 0 || $this->taxWithholdingRate > 1) {
+            throw new InvalidVoucherException("taxWithholdingRate must be between 0 and 1, got {$this->taxWithholdingRate}");
         }
     }
 }

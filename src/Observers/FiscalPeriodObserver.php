@@ -25,8 +25,12 @@ class FiscalPeriodObserver
      */
     public function updating(FiscalPeriod $fiscalPeriod): bool
     {
-        if ($fiscalPeriod->is_locked) {
-            $allowedFields = [];
+        // Checked against the ORIGINAL value: by the time this event fires, the new
+        // attribute values (including a true->false unlock) are already applied in
+        // memory, so checking the live is_locked value would block the lock/unlock
+        // operations themselves instead of guarding an already-locked period.
+        if ($fiscalPeriod->getOriginal('is_locked')) {
+            $allowedFields = ['is_locked'];
 
             $dirtyFields = array_keys($fiscalPeriod->getDirty());
             $unauthorizedChanges = array_diff($dirtyFields, $allowedFields);

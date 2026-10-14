@@ -223,6 +223,7 @@ class JournalService
                 'is_posted' => true,
                 'posted_at' => now(),
                 'reversal_of_id' => $entry->id,
+                'metadata' => $reason ? ['reversal_reason' => $reason] : [],
             ]);
 
             foreach ($entry->items as $item) {

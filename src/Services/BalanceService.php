@@ -135,6 +135,7 @@ class BalanceService
                         'debit_total' => $movement['total_debits'],
                         'credit_total' => $movement['total_credits'],
                         'closing_balance' => $movement['closing_balance'],
+                        'currency_code' => $account->currency_code ?? config('laravel_accounting.default_currency_code', 'USD'),
                     ]
                 );
                 $accountsUpdated++;
@@ -214,6 +215,7 @@ class BalanceService
                 'debit_total' => $movement['total_debits'],
                 'credit_total' => $movement['total_credits'],
                 'closing_balance' => $movement['closing_balance'],
+                'currency_code' => $account->currency_code ?? config('laravel_accounting.default_currency_code', 'USD'),
             ]
         );
     }

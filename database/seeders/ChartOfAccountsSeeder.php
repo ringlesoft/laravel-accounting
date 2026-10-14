@@ -174,6 +174,17 @@ class ChartOfAccountsSeeder extends Seeder
         ]);
 
         $this->createAccount([
+            'code' => '10204',
+            'name' => 'Accrued Revenue',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $receivablesParent->id,
+            'preset' => AccountPreset::ACCRUED_REVENUE->value,
+            'category' => 'Current Assets',
+            'report_section' => 'Assets',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        $this->createAccount([
             'code' => '10210',
             'name' => 'Allowance for Doubtful Accounts',
             'account_type_id' => $assetType->id,
@@ -1172,6 +1183,17 @@ class ChartOfAccountsSeeder extends Seeder
             'account_type_id' => $liabilityType->id,
             'parent_id' => $longTermLiabilities->id,
             'preset' => AccountPreset::LEASE_LIABILITIES->value,
+            'category' => 'Long-term Liabilities',
+            'report_section' => 'Liabilities',
+            'normal_balance' => 'CREDIT',
+        ]);
+
+        $this->createAccount([
+            'code' => '25006',
+            'name' => 'Loan Payable',
+            'account_type_id' => $liabilityType->id,
+            'parent_id' => $longTermLiabilities->id,
+            'preset' => AccountPreset::LOAN_PAYABLE->value,
             'category' => 'Long-term Liabilities',
             'report_section' => 'Liabilities',
             'normal_balance' => 'CREDIT',
@@ -2203,7 +2225,7 @@ class ChartOfAccountsSeeder extends Seeder
      */
     protected function createAccount(array $attributes): ?Account
     {
-        if($attributes['preset'] && !in_array($attributes['preset'], $this->presets, true)) {
+        if (($attributes['preset'] ?? null) && ! in_array($attributes['preset'], $this->presets, true)) {
             return null;
         }
         return Account::updateOrCreate(

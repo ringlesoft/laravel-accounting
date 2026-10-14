@@ -208,7 +208,9 @@ class JournalEntry extends Model
 
     public function canBeVoided(): bool
     {
-        return $this->is_posted && ! $this->is_voided && ! $this->is_reversed;
+        // JournalService::void() rejects posted entries ("use reverse() instead"),
+        // so voiding only applies to draft/unposted entries.
+        return ! $this->is_posted && ! $this->is_voided && ! $this->is_reversed;
     }
 
     public function canBeReversed(): bool

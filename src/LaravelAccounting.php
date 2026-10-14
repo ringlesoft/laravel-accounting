@@ -10,6 +10,7 @@ use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Services\AccountService;
 use RingleSoft\LaravelAccounting\Services\BalanceService;
 use RingleSoft\LaravelAccounting\Services\JournalService;
+use RingleSoft\LaravelAccounting\Services\PeriodService;
 use RingleSoft\LaravelAccounting\Services\PostingService;
 use RingleSoft\LaravelAccounting\Services\ReportService;
 use RingleSoft\LaravelAccounting\Templates\TemplateRegistry;
@@ -55,6 +56,14 @@ class LaravelAccounting
     public function posting(): PostingService
     {
         return app(PostingService::class);
+    }
+
+    /**
+     * @return PeriodService
+     */
+    public function periods(): PeriodService
+    {
+        return app(PeriodService::class);
     }
 
     /**

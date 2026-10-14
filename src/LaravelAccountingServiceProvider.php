@@ -2,9 +2,14 @@
 
 namespace RingleSoft\LaravelAccounting;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use RingleSoft\LaravelAccounting\Commands\InstallCommand;
 use RingleSoft\LaravelAccounting\Commands\UpdateBalancesCommand;
+use RingleSoft\LaravelAccounting\Events\JournalEntryPosted;
+use RingleSoft\LaravelAccounting\Events\JournalEntryReversed;
+use RingleSoft\LaravelAccounting\Events\JournalEntryVoided;
+use RingleSoft\LaravelAccounting\Listeners\InvalidateAccountingCaches;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
@@ -22,6 +27,7 @@ class LaravelAccountingServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerObservers();
+        $this->registerEventListeners();
 
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'ringlesoft');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
@@ -64,5 +70,12 @@ class LaravelAccountingServiceProvider extends ServiceProvider
         JournalEntry::observe(JournalEntryObserver::class);
         Account::observe(AccountObserver::class);
         FiscalPeriod::observe(FiscalPeriodObserver::class);
+    }
+
+    private function registerEventListeners(): void
+    {
+        Event::listen(JournalEntryPosted::class, [InvalidateAccountingCaches::class, 'handlePosted']);
+        Event::listen(JournalEntryReversed::class, [InvalidateAccountingCaches::class, 'handleReversed']);
+        Event::listen(JournalEntryVoided::class, [InvalidateAccountingCaches::class, 'handleVoided']);
     }
 }

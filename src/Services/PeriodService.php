@@ -187,8 +187,6 @@ class PeriodService
 
     /**
      * Validate that a period can be closed
-     *
-     * @param FiscalPeriod $period
      */
     protected function validatePeriodCanBeClosed(FiscalPeriod $period): void
     {

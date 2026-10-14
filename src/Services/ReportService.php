@@ -277,7 +277,6 @@ class ReportService
      *
      * @example
      * LaravelAccounting::reports()->trialBalance(['as_of_date' => now()])->generate()->getData();
-     *
      */
     public function __call(string $reportType, array $params = []): Report
     {

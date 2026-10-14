@@ -332,6 +332,27 @@ Then confirm every preset you referenced actually resolves to a seeded account: 
   ```
 
   A preset resolving to a parent with exactly one child is unambiguous and resolves to that child automatically, no override needed.
+
+  If the choice of account depends on the model itself (e.g. its department, branch, or category) rather than being a one-off, implement `ResolvesAccountPresets` on the model instead of calling `->resolveAccount()` every time you post. `AccountingTemplate` checks this automatically for every entry, including when the model is posted via its `#[DefaultAccountingTemplate]` attribute (`$model->post()`), not just through `postWithTemplate()`:
+
+  ```php
+  use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
+
+  class Purchase extends Model implements PostableModel, ResolvesAccountPresets
+  {
+      use Postable;
+
+      public function resolveAccountForPreset(AccountPreset $preset): Account|int|string|null
+      {
+          return match ($preset) {
+              AccountPreset::COST_OF_GOODS_SOLD => $this->department->cogsAccount,
+              default => null, // no opinion - fall through to the template's default resolution
+          };
+      }
+  }
+  ```
+
+  An explicit `->resolveAccount()` call on the template instance still takes priority over this hook, for a true one-off override.
 - **There's no built-in way to extend `PostingService`** with a convenience method for your own template — it's a fixed class with one method per shipped template. Call `postWithTemplate()` directly, or register your template with `TemplateRegistry` and call `TemplateRegistry::make('your.key')`.
 
 ## Best Practices

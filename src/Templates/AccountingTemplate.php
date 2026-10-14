@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Contracts\PostableTemplate;
+use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
 use RingleSoft\LaravelAccounting\DTOs\AccountTemplateEntry;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\DTOs\VoucherDataItem;
@@ -124,19 +125,28 @@ abstract class AccountingTemplate implements PostableTemplate
      */
     public function resolveAccount(AccountPreset $preset, AccountAlias|int|string $account): self
     {
-        $accountModel = $account instanceof AccountAlias ? $account : AccountAlias::find($account);
-        $this->accountOverrides[$preset->value] = $accountModel ? $accountModel->getKey() : $account;
-
-        if ($accountModel) {
-            $this->warnIfNotChildOfPreset($preset, $accountModel);
-        }
+        $this->accountOverrides[$preset->value] = $this->normalizeAccountOverride($preset, $account);
 
         return $this;
     }
 
     /**
-     * Log a warning (without rejecting the override) when the account given
-     * to resolveAccount() isn't actually a child of the preset's account -
+     * Resolve an override value (an Account, id, or UUID) to the id to post
+     * to, warning if it isn't a child of the preset's own account.
+     */
+    protected function normalizeAccountOverride(AccountPreset $preset, AccountAlias|int|string $account): int|string
+    {
+        $accountModel = $account instanceof AccountAlias ? $account : AccountAlias::find($account);
+
+        if ($accountModel) {
+            $this->warnIfNotChildOfPreset($preset, $accountModel);
+            return $accountModel->getKey();
+        }
+        return $account;
+    }
+
+    /**
+     * Log a warning when the account given resolveAccount() isn't actually a child of the preset's account -
      * most likely a typo or a preset/account mismatch, but still allowed
      * since the developer may have a deliberate reason (e.g. a flatter COA).
      */
@@ -213,7 +223,7 @@ abstract class AccountingTemplate implements PostableTemplate
         $journalPresets = array_map(static fn(AccountTemplateEntry $entry) => $entry->account->value, $this->entries);
         $presetAccounts = AccountAlias::whereIn('preset', $journalPresets)->with('children')->get()->keyBy('preset');
         foreach ($this->entries as $entry) {
-            $accountId = $this->resolveEntryAccountId($entry->account, $presetAccounts);
+            $accountId = $this->resolveEntryAccountId($entry->account, $presetAccounts, $model);
             $entryAmount = $entry->getAmount($amount);
             $voucherEntries[] = new VoucherDataItem($entry->type, $accountId, $entryAmount, $entry->memo);
         }
@@ -230,19 +240,25 @@ abstract class AccountingTemplate implements PostableTemplate
     }
 
     /**
-     * Resolve a template entry's preset to the id of the account to actually
-     * post to: an explicit override wins, then a preset with no children (a
-     * real postable account) or exactly one child (unambiguous) resolves
-     * directly; a preset with multiple children is ambiguous and fails fast
-     * unless posting on parents is explicitly allowed.
+     * Resolve a template entry's preset to the id of the account to actually post to, in priority order:
+     * 1. An explicit resolveAccount() override on this template instance;
+     * 2. The model's own resolveAccountForPreset(), if it implements ResolvesAccountPresets and returns a non-null answer;
+     * 3. the default preset lookup - a preset with no children (a real postable account) or exactly one child (unambiguous)
      *
      * @param Collection<string, AccountAlias> $presetAccounts Keyed by preset value
      * @throws AccountNotFoundException|ParentAccountPostingException
      */
-    protected function resolveEntryAccountId(AccountPreset $preset, Collection $presetAccounts): int|string
+    protected function resolveEntryAccountId(AccountPreset $preset, Collection $presetAccounts, PostableModel $model): int|string
     {
         if (array_key_exists($preset->value, $this->accountOverrides)) {
             return $this->accountOverrides[$preset->value];
+        }
+
+        if ($model instanceof ResolvesAccountPresets) {
+            $resolved = $model->resolveAccountForPreset($preset);
+            if ($resolved !== null) {
+                return $this->normalizeAccountOverride($preset, $resolved);
+            }
         }
 
         $account = $presetAccounts->get($preset->value);

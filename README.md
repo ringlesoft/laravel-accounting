@@ -126,6 +126,32 @@ $invoice->postWithTemplate(new CashSaleTemplate(
 ));
 ```
 
+Accounts are never posted to a parent. If a preset resolves to a parent/category account with more than one child (e.g. `COST_OF_GOODS_SOLD`), posting fails immediately and tells you so — pick the specific child with `resolveAccount()`:
+
+```php
+$purchase->postWithTemplate(
+    (new CashPurchaseTemplate())->resolveAccount(AccountPreset::COST_OF_GOODS_SOLD, $cogsSubAccount)
+);
+```
+
+For a model-wide policy instead of a one-off call (e.g. "this model's COGS account depends on its department"), implement `ResolvesAccountPresets` on the model — it's checked automatically, including when posting via the `#[DefaultAccountingTemplate]` attribute:
+
+```php
+use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
+
+class Invoice extends Model implements PostableModel, ResolvesAccountPresets
+{
+    use Postable;
+
+    public function resolveAccountForPreset(AccountPreset $preset): Account|int|string|null
+    {
+        return $preset === AccountPreset::COST_OF_GOODS_SOLD
+            ? $this->department->cogsAccount
+            : null; // no opinion - fall through to the template's default resolution
+    }
+}
+```
+
 See **[docs/available-templates.md](docs/available-templates.md)** for the full catalog of 23 templates (sales, purchases, payroll, depreciation, loans, equity, inventory, bad debt) with their exact debit/credit accounts and parameters, and **[docs/financial-transactions.md](docs/financial-transactions.md)** for ~100 standard accounting transactions cross-referenced against what's actually implemented today.
 
 ## Core Concepts
@@ -295,7 +321,7 @@ LaravelAccounting::chartsOfAccounts();
 
 ### Key Exceptions
 
-All extend `LaravelAccountingException`: `AccountNotFoundException`, `AccountInactiveException`, `JournalNotBalancedException`, `DuplicatePostingException`, `PeriodClosedException`, `InvalidVoucherException`, `TemplateNotFoundException`. See `src/Exceptions/` for the full list.
+All extend `LaravelAccountingException`: `AccountNotFoundException`, `AccountInactiveException`, `ParentAccountPostingException` (preset resolves to a parent/category account with no unambiguous child), `JournalNotBalancedException`, `DuplicatePostingException`, `PeriodClosedException`, `InvalidVoucherException`, `TemplateNotFoundException`. See `src/Exceptions/` for the full list.
 
 ## Testing
 

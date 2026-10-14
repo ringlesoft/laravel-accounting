@@ -466,6 +466,8 @@ Developers may extend or override templates to match custom accounting structure
   - [x] Implement PostableTemplate interface
   - [x] Add common validation logic
   - [x] Add fluent builder pattern
+  - [x] `validate(PostableModel $model)` on `PostableTemplate` - reject a bad model/parameter combo before account resolution, retrofitted into the templates with risky numeric parameters (tax/withholding rates, interest amounts)
+  - [x] Account resolution for ambiguous category/parent presets (e.g. `COST_OF_GOODS_SOLD`, `ACCOUNTS_PAYABLE`) - never silently posts to a parent account; resolution order is: `AccountingTemplate::resolveAccount(AccountPreset $preset, Account|int|string $account)` (explicit, per-call override) → the model's own `ResolvesAccountPresets::resolveAccountForPreset()` if implemented (model-wide policy, also applies via the `#[DefaultAccountingTemplate]` attribute path) → auto-resolve when the preset has 0 or 1 children → fail fast with `ParentAccountPostingException` naming the preset and its children when still ambiguous (unless `allow_posting_on_parents` is `true`). Logs a warning (doesn't reject) if an override account isn't actually a child of the preset's account.
 
 - [x] **Invoice Template** (CreditSaleTemplate, CashSaleTemplate)
   - [x] Debit: Accounts Receivable
@@ -603,10 +605,6 @@ Developers may extend or override templates to match custom accounting structure
   - [ ] Add @param and @return types
   - [ ] Add @throws documentation
   - [ ] Add usage examples in docblocks
-
-- [ ] **Create UPGRADE.md**
-  - [ ] Document breaking changes
-  - [ ] Provide migration guides
 
 - [ ] **Create CONTRIBUTING.md**
   - [ ] Add contribution guidelines

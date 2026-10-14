@@ -11,11 +11,31 @@ class MultiTenantScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        if ($tenantId = Auth::user()?->{config('laravel_accounting.multi_tenancy_field', 'tenant_id')}) {
-            $builder->where(static function ($query) use ($model, $tenantId) {
-                $query->where($model->getTable().'.tenant_id', $tenantId)
-                    ->orWhereNull($model->getTable().'.tenant_id');
-            });
+        $tenantField = config('laravel_accounting.multi_tenancy_field', 'tenant_id');
+        $tenantId = Auth::user()?->{$tenantField};
+
+        // Outside an authenticated context (CLI, queued jobs, seeders) there is
+        // no tenant to scope to - the caller is responsible for filtering
+        // itself, mirroring MultiTenant::bootMultiTenant()'s write-side design.
+        if (! $tenantId) {
+            return;
         }
+
+        $table = $model->getTable();
+        $strict = config('laravel_accounting.strict_multi_tenancy_check', true);
+
+        // Under the default strict check, a row with a null tenant_id is
+        // never visible to an authenticated tenant - that would make any row
+        // created without an authenticated user (e.g. by a queued job)
+        // permanently visible to every tenant once one is matched. Setting
+        // strict_multi_tenancy_check to false opts into treating null
+        // tenant_id as deliberately global/shared data instead.
+        $builder->where(static function ($query) use ($table, $tenantId, $strict) {
+            $query->where("$table.tenant_id", $tenantId);
+
+            if (! $strict) {
+                $query->orWhereNull("$table.tenant_id");
+            }
+        });
     }
 }

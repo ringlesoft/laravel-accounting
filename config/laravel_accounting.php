@@ -12,6 +12,21 @@ return [
      */
     'multi_tenancy_field' => 'tenant_id',
 
+    /*
+     * When `true`, every multi-tenant model must belong to exactly
+     * one resolvable tenant: querying as an authenticated tenant never
+     * returns a row with a null tenant_id, and creating a record with no
+     * resolvable tenant_id (no authenticated user, and no tenant_id set
+     * explicitly) throws a TenantRequiredException instead of silently
+     * leaving it null.
+     *
+     * `false` (default): allow "global"/shared records alongside tenant-owned
+     * ones: rows with a null tenant_id become visible to every tenant, and
+     * may be created without a resolvable tenant (e.g. from a console
+     * command or seeder) without being rejected.
+     */
+    'strict_multi_tenancy_check' => false,
+
     'default_currency_code' => 'USD',
     'date_format' => 'Y-m-d',
 

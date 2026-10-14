@@ -68,6 +68,7 @@ Posting fails with a validation error ("the fiscal period id field is required")
 return [
     'table_prefix' => 'la',                 // DB table prefix for this package's tables
     'multi_tenancy_field' => 'tenant_id',
+    'strict_multi_tenancy_check' => true,   // false allows null-tenant rows as shared/global data
     'default_currency_code' => 'USD',
     'transaction_number_prefix' => 'JE',    // e.g. JE-20260101-000001
     'use_uuid' => false,                    // UUID vs auto-increment primary keys
@@ -285,6 +286,10 @@ $voucher = VoucherData::make()
 
 Multi-tenancy isn't a toggle — any model using the `MultiTenant` trait (Account, JournalEntry, FiscalYear, FiscalPeriod, AccountBalance all do) is always scoped to a `tenant_id` column via a global scope. `multi_tenancy_field` only controls which attribute is read off the authenticated user to populate it on create (defaults to `tenant_id`); if there's no authenticated user (queues, CLI) it's left unset.
 
+By default (`strict_multi_tenancy_check => false`). When set to `true`, every record must belong to exactly one resolvable tenant: a row with a `null` `tenant_id` is never visible to an authenticated tenant, and creating a record with no resolvable tenant_id (no authenticated user, and none set explicitly) throws `TenantRequiredException`. 
+Set it to `false` to allow genuinely global/shared records instead — `null`-tenant rows become visible to every tenant, and can be created without a resolvable tenant (e.g. from a seeder or console command) without being rejected.
+Recommended is `true` whenever using multitenancy.
+
 ## Reporting
 
 Every report goes through `LaravelAccounting::reports()->{reportType}($params)`, which returns an already-generated report - call `->getData()` (or `->toArray()`/`->toJson()`) directly. `$params` keys are snake_case and vary per report:
@@ -341,7 +346,10 @@ There's no automated closing-entries mechanism yet (see [roadmap.md](roadmap.md)
 No — it's not a config toggle. Any model using the `MultiTenant` trait (`Account`, `JournalEntry`, `FiscalYear`, `FiscalPeriod`, `AccountBalance`) is always scoped to `tenant_id` via a global scope. `multi_tenancy_field` only controls which attribute is read off the authenticated user to populate it.
 
 **The tenant scope relies on `Auth::user()` — what happens in a queued job or artisan command, where there's no authenticated user?**
-No tenant filter is applied at all in that context — the global scope only ever narrows results to the authenticated user's own tenant; it never fails open onto *other* tenants' data, and it never matches rows with a `null` `tenant_id` either. But without an authenticated user, there's nothing for it to scope to, so a queued job or console command operating across tenants is **your responsibility to scope explicitly** (e.g. `Account::where('tenant_id', $tenantId)->get()`, or set `tenant_id` yourself before saving). Don't assume the package will scope non-HTTP code for you.
+No tenant filter is applied at all in that context — the global scope only ever narrows results to the authenticated user's own tenant; it never fails open onto *other* tenants' data. Under the default strict check it never matches a `null`-`tenant_id` row either. But without an authenticated user, there's nothing for it to scope to, so a queued job or console command operating across tenants is **your responsibility to scope explicitly** (e.g. `Account::where('tenant_id', $tenantId)->get()`, or set `tenant_id` yourself before saving). Don't assume the package will scope non-HTTP code for you.
+
+**I want some accounts/data shared across every tenant (e.g. a default chart of accounts), not owned by just one.**
+Set `strict_multi_tenancy_check` to `false`. A record with no resolvable tenant — created explicitly with `tenant_id = null`, or from a seeder/console command with no authenticated user — is then allowed to exist and becomes visible to every tenant, instead of being rejected at creation and invisible everywhere except to whoever created it outside an authenticated context. Tenant-owned rows (a real `tenant_id` set) are still isolated from each other exactly as before — this only changes how `null`-tenant rows behave.
 
 **Can I use cash-basis instead of accrual accounting?**
 The `cash_basis` config flag is informational only — it isn't enforced anywhere. All shipped templates post on an accrual basis (revenue/expense recognized when earned/incurred, not when cash moves). See **Accounting Basis: Accrual vs Cash** in [docs/available-templates.md](docs/available-templates.md) before building cash-basis behavior yourself.

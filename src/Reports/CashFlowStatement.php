@@ -7,9 +7,18 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\Report;
+use RingleSoft\LaravelAccounting\Services\AccountService;
 
 class CashFlowStatement extends Report
 {
+    protected AccountService $accountService;
+
+    public function __construct(?array $params = null)
+    {
+        parent::__construct($params);
+        $this->accountService = app(AccountService::class);
+    }
+
     public function generate(): self
     {
         $startDate = $this->getParameter('start_date', now()->startOfMonth());
@@ -83,7 +92,7 @@ class CashFlowStatement extends Report
 
         // Cash itself is reconciled separately via beginning/ending cash, so it
         // must be excluded here or its movement would be double-counted.
-        $cashAccountIds = $this->balanceService->getAccountsForPresetGroup(AccountPreset::CASH_AND_CASH_EQUIVALENT)
+        $cashAccountIds = $this->accountService->getAccountsForPresetGroup(AccountPreset::CASH_AND_CASH_EQUIVALENT)
             ->pluck('id');
 
         $currentAssets = Account::where('account_type_id', $assetTypeId)
@@ -133,7 +142,7 @@ class CashFlowStatement extends Report
         $activities = [];
         $total = 0;
 
-        $fixedAssets = $this->balanceService->getAccountsForPresetGroup(AccountPreset::FIXED_ASSETS);
+        $fixedAssets = $this->accountService->getAccountsForPresetGroup(AccountPreset::FIXED_ASSETS);
 
         foreach ($fixedAssets as $account) {
             $change = $this->balanceChange($account, $startDate, $endDate);

@@ -19,6 +19,8 @@ use Throwable;
 
 class BalanceService
 {
+    public function __construct(protected AccountService $accountService) {}
+
     /**
      * Get the balance of an account as of a specific date
      */
@@ -389,24 +391,6 @@ class BalanceService
     }
 
     /**
-     * Get the accounts grouped under a "rollup" preset (e.g. Cash and Cash
-     * Equivalents, Fixed Assets): the parent account's direct children when it
-     * has any (the real transactional accounts), or the parent itself when it
-     * doesn't (e.g. a flatter chart of accounts with no sub-accounts for that
-     * preset). Mirrors AccountService::getLastChildrenByPreset()'s fallback.
-     */
-    public function getAccountsForPresetGroup(AccountPreset $parentPreset): Collection
-    {
-        $account = Account::where('preset', $parentPreset->value)->with('children')->first();
-
-        if (! $account) {
-            return collect();
-        }
-
-        return $account->children->isNotEmpty() ? $account->children : collect([$account]);
-    }
-
-    /**
      * Sum the balance of every account grouped under the Cash and Cash
      * Equivalents preset (Cash, Petty Cash, Cash in Bank, Undeposited Funds, ...)
      * as of a date. Reusable wherever "cash on hand" is needed and a single Cash
@@ -416,7 +400,7 @@ class BalanceService
     {
         $asOfDate = $asOfDate ?? now();
 
-        return $this->getAccountsForPresetGroup(AccountPreset::CASH_AND_CASH_EQUIVALENT)
+        return $this->accountService->getAccountsForPresetGroup(AccountPreset::CASH_AND_CASH_EQUIVALENT)
             ->sum(fn (Account $account) => $this->getAccountBalance($account, $asOfDate));
     }
 

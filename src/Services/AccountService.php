@@ -188,6 +188,27 @@ class AccountService
     }
 
     /**
+     * Get the accounts grouped under a "rollup" preset (e.g. Cash and Cash
+     * Equivalents, Fixed Assets): the parent account's direct children when it
+     * has any (the real transactional accounts), or the parent itself when it
+     * doesn't (e.g. a flatter chart of accounts with no sub-accounts for that
+     * preset). Returns an empty collection when no account carries the preset
+     * at all, for callers (reports, balance aggregation) that should degrade
+     * gracefully rather than fail - use getLastChildrenByPreset() instead when
+     * the preset is expected to exist and its absence should be a hard error.
+     */
+    public function getAccountsForPresetGroup(AccountPreset $preset): Collection
+    {
+        $account = Account::where('preset', $preset->value)->with('children')->first();
+
+        if (! $account) {
+            return collect();
+        }
+
+        return $account->children->isNotEmpty() ? $account->children : collect([$account]);
+    }
+
+    /**
      * Check if account has transactions
      */
     public function hasTransactions(Account $account): bool

@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Services;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -128,6 +129,21 @@ class ReportService
     }
 
     /**
+     * The current tenant's segment of the cache key. Report queries are scoped
+     * to the authenticated user's tenant only via the MultiTenant global scope
+     * (no report class filters by tenant_id itself), so without this, two
+     * tenants requesting the same report type with the same params would
+     * collide on the same cache key and see each other's cached financial data.
+     */
+    protected function tenantCacheSegment(): string
+    {
+        $tenantField = config('laravel_accounting.multi_tenancy_field', 'tenant_id');
+        $tenantId = Auth::user()?->{$tenantField};
+
+        return $tenantId !== null ? (string) $tenantId : 'global';
+    }
+
+    /**
      * Generate cache key for report
      *
      * @throws JsonException
@@ -136,7 +152,7 @@ class ReportService
     {
         $paramsHash = md5(json_encode($params, JSON_THROW_ON_ERROR));
 
-        return $this->cachePrefix().".report.$reportType.$paramsHash";
+        return $this->cachePrefix().".report.{$this->tenantCacheSegment()}.$reportType.$paramsHash";
     }
 
     /**
@@ -146,7 +162,7 @@ class ReportService
      */
     protected function getCacheIndexKey(string $reportType): string
     {
-        return $this->cachePrefix().".report_cache_index.$reportType";
+        return $this->cachePrefix().".report_cache_index.{$this->tenantCacheSegment()}.$reportType";
     }
 
     /**

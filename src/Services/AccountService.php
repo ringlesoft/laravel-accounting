@@ -21,6 +21,12 @@ class AccountService
      */
     public function create(array $data): Account
     {
+        // is_system_account is a protected flag (see update()'s guard against
+        // changing a system account's code) that only the package's own seeders
+        // should set, directly on the model - never through this general-purpose,
+        // typically request-driven entry point.
+        unset($data['is_system_account']);
+
         return DB::transaction(function () use ($data) {
             $this->validateAccountData($data);
 
@@ -49,6 +55,9 @@ class AccountService
      */
     public function update(Account $account, array $data): Account
     {
+        // See create() - is_system_account must never flip via this entry point.
+        unset($data['is_system_account']);
+
         return DB::transaction(static function () use ($account, $data) {
             if ($account->is_system_account && isset($data['code'])) {
                 throw new InvalidArgumentException('Cannot change code of system account');

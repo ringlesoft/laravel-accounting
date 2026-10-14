@@ -188,21 +188,27 @@ class JournalService
     public function post(JournalEntry $entry, ?int $userId = null): bool
     {
         return DB::transaction(function () use ($entry, $userId) {
-            if ($entry->is_posted) {
+            // Lock and re-check under the lock, not the possibly-stale $entry
+            // passed in: without this, two concurrent post() calls on the same
+            // draft can both pass the is_posted check before either commits.
+            $locked = JournalEntry::whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
+            $locked->load(['items', 'fiscalPeriod']);
+
+            if ($locked->is_posted) {
                 throw new DuplicatePostingException("Journal entry {$entry->id} is already posted");
             }
 
-            $this->validateBalance($entry);
-            $this->validatePeriod($entry);
-            $this->validateParentAccounts($entry);
+            $this->validateBalance($locked);
+            $this->validatePeriod($locked);
+            $this->validateParentAccounts($locked);
 
-            $entry->update([
+            $locked->update([
                 'is_posted' => true,
                 'posted_at' => now(),
                 'posted_by_user_id' => $userId,
             ]);
 
-            event(new JournalEntryPosted($entry, $userId));
+            event(new JournalEntryPosted($locked, $userId));
 
             return true;
         });
@@ -220,33 +226,40 @@ class JournalService
     public function reverse(JournalEntry $entry, ?string $reason = null, ?int $userId = null): JournalEntry
     {
         return DB::transaction(function () use ($entry, $reason, $userId) {
-            if (! $entry->is_posted) {
+            // Lock and re-check under the lock: without this, two concurrent
+            // reverse() calls on the same entry can both pass these checks
+            // before either commits, each creating its own full reversal
+            // entry - duplicated financial data, not just a duplicate event.
+            $locked = JournalEntry::whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
+            $locked->load('items');
+
+            if (! $locked->is_posted) {
                 throw new InvalidArgumentException('Cannot reverse an unposted journal entry');
             }
 
-            if ($entry->is_reversed) {
+            if ($locked->is_reversed) {
                 throw new InvalidArgumentException('Journal entry has already been reversed');
             }
 
-            if ($entry->is_voided) {
+            if ($locked->is_voided) {
                 throw new InvalidArgumentException('Cannot reverse a voided journal entry');
             }
 
             $reversalEntry = JournalEntry::create([
                 'transaction_date' => now(),
-                'description' => "Reversal: {$entry->description}".($reason ? " - {$reason}" : ''),
-                'reference' => "REV-{$entry->reference}",
-                'currency_code' => $entry->currency_code,
+                'description' => "Reversal: {$locked->description}".($reason ? " - {$reason}" : ''),
+                'reference' => "REV-{$locked->reference}",
+                'currency_code' => $locked->currency_code,
                 'fiscal_period_id' => $this->findFiscalPeriod(now())?->id,
                 'created_by_user_id' => $userId,
                 'posted_by_user_id' => $userId,
                 'is_posted' => true,
                 'posted_at' => now(),
-                'reversal_of_id' => $entry->id,
+                'reversal_of_id' => $locked->id,
                 'metadata' => $reason ? ['reversal_reason' => $reason] : [],
             ]);
 
-            foreach ($entry->items as $item) {
+            foreach ($locked->items as $item) {
                 JournalEntryItem::create([
                     'journal_entry_id' => $reversalEntry->id,
                     'account_id' => $item->account_id,
@@ -257,13 +270,13 @@ class JournalService
                 ]);
             }
 
-            $entry->update([
+            $locked->update([
                 'is_reversed' => true,
             ]);
 
             $reversalEntry->load('items');
 
-            event(new JournalEntryReversed($entry, $reversalEntry, $reason, $userId));
+            event(new JournalEntryReversed($locked, $reversalEntry, $reason, $userId));
 
             return $reversalEntry;
         });
@@ -280,23 +293,27 @@ class JournalService
      */
     public function void(JournalEntry $entry, ?string $reason = null, int|string|null $userId = null): bool
     {
-        return DB::transaction(static function () use ($entry, $reason, $userId) {
-            if ($entry->is_voided) {
+        return DB::transaction(function () use ($entry, $reason, $userId) {
+            // Lock and re-check under the lock, not the possibly-stale $entry
+            // passed in - see post()/reverse() for why.
+            $locked = JournalEntry::whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->is_voided) {
                 throw new InvalidArgumentException('Journal entry is already voided');
             }
 
-            if ($entry->is_posted) {
+            if ($locked->is_posted) {
                 throw new InvalidArgumentException('Cannot void a posted entry. Use reverse() instead.');
             }
 
-            $entry->update([
+            $locked->update([
                 'is_voided' => true,
                 'voided_at' => now(),
                 'voided_by_user_id' => $userId,
-                'metadata' => array_merge($entry->metadata ?? [], ['void_reason' => $reason]),
+                'metadata' => array_merge($locked->metadata ?? [], ['void_reason' => $reason]),
             ]);
 
-            event(new JournalEntryVoided($entry, $reason, $userId));
+            event(new JournalEntryVoided($locked, $reason, $userId));
 
             return true;
         });

@@ -5,6 +5,7 @@ namespace RingleSoft\LaravelAccounting\Traits;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use ReflectionClass;
 use RingleSoft\LaravelAccounting\Attributes\DefaultAccountingTemplate;
@@ -83,7 +84,15 @@ trait Postable
                 return $this->createJournal() && $this->postJournal();
             });
         } catch (Throwable $e) {
-            throw LaravelAccountingException::from($e, 'Failed to post to journal. '.$e->getMessage());
+            // A QueryException's message embeds the raw SQL and bound values -
+            // never echo it verbatim, since host applications commonly surface
+            // this exception's message directly to end users. The original is
+            // still chained as $previous for internal logging/debugging.
+            $message = $e instanceof QueryException
+                ? 'Failed to post to journal due to a database error.'
+                : 'Failed to post to journal. '.$e->getMessage();
+
+            throw LaravelAccountingException::from($e, $message);
         }
     }
 

@@ -340,6 +340,9 @@ There's no automated closing-entries mechanism yet (see [roadmap.md](roadmap.md)
 **Is multi-tenancy optional?**
 No — it's not a config toggle. Any model using the `MultiTenant` trait (`Account`, `JournalEntry`, `FiscalYear`, `FiscalPeriod`, `AccountBalance`) is always scoped to `tenant_id` via a global scope. `multi_tenancy_field` only controls which attribute is read off the authenticated user to populate it.
 
+**The tenant scope relies on `Auth::user()` — what happens in a queued job or artisan command, where there's no authenticated user?**
+No tenant filter is applied at all in that context — the global scope only ever narrows results to the authenticated user's own tenant; it never fails open onto *other* tenants' data, and it never matches rows with a `null` `tenant_id` either. But without an authenticated user, there's nothing for it to scope to, so a queued job or console command operating across tenants is **your responsibility to scope explicitly** (e.g. `Account::where('tenant_id', $tenantId)->get()`, or set `tenant_id` yourself before saving). Don't assume the package will scope non-HTTP code for you.
+
 **Can I use cash-basis instead of accrual accounting?**
 The `cash_basis` config flag is informational only — it isn't enforced anywhere. All shipped templates post on an accrual basis (revenue/expense recognized when earned/incurred, not when cash moves). See **Accounting Basis: Accrual vs Cash** in [docs/available-templates.md](docs/available-templates.md) before building cash-basis behavior yourself.
 

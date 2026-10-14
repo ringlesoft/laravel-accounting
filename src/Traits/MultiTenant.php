@@ -13,13 +13,11 @@ trait MultiTenant
         static::addGlobalScope(new MultiTenantScope);
 
         static::creating(function (Model $model) {
-            if (! $model->getAttribute('tenant_id')) {
-                $tenantField = config('laravel_accounting.multi_tenancy_field', 'tenant_id');
-                $tenantId = Auth::user()?->{$tenantField};
+            $tenantField = config('laravel_accounting.multi_tenancy_field', 'tenant_id');
+            $tenantId = Auth::user()?->{$tenantField};
 
-                if ($tenantId) {
-                    $model->setAttribute('tenant_id', $tenantId);
-                }
+            if ($tenantId) {
+                $model->setAttribute('tenant_id', $tenantId);
             }
         });
     }

@@ -6,6 +6,8 @@ Accounting templates are pre-configured journal entry patterns that automate the
 
 Templates use the `AccountPreset` enum to reference standard chart of accounts, making them flexible and adaptable to your specific account structure. When a template is applied to a postable model, it automatically generates the appropriate debit and credit entries based on the transaction amount and configured parameters.
 
+> **Note on `AccountPreset::EXPENSES`**: this preset is a legacy alias and is never assigned to a seeded account. Don't default a template to it — use a real category preset such as `OPERATING_EXPENSES`, or a specific one like `RENT_EXPENSE`, instead. A template whose default preset has no matching account throws `AccountNotFoundException` when `getPostableAccounts()`/`make()` runs.
+
 ## How Templates Work
 
 1. **Extend `AccountingTemplate`**: All templates extend the base `AccountingTemplate` class
@@ -14,67 +16,94 @@ Templates use the `AccountPreset` enum to reference standard chart of accounts, 
 4. **Dynamic Amounts**: Templates support closures for calculating amounts (e.g., tax calculations)
 5. **Automatic Application**: Attach templates to models using the `#[DefaultAccountingTemplate]` attribute
 
+Most templates are also reachable through a convenience method on `PostingService` (`app(PostingService::class)` or `LaravelAccounting::posting()`), which wraps `createDraft()` + `post()` for you. The **PostingService Method** column below names it where one exists; `TemplateRegistry::make('<key>')` always works as the lower-level alternative.
+
 ## Template Categories
 
 ### Sales & Revenue Templates
 
-| Template | Class | Description | Accounts Affected | Parameters |
-|----------|-------|-------------|-------------------|------------|
-| **Cash Sale** | `CashSaleTemplate` | Records immediate cash sales with optional sales tax | Dr: Cash<br>Cr: Sales Revenue<br>Cr: Sales Tax Payable | `$cashAccount`, `$revenueAccount`, `$taxAccount`, `$taxRate` |
-| **Credit Sale** | `CreditSaleTemplate` | Records sales on account (accounts receivable) with optional tax | Dr: Accounts Receivable<br>Cr: Sales Revenue<br>Cr: Sales Tax Payable | `$receivableAccount`, `$revenueAccount`, `$taxAccount`, `$taxRate` |
-| **Sales Return** | `SalesReturnTemplate` | Records customer returns for cash or credit sales | Dr: Sales Returns<br>Cr: Accounts Receivable/Cash | `$salesReturnsAccount`, `$receivableAccount`, `$cashAccount`, `$isCashReturn` |
-| **Payment Receipt** | `PaymentReceiptTemplate` | Records cash received from customers against receivables | Dr: Cash<br>Cr: Accounts Receivable | `$cashAccount`, `$receivableAccount` |
-| **Accrued Revenue** | `AccruedRevenueTemplate` | Records recognition of previously unearned revenue | Dr: Unearned Revenue<br>Cr: Sales Revenue | `$accruedRevenueAccount`, `$revenueAccount` |
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Cash Sale** | `CashSaleTemplate` | Records immediate cash sales with optional sales tax | Dr: `CASH`<br>Cr: `SALES_REVENUE`<br>Cr: `SALES_TAX_PAYABLE` (if `taxRate` > 0) | `$cashAccount`, `$revenueAccount`, `$taxAccount`, `$taxRate` | `sale.cash` | `cashSale()` |
+| **Credit Sale** | `CreditSaleTemplate` | Records sales on account (accounts receivable) with optional tax | Dr: `ACCOUNTS_RECEIVABLE`<br>Cr: `SALES_REVENUE`<br>Cr: `SALES_TAX_PAYABLE` (if `taxRate` > 0) | `$receivableAccount`, `$revenueAccount`, `$taxAccount`, `$taxRate` | `sale.credit` | `saleTransaction()` |
+| **Sales Return** | `SalesReturnTemplate` | Records customer returns for cash or credit sales | Dr: `SALES_RETURNS`<br>Cr: `ACCOUNTS_RECEIVABLE` / `CASH` | `$salesReturnsAccount`, `$receivableAccount`, `$cashAccount`, `$isCashReturn` | `return.sales` | *(none — use `TemplateRegistry::make()`)* |
+| **Payment Receipt** | `PaymentReceiptTemplate` | Records cash received from customers against receivables | Dr: `CASH`<br>Cr: `ACCOUNTS_RECEIVABLE` | `$cashAccount`, `$receivableAccount` | `payment.receipt` | `receivingPayment()` |
+| **Accrued Revenue** | `AccruedRevenueTemplate` | Records revenue that has been earned but not yet billed or collected | Dr: `ACCRUED_REVENUE`<br>Cr: `SALES_REVENUE` | `$accruedRevenueAccount`, `$revenueAccount` | `revenue.accrued` | `recognizeAccruedRevenue()` |
+| **Unearned Revenue** | `UnearnedRevenueTemplate` | Records cash received in advance of delivering the goods/service | Dr: `CASH`<br>Cr: `UNEARNED_REVENUE` | `$cashAccount`, `$unearnedRevenueAccount` | `revenue.unearned` | `unearnedRevenue()` |
+
+> `AccruedRevenueTemplate` and `UnearnedRevenueTemplate` are opposite-timing events, not variants of each other: Accrued Revenue is earned-but-not-billed (an asset); Unearned Revenue is billed/collected-but-not-earned (a liability). There is currently no template for the third step — recognizing previously-unearned revenue as earned (`Dr UNEARNED_REVENUE / Cr SALES_REVENUE`) once the good/service is delivered. See **Known Gaps** below.
 
 ### Purchase & Expense Templates
 
-| Template | Class | Description | Accounts Affected | Parameters |
-|----------|-------|-------------|-------------------|------------|
-| **Cash Purchase** | `CashPurchaseTemplate` | Records immediate cash purchases with optional input tax | Dr: Expense/COGS<br>Dr: Input VAT<br>Cr: Cash | `$expenseAccount`, `$inputTaxAccount`, `$cashAccount`, `$taxRate` |
-| **Purchase on Account** | `PurchaseOnAccountTemplate` | Records purchases on credit with optional input tax | Dr: Expense/COGS<br>Dr: Input VAT<br>Cr: Accounts Payable | `$expenseAccount`, `$inputTaxAccount`, `$payableAccount`, `$taxRate` |
-| **Purchase Return** | `PurchaseReturnTemplate` | Records returns to suppliers for cash or credit purchases | Dr: Accounts Payable/Cash<br>Cr: Inventory/Expense | `$payableAccount`, `$cashAccount`, `$inventoryAccount`, `$isCashReturn` |
-| **Bill Payment** | `BillPaymentTemplate` | Records payment to suppliers against payables | Dr: Accounts Payable<br>Cr: Cash | `$payableAccount`, `$cashAccount` |
-| **Prepaid Expense** | `PrepaidExpenseTemplate` | Records amortization of prepaid expenses | Dr: Expense<br>Cr: Prepaid Expense | `$expenseAccount`, `$prepaidExpenseAccount` |
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Cash Purchase** | `CashPurchaseTemplate` | Records immediate cash purchases with optional input tax | Dr: `COST_OF_GOODS_SOLD`<br>Dr: `INPUT_VAT` (if `taxRate` > 0)<br>Cr: `CASH` | `$expenseAccount`, `$inputTaxAccount`, `$cashAccount`, `$taxRate` | `purchase.cash` | `cashPurchase()`, `expensePayment()` |
+| **Purchase on Account** | `PurchaseOnAccountTemplate` | Records purchases on credit with optional input tax | Dr: `COST_OF_GOODS_SOLD`<br>Dr: `INPUT_VAT` (if `taxRate` > 0)<br>Cr: `ACCOUNTS_PAYABLE` | `$expenseAccount`, `$inputTaxAccount`, `$payableAccount`, `$taxRate` | `purchase.on_account` | `purchaseOnAccount()` |
+| **Purchase Return** | `PurchaseReturnTemplate` | Records returns to suppliers for cash or credit purchases | Dr: `ACCOUNTS_PAYABLE` / `CASH`<br>Cr: `INVENTORY` | `$payableAccount`, `$cashAccount`, `$inventoryAccount`, `$isCashReturn` | `return.purchase` | *(none — use `TemplateRegistry::make()`)* |
+| **Bill Payment** | `BillPaymentTemplate` | Records payment to suppliers against payables | Dr: `ACCOUNTS_PAYABLE`<br>Cr: `CASH` | `$payableAccount`, `$cashAccount` | `payment.bill` | `paymentToSupplier()` |
+| **Prepaid Expense Payment** | `PrepaidExpensePaymentTemplate` | Records the initial cash payment for a future expense | Dr: `PREPAID_EXPENSES`<br>Cr: `CASH` | `$prepaidExpenseAccount`, `$cashAccount` | `expense.prepaid.payment` | `prepaidExpense()` |
+| **Prepaid Expense Amortization** | `PrepaidExpenseTemplate` | Records recognition of a previously prepaid expense as it's consumed | Dr: `OPERATING_EXPENSES`<br>Cr: `PREPAID_EXPENSES` | `$expenseAccount`, `$prepaidExpenseAccount` | `expense.prepaid` | `amortizePrepaidExpense()` |
+
+`$expenseAccount` on `CashPurchaseTemplate`/`PurchaseOnAccountTemplate` is any `AccountPreset` you choose — `COST_OF_GOODS_SOLD` is just the default for a goods/inventory purchase; pass a specific expense preset (e.g. `RENT_EXPENSE`) for a service/general expense instead.
 
 ### Payroll Templates
 
-| Template | Class | Description | Accounts Affected | Parameters |
-|----------|-------|-------------|-------------------|------------|
-| **Payroll Accrual** | `PayrollAccrualTemplate` | Records payroll expense with tax withholding | Dr: Salaries Expense<br>Cr: Wages Payable<br>Cr: Payroll Tax Payable | `$salaryExpenseAccount`, `$wagesPayableAccount`, `$taxPayableAccount`, `$taxWithholdingRate` |
-| **Payroll Payment** | `PayrollPaymentTemplate` | Records actual payment of wages to employees | Dr: Wages Payable<br>Cr: Cash | `$wagesPayableAccount`, `$cashAccount` |
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Payroll Expense** | `PayrollExpenseTemplate` | Records payroll expensed and paid in one step (no accrual) | Dr: `SALARIES_EXPENSE`<br>Cr: `CASH` | `$salaryExpenseAccount`, `$cashAccount` | `payroll.expense` | `payroll()` |
+| **Payroll Accrual** | `PayrollAccrualTemplate` | Records payroll expense with tax withholding, before it's paid | Dr: `SALARIES_EXPENSE`<br>Cr: `WAGES_PAYABLE`<br>Cr: `PAYROLL_TAX_PAYABLE` (if `taxWithholdingRate` > 0) | `$salaryExpenseAccount`, `$wagesPayableAccount`, `$taxPayableAccount`, `$taxWithholdingRate` | `payroll.accrual` | `accruedExpense()` |
+| **Payroll Payment** | `PayrollPaymentTemplate` | Records payment of previously-accrued wages | Dr: `WAGES_PAYABLE`<br>Cr: `CASH` | `$wagesPayableAccount`, `$cashAccount` | `payroll.payment` | `payWages()` |
+
+`payroll()` (Payroll Expense) and `accruedExpense()` + `payWages()` (Payroll Accrual then Payment) are two different workflows for the same real-world event — pick one depending on whether your business accrues payroll before paying it or expenses it directly at payment time.
 
 ### Asset & Depreciation Templates
 
-| Template | Class | Description | Accounts Affected | Parameters |
-|----------|-------|-------------|-------------------|------------|
-| **Fixed Asset Purchase** | `FixedAssetPurchaseTemplate` | Records acquisition of fixed assets (cash or credit) | Dr: Fixed Assets<br>Cr: Cash/Accounts Payable | `$fixedAssetAccount`, `$cashAccount`, `$payableAccount`, `$isCashPurchase` |
-| **Depreciation** | `DepreciationTemplate` | Records periodic depreciation expense | Dr: Depreciation Expense<br>Cr: Accumulated Depreciation | `$depreciationExpenseAccount`, `$accumulatedDepreciationAccount` |
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Fixed Asset Purchase** | `FixedAssetPurchaseTemplate` | Records acquisition of fixed assets (cash or credit) | Dr: `FIXED_ASSETS`<br>Cr: `CASH` / `ACCOUNTS_PAYABLE` | `$fixedAssetAccount`, `$cashAccount`, `$payableAccount`, `$isCashPurchase` | `asset.purchase` | *(none — use `TemplateRegistry::make()`)* |
+| **Depreciation** | `DepreciationTemplate` | Records periodic depreciation expense | Dr: `DEPRECIATION_EXPENSE`<br>Cr: `ACCUMULATED_DEPRECIATION` | `$depreciationExpenseAccount`, `$accumulatedDepreciationAccount` | `asset.depreciation` | `depreciation()` |
 
 ### Inventory Templates
 
-| Template | Class | Description | Accounts Affected | Parameters |
-|----------|-------|-------------|-------------------|------------|
-| **Inventory Adjustment** | `InventoryAdjustmentTemplate` | Records inventory increases or decreases (shrinkage) | Dr: Inventory/Shrinkage Expense<br>Cr: Shrinkage Expense/Inventory | `$inventoryAccount`, `$shrinkageExpenseAccount`, `$isIncrease` |
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Inventory Adjustment** | `InventoryAdjustmentTemplate` | Records inventory increases, or decreases from shrinkage | `isIncrease=true`: Dr `INVENTORY` / Cr `INVENTORY_ADJUSTMENTS`<br>`isIncrease=false`: Dr `INVENTORY_ADJUSTMENTS` / Cr `INVENTORY` | `$inventoryAccount`, `$shrinkageExpenseAccount`, `$isIncrease` | `inventory.adjustment` | *(none directly — see below)* |
+
+`PostingService::costOfGoodsSold()` reuses this same template, but overrides `$shrinkageExpenseAccount` to `COST_OF_GOODS_SOLD` so a sale's cost of goods sold posts `Dr COST_OF_GOODS_SOLD / Cr INVENTORY` instead of the shrinkage default. `PostingService::inventoryPurchase()` similarly reuses `PurchaseOnAccountTemplate`/`CashPurchaseTemplate` with `$expenseAccount` overridden to `INVENTORY`.
 
 ### Loan & Financing Templates
 
-| Template | Class | Description | Accounts Affected | Parameters |
-|----------|-------|-------------|-------------------|------------|
-| **Loan Receipt** | `LoanReceiptTemplate` | Records receipt of loan proceeds | Dr: Cash<br>Cr: Loan Payable | `$cashAccount`, `$loanPayableAccount` |
-| **Loan Payment** | `LoanPaymentTemplate` | Records loan principal and interest payments | Dr: Loan Payable<br>Dr: Interest Expense<br>Cr: Cash | `$loanPayableAccount`, `$interestExpenseAccount`, `$cashAccount`, `$interestAmount` |
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Loan Receipt** | `LoanReceiptTemplate` | Records receipt of loan proceeds | Dr: `CASH`<br>Cr: `LOAN_PAYABLE` | `$cashAccount`, `$loanPayableAccount` | `loan.receipt` | `loanReceived()` |
+| **Loan Payment** | `LoanPaymentTemplate` | Records loan principal and interest payments | Dr: `LOAN_PAYABLE`<br>Dr: `INTEREST_EXPENSE` (if `interestAmount` > 0)<br>Cr: `CASH` | `$loanPayableAccount`, `$interestExpenseAccount`, `$cashAccount`, `$interestAmount` | `loan.payment` | `loanPayment()` |
 
 ### Equity Templates
 
-| Template | Class | Description | Accounts Affected | Parameters |
-|----------|-------|-------------|-------------------|------------|
-| **Owner Investment** | `OwnerInvestmentTemplate` | Records capital contributions by owners | Dr: Cash<br>Cr: Owner's Equity | `$cashAccount`, `$equityAccount` |
-| **Dividend** | `DividendTemplate` | Records dividend distributions to shareholders | Dr: Retained Earnings<br>Cr: Cash | `$retainedEarningsAccount`, `$cashAccount` |
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Owner Investment** | `OwnerInvestmentTemplate` | Records capital contributions by owners | Dr: `CASH`<br>Cr: `OWNERS_EQUITY` | `$cashAccount`, `$equityAccount` | `equity.investment` | `ownerInvestment()` |
+| **Dividend** | `DividendTemplate` | Records a dividend/owner's-draw declared and paid in one step | Dr: `DIVIDENDS_DECLARED`<br>Cr: `CASH` | `$dividendsAccount`, `$cashAccount` | `equity.dividend` | `ownerWithdrawal()` |
+
+`DividendTemplate` collapses declaration and payment into a single entry. If you need the two-step textbook flow (`Dr RETAINED_EARNINGS / Cr DIVIDENDS_PAYABLE` at declaration, then `Dr DIVIDENDS_PAYABLE / Cr CASH` at payment), that isn't implemented — see **Known Gaps**.
 
 ### Receivables Management Templates
 
-| Template | Class | Description | Accounts Affected | Parameters |
-|----------|-------|-------------|-------------------|------------|
-| **Bad Debt** | `BadDebtTemplate` | Records write-off of uncollectible receivables | Dr: Bad Debt Expense<br>Cr: Allowance for Doubtful Accounts | `$badDebtExpenseAccount`, `$allowanceAccount` |
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Bad Debt** | `BadDebtTemplate` | Records the *estimate* of uncollectible receivables (not a specific write-off) | Dr: `BAD_DEBT_EXPENSE`<br>Cr: `ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS` | `$badDebtExpenseAccount`, `$allowanceAccount` | `debt.writeoff` | *(none — use `TemplateRegistry::make()`)* |
+
+Despite its registry key (`debt.writeoff`) and class name, this template records the *allowance estimation* step, not writing off one specific customer's balance (`Dr ALLOWANCE... / Cr ACCOUNTS_RECEIVABLE`) — that specific write-off, and recovering a previously written-off debt, aren't implemented. See **Known Gaps**.
+
+## Known Gaps
+
+Correct, standard accounting events that are **not yet implemented** as a template (confirmed by checking every registered template and `PostingService` method):
+
+- **Recognizing previously-unearned revenue as earned** (`Dr UNEARNED_REVENUE / Cr SALES_REVENUE`) — the counterpart to `UnearnedRevenueTemplate`.
+- **Bad debt write-off of a specific account** (`Dr ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS / Cr ACCOUNTS_RECEIVABLE`) and **bad debt recovery** (`Dr CASH / Cr ALLOWANCE...`) — only the estimation step exists.
+- **Two-step dividend** (declare to a payable, then pay it) — only the one-step version exists.
+- **Fixed asset sale/disposal** (removing the asset and its accumulated depreciation, recognizing a gain or loss) — no template at all; only *purchase* of fixed assets is covered.
+- **Closing entries** (closing Revenue/Expense to Income Summary, Income Summary to Retained Earnings, Dividends to Retained Earnings) — the package has no closing-entry mechanism; see `roadmap.md`'s "Future Consideration" list.
 
 ## Usage Examples
 
@@ -153,9 +182,9 @@ $template = new LoanPaymentTemplate(
 
 $payment->postWithTemplate($template);
 // Results in:
-// Dr: Loan Payable $1,000
-// Dr: Interest Expense $200
-// Cr: Cash $1,200
+// Dr: `LOAN_PAYABLE` $1,000
+// Dr: `INTEREST_EXPENSE` $200
+// Cr: `CASH` $1,200
 ```
 
 ### Conditional Template Logic
@@ -217,18 +246,17 @@ class CustomRefundTemplate extends AccountingTemplate
 1. **Use AccountPreset Enums**: Always use `AccountPreset` enums instead of hardcoding account IDs
 2. **Parameterize Templates**: Make templates flexible by accepting account parameters in the constructor
 3. **Support Tax Calculations**: Include optional tax parameters for jurisdictions that require them
-4. **Document Entry Logic**: Add comments showing the debit/credit pattern (e.g., `// Dr: Cash, Cr: Revenue`)
+4. **Document Entry Logic**: Add comments showing the debit/credit pattern (e.g., `// Dr: `CASH`, Cr: Revenue`)
 5. **Use Closures for Dynamic Amounts**: When amounts need calculation, use closures: `fn($amount) => $amount * 0.15`
 6. **Test Thoroughly**: Verify that templates produce balanced entries for various scenarios
 7. **Consider Edge Cases**: Handle optional entries (e.g., tax only when `$taxRate > 0`)
+8. **Pick a real default preset**: Never default a template to a category/legacy preset unless an account actually carries it — check with `php artisan tinker` and `Account::where('preset', '...')->exists()`, or call `YourTemplate::getPostableAccounts()` and confirm both `DEBIT` and `CREDIT` come back non-empty.
 
 ## Template Registry
 
-All templates are automatically registered and can be discovered programmatically. See the `TemplateRegistry` class for dynamic template management.
+All templates are automatically registered in `TemplateRegistry::$templates` and can be resolved by key via `TemplateRegistry::make('<key>')`. The **Registry Key** column in each table above is the exact key to use.
 
 ## See Also
 
-- [Account Presets Documentation](./account-presets.md)
-- [Postable Models Guide](./postable-models.md)
-- [Creating Custom Templates](./custom-templates.md)
-- [Chart of Accounts Setup](./chart-of-accounts.md)
+- [README.md](../README.md) — installation, configuration, and general usage
+- [roadmap.md](../roadmap.md) — implementation status and planned features, including the closing-entries gap noted above

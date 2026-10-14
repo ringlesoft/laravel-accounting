@@ -7,14 +7,14 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 class DividendTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $retainedEarningsAccount = AccountPreset::RETAINED_EARNINGS,
+        protected AccountPreset $dividendsAccount = AccountPreset::DIVIDENDS_DECLARED,
         protected AccountPreset $cashAccount = AccountPreset::CASH
     ) {}
 
     public function configure(): void
     {
-        // Retained Earnings → Cash
-        $this->debit($this->retainedEarningsAccount);
+        // Dividends Declared → Cash
+        $this->debit($this->dividendsAccount);
         $this->credit($this->cashAccount);
     }
 }

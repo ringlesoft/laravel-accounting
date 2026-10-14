@@ -42,7 +42,9 @@ class JournalEntryValidator
                 'required',
                 'exists:'.$tablePrefix.'_fiscal_periods,id',
             ],
-            'postable_id' => 'nullable|integer',
+            'postable_id' => config('laravel_accounting.use_uuid', false)
+                ? 'nullable|string|max:36'
+                : 'nullable|integer',
             'postable_type' => 'nullable|string|required_with:postable_id',
             'posted_by_user_id' => 'nullable|exists:users,id',
             'created_by_user_id' => 'nullable|exists:users,id',

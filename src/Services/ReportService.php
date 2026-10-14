@@ -78,6 +78,8 @@ class ReportService
         $cacheTtl = config('laravel_accounting.report_cache_ttl', 3600);
 
         if (config('laravel_accounting.report_cache_enabled', true)) {
+            $this->rememberCacheKey($reportType, $cacheKey, $cacheTtl);
+
             return Cache::remember($cacheKey, $cacheTtl, function () use ($reportType, $params) {
                 return $this->generateReport($reportType, $params);
             });
@@ -114,6 +116,14 @@ class ReportService
     }
 
     /**
+     * The package-specific prefix used for all of this service's cache entries.
+     */
+    protected function cachePrefix(): string
+    {
+        return config('laravel_accounting.cache_prefix', 'laravel_accounting');
+    }
+
+    /**
      * Generate cache key for report
      *
      * @throws JsonException
@@ -122,18 +132,50 @@ class ReportService
     {
         $paramsHash = md5(json_encode($params, JSON_THROW_ON_ERROR));
 
-        return "laravel_accounting.report.$reportType.$paramsHash";
+        return $this->cachePrefix().".report.$reportType.$paramsHash";
     }
 
     /**
-     * Clear report cache
+     * Key of the per-report-type index listing every cache key generated for it,
+     * so clearCache() can forget exactly those keys instead of relying on
+     * wildcard forget() (unsupported by most cache stores) or a global flush.
+     */
+    protected function getCacheIndexKey(string $reportType): string
+    {
+        return $this->cachePrefix().".report_cache_index.$reportType";
+    }
+
+    /**
+     * Track a generated report cache key in its report type's index.
+     */
+    protected function rememberCacheKey(string $reportType, string $cacheKey, int $ttl): void
+    {
+        $indexKey = $this->getCacheIndexKey($reportType);
+        $keys = Cache::get($indexKey, []);
+
+        if (! in_array($cacheKey, $keys, true)) {
+            $keys[] = $cacheKey;
+            Cache::put($indexKey, $keys, $ttl);
+        }
+    }
+
+    /**
+     * Clear this package's report cache, scoped by its own prefix.
+     * Passing a report type clears only that report's cached results;
+     * omitting it clears every report type this service knows about.
      */
     public function clearCache(?string $reportType = null): void
     {
-        if ($reportType) {
-            Cache::forget("laravel_accounting.report.{$reportType}.*");
-        } else {
-            Cache::flush();
+        $reportTypes = $reportType ? [$reportType] : array_keys($this->reports);
+
+        foreach ($reportTypes as $type) {
+            $indexKey = $this->getCacheIndexKey($type);
+
+            foreach (Cache::get($indexKey, []) as $cacheKey) {
+                Cache::forget($cacheKey);
+            }
+
+            Cache::forget($indexKey);
         }
     }
 

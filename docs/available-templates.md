@@ -18,6 +18,19 @@ Templates use the `AccountPreset` enum to reference standard chart of accounts, 
 
 Most templates are also reachable through a convenience method on `PostingService` (`app(PostingService::class)` or `LaravelAccounting::posting()`), which wraps `createDraft()` + `post()` for you. The **PostingService Method** column below names it where one exists; `TemplateRegistry::make('<key>')` always works as the lower-level alternative.
 
+## Accounting Basis: Accrual vs Cash
+
+**Accrual basis** recognizes revenue when it's *earned* and expense when it's *incurred*, independent of when cash actually moves — this is what Accounts Receivable/Payable, Unearned Revenue, Prepaid Expenses, and Accrued Revenue/Expense exist for. **Cash basis** recognizes revenue only when cash is *received* and expense only when cash is *paid* — simpler, but not GAAP/IFRS-compliant above small-business revenue thresholds.
+
+The package ships templates for both styles side by side. Which basis your books end up following is determined entirely by which templates you choose to post with:
+
+| Style | Templates |
+|---|---|
+| **Accrual** (post through a timing account) | `CreditSaleTemplate`, `PurchaseOnAccountTemplate`, `PayrollAccrualTemplate`, `UnearnedRevenueTemplate`, `AccruedRevenueTemplate`, `PrepaidExpenseTemplate`, `BillPaymentTemplate`, `PayrollPaymentTemplate` |
+| **Cash** (post straight to Cash) | `CashSaleTemplate`, `CashPurchaseTemplate`, `PayrollExpenseTemplate`, `PrepaidExpensePaymentTemplate` |
+
+`config('laravel_accounting.cash_basis')` (default `false`) exists to let you *declare* which basis an installation intends to follow. **It is informational only right now** — nothing in the package reads it or enforces it. Setting it to `true` does not stop you from posting through an accrual-only template like `CreditSaleTemplate`; it's on you to consistently pick cash-style templates if that's the basis you want. Nothing currently stops mixing styles across transactions either (e.g. accrual for sales, cash for expenses) — that isn't a recognized "basis," just whatever policy you apply transaction-by-transaction.
+
 ## Template Categories
 
 ### Sales & Revenue Templates

@@ -37,6 +37,22 @@ return [
     'fiscal_periods_count' => 2,
 
     /*
+     * Whether this installation runs cash-basis accounting instead of accrual
+     * (the default, and the only GAAP/IFRS-compliant basis above small-business
+     * revenue thresholds). This flag is informational only - it is not read or
+     * enforced anywhere in the package yet. Revenue/expense timing is determined
+     * entirely by which templates you post with: accrual-style templates
+     * (CreditSaleTemplate, PurchaseOnAccountTemplate, PayrollAccrualTemplate,
+     * UnearnedRevenueTemplate, AccruedRevenueTemplate, PrepaidExpenseTemplate, ...)
+     * use timing accounts like Accounts Receivable/Payable; cash-style templates
+     * (CashSaleTemplate, CashPurchaseTemplate, PayrollExpenseTemplate,
+     * PrepaidExpensePaymentTemplate, ...) post straight to Cash. Setting this to
+     * true does NOT prevent accrual-only templates from being used - see
+     * "Accounting Basis: Accrual vs Cash" in docs/available-templates.md.
+     */
+    'cash_basis' => false,
+
+    /*
      * Automatically post journal entries when created
      * If false, entries will be created in draft status and require manual posting
      */

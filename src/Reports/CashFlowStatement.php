@@ -3,7 +3,7 @@
 namespace RingleSoft\LaravelAccounting\Reports;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\Report;
@@ -24,7 +24,7 @@ class CashFlowStatement extends Report
 
         $this->setTitle('Cash Flow Statement (Indirect Method)');
 
-        $netIncome = $this->calculateNetIncome($startDate, $endDate);
+        $netIncome = $this->balanceService->calculateNetIncome($startDate, $endDate);
 
         $operating = $this->calculateOperatingActivities($startDate, $endDate, $netIncome);
         $investing = $this->calculateInvestingActivities($startDate, $endDate);
@@ -32,30 +32,8 @@ class CashFlowStatement extends Report
 
         $netCashFlow = $operating['total'] + $investing['total'] + $financing['total'];
 
-        $beginningCash = 0;
-        $endingCash = 0;
-
-        $assetTypeId = AccountTypeEnum::ASSET->getId();
-        if ($assetTypeId) {
-            $prefix = config('laravel_accounting.table_prefix', 'la');
-            $cashAccount = DB::table("{$prefix}_accounts as acc")
-                ->where('acc.account_type_id', $assetTypeId)
-                ->where('acc.is_active', true)
-                ->where(function ($query) {
-                    $query->where('acc.code', 'LIKE', '%CASH%')
-                        ->orWhere('acc.name', 'LIKE', '%Cash%');
-                })
-                ->select('acc.id')
-                ->first();
-
-            if ($cashAccount) {
-                $account = Account::find($cashAccount->id);
-                if ($account) {
-                    $beginningCash = $this->balanceService->getAccountBalance($account, $startDate->copy()->subDay());
-                    $endingCash = $this->balanceService->getAccountBalance($account, $endDate);
-                }
-            }
-        }
+        $beginningCash = $this->balanceService->getCashAndCashEquivalentsBalance($startDate->copy()->subDay());
+        $endingCash = $this->balanceService->getCashAndCashEquivalentsBalance($endDate);
 
         $this->setData([
             'period' => [
@@ -74,19 +52,17 @@ class CashFlowStatement extends Report
         return $this;
     }
 
-    protected function calculateNetIncome(Carbon $startDate, Carbon $endDate): float
+    /**
+     * Change in each account's balance between two dates, using the existing
+     * getAccountBalance() sign convention (positive = normal-side balance).
+     * Shared by every "changes in X over the period" section below.
+     */
+    protected function balanceChange(Account $account, Carbon $startDate, Carbon $endDate): float
     {
-        $incomeType = AccountTypeEnum::INCOME->accountType();
-        $expenseType = AccountTypeEnum::EXPENSE->accountType();
+        $beginningBalance = $this->balanceService->getAccountBalance($account, $startDate->copy()->subDay());
+        $endingBalance = $this->balanceService->getAccountBalance($account, $endDate);
 
-        if (! $incomeType || ! $expenseType) {
-            return 0;
-        }
-
-        $revenueBalances = $this->balanceService->getPeriodBalancesByAccountType($incomeType, $startDate, $endDate);
-        $expenseBalances = $this->balanceService->getPeriodBalancesByAccountType($expenseType, $startDate, $endDate);
-
-        return $revenueBalances->sum('balance') - $expenseBalances->sum('balance');
+        return $endingBalance - $beginningBalance;
     }
 
     protected function calculateOperatingActivities(Carbon $startDate, Carbon $endDate, float $netIncome): array
@@ -105,54 +81,43 @@ class CashFlowStatement extends Report
             ];
         }
 
-        $prefix = config('laravel_accounting.table_prefix', 'la');
+        // Cash itself is reconciled separately via beginning/ending cash, so it
+        // must be excluded here or its movement would be double-counted.
+        $cashAccountIds = $this->balanceService->getAccountsForPresetGroup(AccountPreset::CASH_AND_CASH_EQUIVALENT)
+            ->pluck('id');
 
-        $currentAssets = DB::table("{$prefix}_accounts as acc")
-            ->where('acc.account_type_id', $assetTypeId)
-            ->where('acc.is_active', true)
-            ->where('acc.code', 'LIKE', '%CURRENT%')
-            ->where('acc.code', 'NOT LIKE', '%CASH%')
-            ->select('acc.id', 'acc.name')
+        $currentAssets = Account::where('account_type_id', $assetTypeId)
+            ->where('is_active', true)
+            ->where('category', 'Current Assets')
+            ->whereNotIn('id', $cashAccountIds)
             ->get();
 
-        foreach ($currentAssets as $accountData) {
-            $account = Account::find($accountData->id);
-            if ($account) {
-                $beginningBalance = $this->balanceService->getAccountBalance($account, $startDate->copy()->subDay());
-                $endingBalance = $this->balanceService->getAccountBalance($account, $endDate);
-                $change = $endingBalance - $beginningBalance;
+        foreach ($currentAssets as $account) {
+            $change = $this->balanceChange($account, $startDate, $endDate);
 
-                if (abs($change) > 0.01) {
-                    $adjustments[] = [
-                        'description' => "Change in {$account->name}",
-                        'amount' => -$change,
-                    ];
-                    $total -= $change;
-                }
+            if (abs($change) > 0.01) {
+                $adjustments[] = [
+                    'description' => "Change in {$account->name}",
+                    'amount' => -$change,
+                ];
+                $total -= $change;
             }
         }
 
-        $currentLiabilities = DB::table("{$prefix}_accounts as acc")
-            ->where('acc.account_type_id', $liabilityTypeId)
-            ->where('acc.is_active', true)
-            ->where('acc.code', 'LIKE', '%CURRENT%')
-            ->select('acc.id', 'acc.name')
+        $currentLiabilities = Account::where('account_type_id', $liabilityTypeId)
+            ->where('is_active', true)
+            ->where('category', 'Current Liabilities')
             ->get();
 
-        foreach ($currentLiabilities as $accountData) {
-            $account = Account::find($accountData->id);
-            if ($account) {
-                $beginningBalance = $this->balanceService->getAccountBalance($account, $startDate->copy()->subDay());
-                $endingBalance = $this->balanceService->getAccountBalance($account, $endDate);
-                $change = $endingBalance - $beginningBalance;
+        foreach ($currentLiabilities as $account) {
+            $change = $this->balanceChange($account, $startDate, $endDate);
 
-                if (abs($change) > 0.01) {
-                    $adjustments[] = [
-                        'description' => "Change in {$account->name}",
-                        'amount' => $change,
-                    ];
-                    $total += $change;
-                }
+            if (abs($change) > 0.01) {
+                $adjustments[] = [
+                    'description' => "Change in {$account->name}",
+                    'amount' => $change,
+                ];
+                $total += $change;
             }
         }
 
@@ -168,28 +133,17 @@ class CashFlowStatement extends Report
         $activities = [];
         $total = 0;
 
-        $assetTypeId = AccountTypeEnum::ASSET->getId();
-
-        if (! $assetTypeId) {
-            return ['activities' => $activities, 'total' => $total];
-        }
-
-        $fixedAssets = $this->balanceService->getPeriodBalancesByAccountTypeIdAndCodePattern(
-            $assetTypeId,
-            $startDate,
-            $endDate,
-            '%FIXED%'
-        );
+        $fixedAssets = $this->balanceService->getAccountsForPresetGroup(AccountPreset::FIXED_ASSETS);
 
         foreach ($fixedAssets as $account) {
-            $netChange = $account['total_debits'] - $account['total_credits'];
+            $change = $this->balanceChange($account, $startDate, $endDate);
 
-            if (abs($netChange) > 0.01) {
+            if (abs($change) > 0.01) {
                 $activities[] = [
-                    'description' => $netChange > 0 ? "Purchase of {$account['name']}" : "Sale of {$account['name']}",
-                    'amount' => -$netChange,
+                    'description' => $change > 0 ? "Purchase of {$account->name}" : "Sale of {$account->name}",
+                    'amount' => -$change,
                 ];
-                $total -= $netChange;
+                $total -= $change;
             }
         }
 
@@ -211,40 +165,36 @@ class CashFlowStatement extends Report
             return ['activities' => $activities, 'total' => $total];
         }
 
-        $longTermLiabilities = $this->balanceService->getPeriodBalancesByAccountTypeIdAndCodePattern(
-            $liabilityTypeId,
-            $startDate,
-            $endDate,
-            '%LONG%'
-        );
+        $longTermLiabilities = Account::where('account_type_id', $liabilityTypeId)
+            ->where('is_active', true)
+            ->where('category', 'Long-term Liabilities')
+            ->get();
 
         foreach ($longTermLiabilities as $account) {
-            $netChange = $account['total_credits'] - $account['total_debits'];
+            $change = $this->balanceChange($account, $startDate, $endDate);
 
-            if (abs($netChange) > 0.01) {
+            if (abs($change) > 0.01) {
                 $activities[] = [
-                    'description' => $netChange > 0 ? "Proceeds from {$account['name']}" : "Repayment of {$account['name']}",
-                    'amount' => $netChange,
+                    'description' => $change > 0 ? "Proceeds from {$account->name}" : "Repayment of {$account->name}",
+                    'amount' => $change,
                 ];
-                $total += $netChange;
+                $total += $change;
             }
         }
 
-        $equityAccounts = $this->balanceService->getPeriodBalancesByAccountTypeIdAndCodePattern(
-            $equityTypeId,
-            $startDate,
-            $endDate
-        );
+        $equityAccounts = Account::where('account_type_id', $equityTypeId)
+            ->where('is_active', true)
+            ->get();
 
         foreach ($equityAccounts as $account) {
-            $netChange = $account['total_credits'] - $account['total_debits'];
+            $change = $this->balanceChange($account, $startDate, $endDate);
 
-            if (abs($netChange) > 0.01) {
+            if (abs($change) > 0.01) {
                 $activities[] = [
-                    'description' => $netChange > 0 ? 'Capital contribution' : 'Dividends paid',
-                    'amount' => $netChange,
+                    'description' => $change > 0 ? 'Capital contribution' : 'Dividends paid',
+                    'amount' => $change,
                 ];
-                $total += $netChange;
+                $total += $change;
             }
         }
 

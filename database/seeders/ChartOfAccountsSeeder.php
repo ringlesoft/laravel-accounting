@@ -78,6 +78,7 @@ class ChartOfAccountsSeeder extends Seeder
             'name' => 'Cash and Cash Equivalents',
             'account_type_id' => $assetType->id,
             'parent_id' => $currentAssets->id,
+            'preset' => AccountPreset::CASH_AND_CASH_EQUIVALENT->value,
             'category' => 'Current Assets',
             'report_section' => 'Assets',
             'normal_balance' => 'DEBIT',

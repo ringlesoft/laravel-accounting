@@ -8,7 +8,7 @@ class InventoryAdjustmentTemplate extends AccountingTemplate
 {
     public function __construct(
         protected AccountPreset $inventoryAccount = AccountPreset::INVENTORY,
-        protected AccountPreset $shrinkageExpenseAccount = AccountPreset::INVENTORY_SHRINKAGE,
+        protected AccountPreset $shrinkageExpenseAccount = AccountPreset::INVENTORY_ADJUSTMENTS,
         protected bool $isIncrease = false
     ) {}
 

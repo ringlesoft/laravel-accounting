@@ -110,7 +110,7 @@ class ReportService
 
         $reportClass = $this->reports[$reportType];
 
-        return new $reportClass($this->balanceService);
+        return new $reportClass(null);
     }
 
     /**

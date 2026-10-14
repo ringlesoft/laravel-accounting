@@ -29,7 +29,7 @@ class LaravelAccountingServiceProvider extends ServiceProvider
         $this->publishItems();
 
         $this->mergeConfigFrom(
-            __DIR__.'/../config/laravel_accounting.php', 'accounting'
+            __DIR__.'/../config/laravel_accounting.php', 'laravel_accounting'
         );
 
         if ($this->app->runningInConsole()) {

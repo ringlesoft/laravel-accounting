@@ -20,10 +20,16 @@ class ChartOfAccountsSeeder extends Seeder
      * - 40000-49999: Revenue/Income
      * - 50000-99999: Expenses
      */
-    public function run(): void
+
+    /**
+     * @var string[]
+     */
+    private $presets = [];
+    public function run(string $industry = 'full'): void
     {
         // Ensure account types exist
         $accountTypes = $this->getAccountTypes();
+        $this->presets = collect(AccountPreset::byIndustry()[$industry])->pluck('value')->toArray();
 
         // Create hierarchical chart of accounts
         $this->seedAssets($accountTypes);
@@ -339,18 +345,6 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'DEBIT',
         ]);
 
-        // 10800 - Deferred Tax Asset
-        $this->createAccount([
-            'code' => '10800',
-            'name' => 'Deferred Tax Asset',
-            'account_type_id' => $assetType->id,
-            'parent_id' => $currentAssets->id,
-            'preset' => AccountPreset::DEFERRED_TAX_ASSETS->value,
-            'category' => 'Current Assets',
-            'report_section' => 'Assets',
-            'normal_balance' => 'DEBIT',
-        ]);
-
         // 15000 - Non-Current Assets (Parent)
         $nonCurrentAssets = $this->createAccount([
             'code' => '15000',
@@ -578,6 +572,7 @@ class ChartOfAccountsSeeder extends Seeder
             'name' => 'Intangible Assets',
             'account_type_id' => $assetType->id,
             'parent_id' => $nonCurrentAssets->id,
+            'preset' => AccountPreset::INTANGIBLE_ASSETS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
             'normal_balance' => 'DEBIT',
@@ -592,7 +587,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::GOODWILL->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'CREDIT',
+            'normal_balance' => 'DEBIT',
         ]);
 
         $this->createAccount([
@@ -603,7 +598,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::PATENTS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'CREDIT',
+            'normal_balance' => 'DEBIT',
         ]);
 
         $this->createAccount([
@@ -614,7 +609,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::SOFTWARE->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'CREDIT',
+            'normal_balance' => 'DEBIT',
         ]);
 
         $this->createAccount([
@@ -625,7 +620,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::TRADEMARKS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'CREDIT',
+            'normal_balance' => 'DEBIT',
         ]);
 
         $this->createAccount([
@@ -636,7 +631,7 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::COPYRIGHTS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'CREDIT',
+            'normal_balance' => 'DEBIT',
         ]);
 
         $accumAmortization = $this->createAccount([
@@ -732,7 +727,19 @@ class ChartOfAccountsSeeder extends Seeder
             'preset' => AccountPreset::RIGHT_OF_USE_ASSETS->value,
             'category' => 'Non-Current Assets',
             'report_section' => 'Assets',
-            'normal_balance' => 'CREDIT',
+            'normal_balance' => 'DEBIT',
+        ]);
+
+        // 15600 - Deferred Tax Asset
+        $this->createAccount([
+            'code' => '15600',
+            'name' => 'Deferred Tax Asset',
+            'account_type_id' => $assetType->id,
+            'parent_id' => $nonCurrentAssets->id,
+            'preset' => AccountPreset::DEFERRED_TAX_ASSETS->value,
+            'category' => 'Non-Current Assets',
+            'report_section' => 'Assets',
+            'normal_balance' => 'DEBIT',
         ]);
     }
 
@@ -2044,6 +2051,18 @@ class ChartOfAccountsSeeder extends Seeder
             'normal_balance' => 'DEBIT',
         ]);
 
+        // 60900 - Research & Development
+        $this->createAccount([
+            'code' => '60900',
+            'name' => 'Research and Development',
+            'account_type_id' => $expenseType->id,
+            'parent_id' => $operatingExpenses->id,
+            'preset' => AccountPreset::RESEARCH_AND_DEVELOPMENT->value,
+            'category' => 'Operating Expenses',
+            'report_section' => 'Expenses',
+            'normal_balance' => 'DEBIT',
+        ]);
+
         // 8000 - Financial Expenses
         $financialExpenses = $this->createAccount([
             'code' => '70000',
@@ -2157,17 +2176,6 @@ class ChartOfAccountsSeeder extends Seeder
         ]);
 
         $this->createAccount([
-            'code' => '70202',
-            'name' => 'Research and Development',
-            'account_type_id' => $expenseType->id,
-            'parent_id' => $otherExpenses->id,
-            'preset' => AccountPreset::RESEARCH_AND_DEVELOPMENT->value,
-            'category' => 'Other Expenses',
-            'report_section' => 'Expenses',
-            'normal_balance' => 'DEBIT',
-        ]);
-
-        $this->createAccount([
             'code' => '70204',
             'name' => 'Penalties and Fines',
             'account_type_id' => $expenseType->id,
@@ -2193,8 +2201,11 @@ class ChartOfAccountsSeeder extends Seeder
     /**
      * Create an account with the given attributes
      */
-    protected function createAccount(array $attributes): Account
+    protected function createAccount(array $attributes): ?Account
     {
+        if($attributes['preset'] && !in_array($attributes['preset'], $this->presets, true)) {
+            return null;
+        }
         return Account::updateOrCreate(
             ['code' => $attributes['code']],
             array_merge([

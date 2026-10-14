@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Commands;
 
+use Database\Seeders\ChartOfAccountsSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
@@ -51,9 +52,7 @@ class InstallCommand extends Command
             $this->call('db:seed', [
                 '--class' => 'AccountTypeSeeder',
             ]);
-            $this->call('db:seed', [
-                '--class' => 'ChartOfAccountsSeeder',
-            ]);
+            (new ChartOfAccountsSeeder())->run();
             $this->call('db:seed', [
                 '--class' => 'FiscalPeriodSeeder',
             ]);

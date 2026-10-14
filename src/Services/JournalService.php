@@ -363,8 +363,8 @@ class JournalService
             $query->where('je.transaction_date', '>=', $filters['start_date']);
         }
 
-        if (isset($filters['end_ate'])) {
-            $query->where('je.transaction_date', '<=', $filters['end_ate']);
+        if (isset($filters['end_date'])) {
+            $query->where('je.transaction_date', '<=', $filters['end_date']);
         }
 
         if (isset($filters['fiscal_period_id'])) {

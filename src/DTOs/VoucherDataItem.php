@@ -91,6 +91,6 @@ class VoucherDataItem
      */
     public static function credit(int|string $accountId, float $amount, ?string $memo = null): self
     {
-        return new self(EntryType::CREDIT, $accountId, -abs($amount), $memo);
+        return new self(EntryType::CREDIT, $accountId, abs($amount), $memo);
     }
 }

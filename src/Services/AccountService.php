@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
+use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\AccountType;
 
@@ -175,6 +176,9 @@ class AccountService
     public function getLastChildrenByPreset(AccountPreset $preset): Collection
     {
         $account = Account::where('preset', $preset->value)->with('children.children')->first();
+        if (! $account) {
+            throw new AccountNotFoundException('Account not found for preset: '.$preset->value);
+        }
         if ($account->children->count() > 0) {
             // TODO process level 2 of children
             return $account->children;

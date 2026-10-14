@@ -424,7 +424,7 @@ enum AccountPreset: string
     {
         return array_filter(
             self::cases(),
-            static fn ($preset) => $preset->type() === $type
+            static fn($preset) => $preset->type() === $type
         );
     }
 
@@ -469,7 +469,7 @@ enum AccountPreset: string
             ],
             'inventory' => [
                 self::RAW_MATERIALS, self::WORK_IN_PROGRESS, self::FINISHED_GOODS,
-                self::MERCHANDISE_INVENTORY,
+                self::MERCHANDISE_INVENTORY
             ],
             'payroll_liability' => [
                 self::WAGES_PAYABLE, self::SALARIES_PAYABLE, self::BONUSES_PAYABLE,
@@ -488,7 +488,7 @@ enum AccountPreset: string
             'bond_accounts' => [
                 self::BONDS_PAYABLE, self::DISCOUNT_ON_BONDS,
                 self::PREMIUM_ON_BONDS, self::BOND_ISSUANCE_COSTS,
-            ],
+            ]
         ];
 
         return $categories[$category] ?? [];
@@ -497,12 +497,11 @@ enum AccountPreset: string
     /**
      * These presets should never be available for account creation.
      * That means we should not allow users to create accounts with these presets.
-     *
-     * @return AccountPreset[]
+     * @return bool
      */
-    public function parents(): array
+    public function isParent(): bool
     {
-        return [
+        return in_array($this, [
             self::FIXED_ASSETS,
             self::EXPENSES,
             self::PAYROLL_EXPENSES,
@@ -523,7 +522,23 @@ enum AccountPreset: string
             self::PREPAID_EXPENSES,
             self::INVENTORY,
             self::INVENTORY,
-            self::CASH_AND_CASH_EQUIVALENT,
+            self::CASH_AND_CASH_EQUIVALENT
+        ]);
+    }
+
+    public static function byIndustry()
+    {
+        return [
+            "full" => self::cases(),
+            "retail" => collect(self::cases())->except([
+
+            ]),
+            "saas" => collect(self::cases())->except([
+
+            ]),
+            "manufacturing" => collect(self::cases())->except([
+
+            ])
         ];
     }
 }

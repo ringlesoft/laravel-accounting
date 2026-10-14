@@ -24,6 +24,7 @@ class Account extends Model
         'sub_category',
         'report_section',
         'parent_id',
+        'normal_balance',
         'currency_code',
         'description',
         'is_active',

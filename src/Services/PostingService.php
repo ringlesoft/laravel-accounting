@@ -267,7 +267,6 @@ class PostingService
      */
     protected function postWithTemplate(PostableModel $model, $template, string|int|null $userId = null): JournalEntry
     {
-        $template->configure();
         $voucher = $template->make($model);
         $entry = $this->journalService->createDraft($voucher, $userId);
         $this->journalService->post($entry, $userId);

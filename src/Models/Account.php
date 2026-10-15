@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
+use RingleSoft\LaravelAccounting\Validators\AccountValidator;
 
 /**
  * @mixin  Builder
@@ -174,6 +175,6 @@ class Account extends Model
 
     public static function validationRules(?int $ignoreId = null): array
     {
-        return \RingleSoft\LaravelAccounting\Validators\AccountValidator::rules($ignoreId);
+        return AccountValidator::rules($ignoreId);
     }
 }

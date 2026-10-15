@@ -4,6 +4,7 @@ namespace RingleSoft\LaravelAccounting;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use RingleSoft\LaravelAccounting\Commands\ClosePeriodCommand;
 use RingleSoft\LaravelAccounting\Commands\InstallCommand;
 use RingleSoft\LaravelAccounting\Commands\UpdateBalancesCommand;
 use RingleSoft\LaravelAccounting\Events\JournalEntryPosted;
@@ -42,6 +43,7 @@ class LaravelAccountingServiceProvider extends ServiceProvider
             $this->commands([
                 InstallCommand::class,
                 UpdateBalancesCommand::class,
+                ClosePeriodCommand::class,
             ]);
         }
     }

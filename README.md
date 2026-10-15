@@ -313,6 +313,46 @@ just returns `null`. Requires `INCOME_SUMMARY` and `RETAINED_EARNINGS` accounts 
 businesses never declare dividends at all. Must run before `PeriodService::closePeriod()`, since posting is rejected
 once a period is closed.
 
+##### Scheduling period closing
+
+`php artisan accounting:close-period` wraps the two steps above (`ClosingService::commit()` then
+`PeriodService::closePeriod()`) into one command built to run unattended: with no options it finds every **open**
+fiscal period whose `end_date` has already passed and closes each one, continuing past any individual failure rather
+than aborting the whole run.
+
+```bash
+php artisan accounting:close-period                # close every due period
+php artisan accounting:close-period --dry-run       # preview net income per period, post/close nothing
+php artisan accounting:close-period --period=12     # close one specific period regardless of its end date
+php artisan accounting:close-period --lock          # also lock each period immediately after it closes
+php artisan accounting:close-period --tenant=5      # only consider periods belonging to this tenant_id
+php artisan accounting:close-period --user=1        # attribute the closing entries/closure to this user id
+```
+
+It exits `0` only if every period it processed closed successfully, and `1` if at least one failed (e.g. an
+unbalanced trial balance, or an unposted draft entry still sitting in that period) — check the exit code if you wire
+alerting around it. A period that's already closed is reported and skipped rather than erroring.
+
+Schedule it like any other command — in `routes/console.php` (Laravel 11+):
+
+```php
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('accounting:close-period')->dailyAt('01:00');
+```
+
+or in `app/Console/Kernel.php`'s `schedule()` method on earlier Laravel versions:
+
+```php
+$schedule->command('accounting:close-period')->dailyAt('01:00');
+```
+
+Running it daily (rather than exactly on the period boundary) is deliberate: a period only closes once its `end_date`
+has passed, so a daily run just means it closes the morning after the period actually ends, whenever that falls.
+Since this runs outside an authenticated context, it is **not** scoped to a single tenant by the usual global scope
+(see [Multi-Currency & Multi-Tenancy](#multi-currency--multi-tenancy) below) — one scheduled run naturally closes the
+due period for every tenant, which is normally what you want; pass `--tenant=` if you need to isolate it to one.
+
 #### Multi-Currency & Multi-Tenancy
 
 ```php

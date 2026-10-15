@@ -1,4 +1,4 @@
-# Available Accounting Templates
+# Accounting Templates API
 
 ## Overview
 

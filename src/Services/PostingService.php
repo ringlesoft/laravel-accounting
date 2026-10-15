@@ -524,14 +524,12 @@ class PostingService
      * Post using a template: resolve its entries against $model, then create
      * and post the resulting journal entry in one step.
      *
-     * @param  string|int|null  $userId  Attributed as created_by/posted_by; null if posting outside an authenticated context (e.g. a queued job)
+     * @param PostableModel $model
+     * @param $template
+     * @param string|int|null $userId Attributed as created_by/posted_by; null if posting outside an authenticated context (e.g. a queued job)
      *
-     * @throws \RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException
-     * @throws InvalidVoucherException
-     * @throws JournalNotBalancedException
-     * @throws \RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException
-     * @throws PeriodClosedException
-     * @throws \RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException
+     * @return JournalEntry
+     * @throws Throwable
      */
     protected function postWithTemplate(PostableModel $model, $template, string|int|null $userId = null): JournalEntry
     {

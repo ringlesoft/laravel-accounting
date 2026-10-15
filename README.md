@@ -75,8 +75,7 @@ class Invoice extends Model implements PostableModel
 Now you can post your model
 ```php
 $invoice = Invoice::create(['total' => 5000]);
-$invoice->post(); // Dr Accounts Receivable, Cr Sales Revenue — using CreditSaleTemplate
-
+$invoice->post();
 echo $invoice->journalEntry->transaction_number;
 ```
 
@@ -84,14 +83,10 @@ echo $invoice->journalEntry->transaction_number;
 Post with an explicit template and overridden accounts instead of the default attribute:
 
 ```php
-use RingleSoft\LaravelAccounting\Templates\CashSaleTemplate;
+use RingleSoft\LaravelAccounting\Templates\CreditSaleTemplate;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
-
 $invoice = Invoice::create(['total' => 5000]);
-$invoice->postWithTemplate(new CashSaleTemplate(
-    cashAccount: AccountPreset::PETTY_CASH,
-    taxRate: 0.15,
-));
+$invoice->postWithTemplate(new CreditSaleTemplate( cashAccount: AccountPreset::PETTY_CASH));
 ```
 > Note: Accounts are never posted to a parent.
 
@@ -128,7 +123,7 @@ echo $child->getFullCode(); // hierarchical code, e.g. "1000.1010"
 
 ```mermaid
 graph LR
-    flowchart TD
+    flowchartLR
     MODEL["Your Model<br/>PostableModel + Postable trait"]:::model
     TEMPLATE["AccountingTemplate<br/>debit()/credit() lines by AccountPreset"]:::template
     VOUCHER["VoucherData + VoucherDataItem[]<br/>Balanced DTO: debits, credits,<br/>date, description, currency"]:::dto

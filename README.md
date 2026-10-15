@@ -5,13 +5,13 @@
 <a href="https://packagist.org/packages/ringlesoft/laravel-accounting"><img src="https://img.shields.io/packagist/dt/ringlesoft/laravel-accounting.svg?style=flat-square" alt="Total Downloads"></a>
 <a href="https://github.com/ringlesoft/laravel-accounting/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square" alt="License"></a>
 </p>
-# Laravel Accounting
+
 A double-entry accounting engine for Laravel. 
 Turn any model to a source of accounting transactions. Attach a `Postable` trait, map it to an `AccountingTemplate`, and posting produces a balanced, immutable journal entry.
 
 - **Double-entry bookkeeping** — every transaction maintains balanced debits and credits
 - **Immutable records** — posted entries can't be edited, only reversed or voided
-- **Template-based posting** — 39 ready-made templates for common transactions (sales, purchases, payroll, depreciation, loans, equity...), or write your own
+- **Template-based posting** — 39 ready-made templates for common transactions (sales, purchases, payroll, depreciation, loans, equity...), or easily write your own
 - **Multi-currency**, **multi-tenancy**, and **fiscal period** support
 - **Reports**: Trial Balance, Balance Sheet, Income Statement, Cash Flow Statement, General Ledger, Account Ledger, Chart of Accounts
 
@@ -47,23 +47,71 @@ composer require ringlesoft/laravel-accounting
 php artisan laravel-accounting:install
 ```
 
-Or do it manually:
+## Quick Start
+
+### Option A. Using PHP attributes
+
+Implement the `PostableModel` interface and the `getPostableAmount()` method. Apply the `#[DefaultAccountingTemplate]` attribute
+```php
+use RingleSoft\LaravelAccounting\Contracts\PostableModel;
+use RingleSoft\LaravelAccounting\Traits\Postable;
+use RingleSoft\LaravelAccounting\Attributes\DefaultAccountingTemplate;
+use RingleSoft\LaravelAccounting\Templates\CreditSaleTemplate;
+
+#[DefaultAccountingTemplate(CreditSaleTemplate::class)]
+class Invoice extends Model implements PostableModel
+{
+    use Postable;
+
+    public function getPostableAmount(): float // You must implement this
+    {
+        return $this->total;
+    }
+}
+```
+
+Now you can post your model
+```php
+$invoice = Invoice::create(['total' => 5000]);
+$invoice->post(); // Dr Accounts Receivable, Cr Sales Revenue — using CreditSaleTemplate
+
+echo $invoice->journalEntry->transaction_number;
+```
+
+### Option B. Manual Template assigning
+Post with an explicit template and overridden accounts instead of the default attribute:
+
+```php
+use RingleSoft\LaravelAccounting\Templates\CashSaleTemplate;
+use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+
+$invoice = Invoice::create(['total' => 5000]);
+$invoice->postWithTemplate(new CashSaleTemplate(
+    cashAccount: AccountPreset::PETTY_CASH,
+    taxRate: 0.15,
+));
+```
+> Note: Accounts are never posted to a parent.
+
+
+---
+
+## Diving Deeper
+
+### Manual Installation and Resources Publishing
+If you dont want to run the install command, you can manually publish package resources. This is what the `install` command does in the background:
 
 ```bash
 php artisan vendor:publish --tag="accounting-config"
 php artisan vendor:publish --tag="accounting-migrations"
 php artisan migrate
-
 php artisan db:seed --class=AccountTypeSeeder
 php artisan db:seed --class=ChartOfAccountsSeeder
 php artisan db:seed --class=FiscalPeriodSeeder
 ```
 
-Posting fails with a validation error ("the fiscal period id field is required") if no fiscal period covers today — make sure `FiscalPeriodSeeder` has run, or create one via `LaravelAccounting::periods()->createPeriodsForYear($fiscalYear)`.
-
-## Configuration
-
-`config/laravel_accounting.php`, published above:
+### Configuration
+The above command publishes the configuration file `config/laravel_accounting.php` in your laravel application.
 
 ```php
 return [
@@ -87,58 +135,20 @@ return [
 ];
 ```
 
-## Quick Start
+> Posting fails with a validation error ("the fiscal period id field is required") if no fiscal period covers today — make sure `FiscalPeriodSeeder` has run, or create one via `LaravelAccounting::periods()->createPeriodsForYear($fiscalYear)`.
 
-### 1. Make a model postable
 
-```php
-use RingleSoft\LaravelAccounting\Contracts\PostableModel;
-use RingleSoft\LaravelAccounting\Traits\Postable;
-use RingleSoft\LaravelAccounting\Attributes\DefaultAccountingTemplate;
-use RingleSoft\LaravelAccounting\Templates\CreditSaleTemplate;
+### Handling Child accounts manually
+Sometimes an account template (e.g `COST_OF_GOODS_SOLD`) may resolve to an account that has multiple accounts under it. 
+When the pacakge wants to post using this template it will fail with ``. To make this work you should manually resolve the template into one specific account among the children. There are two approaches:
 
-#[DefaultAccountingTemplate(CreditSaleTemplate::class)]
-class Invoice extends Model implements PostableModel
-{
-    use Postable;
-
-    public function getPostableAmount(): float // You must implement this
-    {
-        return $this->total;
-    }
-}
-```
-
-### 2. Post it when you are ready
-
-```php
-$invoice = Invoice::create(['total' => 5000]);
-$invoice->post(); // Dr Accounts Receivable, Cr Sales Revenue — using CreditSaleTemplate
-
-echo $invoice->journalEntry->transaction_number;
-```
-
-Or post with an explicit template and overridden accounts instead of the default attribute:
-
-```php
-use RingleSoft\LaravelAccounting\Templates\CashSaleTemplate;
-use RingleSoft\LaravelAccounting\Enums\AccountPreset;
-
-$invoice->postWithTemplate(new CashSaleTemplate(
-    cashAccount: AccountPreset::PETTY_CASH,
-    taxRate: 0.15,
-));
-```
-
-Accounts are never posted to a parent. If a preset resolves to a parent/category account with more than one child (e.g. `COST_OF_GOODS_SOLD`), posting fails immediately and tells you so — pick the specific child with `resolveAccount()`:
-
+1. Pass the template - Account mapping as you instantiate the PostingTemplate:
 ```php
 $purchase->postWithTemplate(
     (new CashPurchaseTemplate())->resolveAccount(AccountPreset::COST_OF_GOODS_SOLD, $cogsSubAccount)
 );
 ```
-
-For a model-wide policy instead of a one-off call (e.g. "this model's COGS account depends on its department"), implement `ResolvesAccountPresets` on the model — it's checked automatically, including when posting via the `#[DefaultAccountingTemplate]` attribute:
+2. Implement `ResolvesAccountPresets` on the postable model and return the mapping account class using the `resolveAccountForPreset()` method
 
 ```php
 use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
@@ -147,19 +157,16 @@ use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
 class Invoice extends Model implements PostableModel, ResolvesAccountPresets
 {
     use Postable;
-
     public function resolveAccountForPreset(AccountPreset $preset): Account|int|string|null
     {
-        return $preset === AccountPreset::COST_OF_GOODS_SOLD
-            ? $this->department->cogsAccount
-            : null; // no opinion - fall through to the template's default resolution
+        return $preset === AccountPreset::COST_OF_GOODS_SOLD  ? $this->department->cogsAccount  : null;
     }
 }
 ```
 
-See **[docs/available-templates.md](docs/available-templates.md)** for the full catalog of 39 templates (sales, purchases, payroll, depreciation, loans, equity, inventory, bad debt) with their exact debit/credit accounts and parameters, and **[docs/financial-transactions.md](docs/financial-transactions.md)** for ~100 standard accounting transactions cross-referenced against what's actually implemented today.
+> See **[docs/available-templates.md](docs/available-templates.md)** for the full catalog of 39 preset templates (sales, purchases, payroll, depreciation, loans, equity, inventory, bad debt).
 
-## Core Concepts
+### Core Concepts
 
 - **Account** — a chart-of-accounts entry (`code`, `name`, `account_type_id`, optional `parent_id` for hierarchy, optional `preset` to tag it for template lookup).
 - **AccountPreset** — an enum of ~250 standard account roles (`CASH`, `ACCOUNTS_RECEIVABLE`, `SALES_REVENUE`, ...) that templates reference instead of hardcoded IDs, so the same template works against any chart of accounts.
@@ -181,33 +188,41 @@ $child = Account::create([
 echo $child->getFullCode(); // hierarchical code, e.g. "1000.1010"
 ```
 
-## Architecture
+### Architecture
 
+```mermaid
+graph LR
+    flowchart TD
+    MODEL["Your Model<br/>PostableModel + Postable trait"]:::model
+    TEMPLATE["AccountingTemplate<br/>debit()/credit() lines by AccountPreset"]:::template
+    VOUCHER["VoucherData + VoucherDataItem[]<br/>Balanced DTO: debits, credits,<br/>date, description, currency"]:::dto
+    JOURNAL["JournalEntry + JournalEntryItem[]<br/>Immutable once posted<br/>Only reverse() / void()"]:::ledger
+    REPORTS["BalanceService / ReportService<br/>Cached balances, financial reports"]:::report
+    RESOLVE["Preset resolution order<br/>1. resolveAccount()<br/>2. ResolvesAccountPresets<br/>3. Auto / fail-fast"]:::note
+
+    MODEL -->|"post() / postWithTemplate()<br/>createJournal()"| TEMPLATE
+    TEMPLATE -->|"make($model)<br/>presets → Account ids"| VOUCHER
+    VOUCHER -->|"createDraft() → post()"| JOURNAL
+    JOURNAL --> REPORTS
+
+    TEMPLATE -.-> RESOLVE
+    RESOLVE -.-> VOUCHER
+
+    classDef model    fill:#6CB2EB,stroke:#2B6CB0,stroke-width:2px,color:#1a1a1a
+    classDef template fill:#B8A9F0,stroke:#6B46C1,stroke-width:2px,color:#1a1a1a
+    classDef dto      fill:#F6D365,stroke:#B7791F,stroke-width:2px,color:#1a1a1a
+    classDef ledger   fill:#7DD6A0,stroke:#2F855A,stroke-width:2px,color:#1a1a1a
+    classDef report   fill:#5FD3C4,stroke:#2C7A7B,stroke-width:2px,color:#1a1a1a
+    classDef note     fill:#E2E8F0,stroke:#4A5568,stroke-width:2px,color:#1a1a1a
+    linkStyle default stroke:#8b95a1,stroke-width:2px
 ```
-Your Model (implements PostableModel, uses Postable trait)
-        │
-        │  post()  /  postWithTemplate($template)  /  createJournal()
-        ▼
-AccountingTemplate                  ← configure() declares debit()/credit() lines by AccountPreset
-        │
-        │  make($model): resolves each preset to a real Account id
-        │  (explicit resolveAccount() → model's ResolvesAccountPresets → auto/fail-fast)
-        ▼
-VoucherData + VoucherDataItem[]     ← balanced DTO: debits, credits, date, description, currency
-        │
-        │  JournalService::createDraft() → post()
-        ▼
-JournalEntry + JournalEntryItem[]   ← immutable once posted; only reverse()/void(), never edit
-        │
-        ▼
-BalanceService / ReportService      ← cached balances, financial reports
-```
+> Note: Templates never touch the database directly. They only describe *which* presets to debit/credit and *how much*. You can create your own Templates by extending the `AcountingTemplate` class
 
-Templates never touch the database directly — they only describe *which* presets to debit/credit and *how much*. `AccountingTemplate::make()` is the one place a preset becomes a real account id. `JournalService` is the only place a `JournalEntry` is created, posted, reversed, or voided; everything else (`Postable` trait, `PostingService`) is a convenience wrapper around it.
 
-## Posting Transactions
 
-### Via a template directly
+### Posting Transactions
+
+#### Via a template directly
 
 ```php
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
@@ -223,7 +238,7 @@ $entry = LaravelAccounting::journals()->createDraft($voucher);
 LaravelAccounting::journals()->post($entry, auth()->id());
 ```
 
-### Via `PostingService`
+#### Via `PostingService`
 
 For common transactions, `PostingService` wraps the right template plus `createDraft()` + `post()` in one call:
 
@@ -237,7 +252,7 @@ LaravelAccounting::posting()->payroll($payrollRun, auth()->id());
 
 See the **PostingService Method** column in [docs/available-templates.md](docs/available-templates.md) for every available method.
 
-### Two-step posting (review before posting)
+#### Two-step posting (review before posting)
 
 ```php
 $invoice->createJournal();           // draft only
@@ -247,7 +262,7 @@ if ($draft->canBePosted()) {
 }
 ```
 
-## Reversing and Voiding
+### Reversing and Voiding
 
 Posted entries are immutable — correct them by reversing (creates an offsetting entry, full audit trail) rather than editing:
 
@@ -261,7 +276,7 @@ if ($entry->canBeReversed()) {       // true once posted
 
 `void()` only applies to a **draft, unposted** entry (cancelling it before it's ever posted) — once posted, `canBeVoided()` returns `false` and you must `reverse()` instead.
 
-## Fiscal Periods
+### Fiscal Periods
 
 ```php
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
@@ -276,7 +291,7 @@ LaravelAccounting::periods()->lockPeriod($periods[0]);  // freezes it completely
 
 Posting validates the fiscal period is open; closing validates every entry in it is posted and the trial balance is in balance.
 
-### Closing entries
+#### Closing entries
 
 `PeriodService::closePeriod()` doesn't post anything by itself — it just validates and locks. To actually zero out Revenue/Expense into Retained Earnings before closing a period (the step that was missing before, and why the Balance Sheet wouldn't balance at year-end), use `ClosingService`:
 
@@ -381,9 +396,9 @@ See **Creating Custom Templates** in [docs/available-templates.md](docs/availabl
 **Does the package handle authorization (who's allowed to post, close a period, etc.)?**
 No — that's left entirely to your application. There are no policy classes or permission checks anywhere in the package; wrap calls into `PostingService`/`PeriodService`/`JournalService` with your own authorization logic (a policy, a middleware, a form request) before invoking them.
 
-## API Reference
+### API Reference
 
-### Facade
+#### Facade
 
 ```php
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
@@ -399,15 +414,15 @@ LaravelAccounting::closing();    // ClosingService
 LaravelAccounting::chartsOfAccounts();
 ```
 
-### Models
+#### Models
 
 `Account`, `AccountType`, `AccountBalance` (cached per-period balances), `JournalEntry`, `JournalEntryItem`, `FiscalYear`, `FiscalPeriod`, `ExchangeRate`.
 
-### Services
+#### Services
 
 `JournalService` (create/validate/post/reverse/void), `AccountService` (CRUD, hierarchy, preset lookup), `BalanceService` (balance calculation, trial balance, net income), `ReportService`, `PostingService` (named transaction shortcuts), `PeriodService` (open/close/lock fiscal periods), `ClosingService` (preview/commit period-end closing entries).
 
-### Key Exceptions
+#### Key Exceptions
 
 All extend `LaravelAccountingException`: `AccountNotFoundException`, `AccountInactiveException`, `ParentAccountPostingException` (preset resolves to a parent/category account with no unambiguous child), `JournalNotBalancedException`, `DuplicatePostingException`, `PeriodClosedException`, `InvalidVoucherException`, `TemplateNotFoundException`. See `src/Exceptions/` for the full list.
 
@@ -418,7 +433,7 @@ composer test
 composer test-coverage
 ```
 
-## Contributing
+##  Contributing
 
 Let me pave the way, I'll let you know when you can contribute. 
 

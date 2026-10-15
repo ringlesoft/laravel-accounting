@@ -21,10 +21,7 @@ class AccountService
      */
     public function create(array $data): Account
     {
-        // is_system_account is a protected flag (see update()'s guard against
-        // changing a system account's code) that only the package's own seeders
-        // should set, directly on the model - never through this general-purpose,
-        // typically request-driven entry point.
+        // is_system_account is a protected flag that only the package's own seeders
         unset($data['is_system_account']);
 
         return DB::transaction(function () use ($data) {
@@ -38,13 +35,11 @@ class AccountService
                 }
             }
 
-            $account = Account::create(array_merge([
+            return Account::create(array_merge([
                 'is_active' => true,
                 'allows_manual_entries' => true,
                 'currency_code' => config('laravel_accounting.default_currency_code'),
             ], $data));
-
-            return $account;
         });
     }
 

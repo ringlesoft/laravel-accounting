@@ -362,7 +362,9 @@ Then confirm every preset you referenced actually resolves to a seeded account: 
 - **A preset that resolves to a parent/category account with more than one child is ambiguous and `make()` rejects it immediately** with `ParentAccountPostingException` (unless `allow_posting_on_parents` is `true`) — never silently posting to the parent. Many shipped templates default to a category preset (e.g. `COST_OF_GOODS_SOLD`, `ACCOUNTS_RECEIVABLE`) on purpose, since which specific sub-account to use is a business decision only you can make. Pick one with `->resolveAccount(AccountPreset::COST_OF_GOODS_SOLD, $account)` on the template instance — `$account` can be an `Account` model, an id, or a UUID, and does not need to carry a preset at all:
 
   ```php
-  $cogsAccount = Account::where('code', '50010')->first(); // your own sub-account
+  use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
+
+  $cogsAccount = LaravelAccounting::accounts()->findByCode('50010'); // your own sub-account
 
   $template = (new CashPurchaseTemplate())->resolveAccount(AccountPreset::COST_OF_GOODS_SOLD, $cogsAccount);
 
@@ -406,9 +408,10 @@ Then confirm every preset you referenced actually resolves to a seeded account: 
 
 ## Template Registry
 
-The 31 shipped templates are pre-registered in `TemplateRegistry::$templates`; your own custom templates are **not** added automatically — call `TemplateRegistry::register('your.key', YourTemplate::class)` yourself if you want key-based resolution or a slot in the Journal Voucher UI's template picker. Any registered template can be resolved via `TemplateRegistry::make('<key>')`. The **Registry Key** column in each table above is the exact key to use for the shipped ones.
+The 39 shipped templates are pre-registered in `TemplateRegistry::$templates`; your own custom templates are **not** added automatically — call `TemplateRegistry::register('your.key', YourTemplate::class)` yourself if you want key-based resolution or a slot in the Journal Voucher UI's template picker. Any registered template can be resolved via `TemplateRegistry::make('<key>')`. The **Registry Key** column in each table above is the exact key to use for the shipped ones.
 
 ## See Also
 
 - [README.md](../README.md) — installation, configuration, and general usage
+- [financial-transactions.md](financial-transactions.md) — the broader reference of standard accounting transactions (including ones with no dedicated template), with the debit/credit pattern for each
 - [roadmap.md](../roadmap.md) — implementation status and planned features, including the closing-entries gap noted above

@@ -20,17 +20,19 @@ Turn any model to a source of accounting transactions. Attach a `Postable` trait
 ## Table of Contents
 
 - [Installation](#installation)
-- [Configuration](#configuration)
 - [Quick Start](#quick-start)
-- [Core Concepts](#core-concepts)
-- [Architecture](#architecture)
-- [Posting Transactions](#posting-transactions)
-- [Reversing and Voiding](#reversing-and-voiding)
-- [Fiscal Periods](#fiscal-periods)
-- [Multi-Currency & Multi-Tenancy](#multi-currency--multi-tenancy)
-- [Reporting](#reporting)
-- [Troubleshooting & FAQ](#troubleshooting--faq)
-- [API Reference](#api-reference)
+- [Diving Deeper](#diving-deeper)
+  - [Core Concepts](#core-concepts)
+  - [Architecture](#architecture)
+  - [Configuration](#configuration)
+  - [Manual Installation and Resources Publishing](#manual-installation-and-resources-publishing)
+  - [Posting Transactions](#posting-transactions)
+  - [Reversing and Voiding](#reversing-and-voiding)
+  - [Fiscal Periods](#fiscal-periods)
+  - [Multi-Currency & Multi-Tenancy](#multi-currency--multi-tenancy)
+  - [Reporting](#reporting)
+  - [Troubleshooting & FAQ](#troubleshooting--faq)
+  - [API Reference](#api-reference)
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
@@ -98,73 +100,7 @@ $invoice->postWithTemplate(new CashSaleTemplate(
 
 ## Diving Deeper
 
-### Manual Installation and Resources Publishing
-If you dont want to run the install command, you can manually publish package resources. This is what the `install` command does in the background:
-
-```bash
-php artisan vendor:publish --tag="accounting-config"
-php artisan vendor:publish --tag="accounting-migrations"
-php artisan migrate
-php artisan db:seed --class=AccountTypeSeeder
-php artisan db:seed --class=ChartOfAccountsSeeder
-php artisan db:seed --class=FiscalPeriodSeeder
-```
-
-### Configuration
-The above command publishes the configuration file `config/laravel_accounting.php` in your laravel application.
-
-```php
-return [
-    'table_prefix' => 'la',                 // DB table prefix for this package's tables
-    'multi_tenancy_field' => 'tenant_id',
-    'strict_multi_tenancy_check' => true,   // false allows null-tenant rows as shared/global data
-    'default_currency_code' => 'USD',
-    'transaction_number_prefix' => 'JE',    // e.g. JE-20260101-000001
-    'use_uuid' => false,                    // UUID vs auto-increment primary keys
-    'default_fiscal_year_start' => ['month' => 1, 'day' => 1],
-    'fiscal_periods_count' => 2,            // 12 monthly, 4 quarterly, 2 semi-annual, 1 annual
-    'cash_basis' => false,                  // informational only, not enforced - see docs/available-templates.md
-    'auto_post' => false,
-    'balance_cache_enabled' => true,
-    'report_cache_enabled' => true,
-    'report_cache_ttl' => 3600,
-    'cache_prefix' => 'laravel_accounting',
-    'supported_currencies' => [],           // empty = allow any ISO 4217 code
-    'account_code_format' => '/^[0-9]{4}(-[0-9]{2})?$/',
-    'allow_posting_on_parents' => false,
-];
-```
-
-> Posting fails with a validation error ("the fiscal period id field is required") if no fiscal period covers today — make sure `FiscalPeriodSeeder` has run, or create one via `LaravelAccounting::periods()->createPeriodsForYear($fiscalYear)`.
-
-
-### Handling Child accounts manually
-Sometimes an account template (e.g `COST_OF_GOODS_SOLD`) may resolve to an account that has multiple accounts under it. 
-When the pacakge wants to post using this template it will fail with ``. To make this work you should manually resolve the template into one specific account among the children. There are two approaches:
-
-1. Pass the template - Account mapping as you instantiate the PostingTemplate:
-```php
-$purchase->postWithTemplate(
-    (new CashPurchaseTemplate())->resolveAccount(AccountPreset::COST_OF_GOODS_SOLD, $cogsSubAccount)
-);
-```
-2. Implement `ResolvesAccountPresets` on the postable model and return the mapping account class using the `resolveAccountForPreset()` method
-
-```php
-use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
-
-#[DefaultAccountingTemplate(PrepaidExpenseTemplate::class)]
-class Invoice extends Model implements PostableModel, ResolvesAccountPresets
-{
-    use Postable;
-    public function resolveAccountForPreset(AccountPreset $preset): Account|int|string|null
-    {
-        return $preset === AccountPreset::COST_OF_GOODS_SOLD  ? $this->department->cogsAccount  : null;
-    }
-}
-```
-
-> See **[docs/available-templates.md](docs/available-templates.md)** for the full catalog of 39 preset templates (sales, purchases, payroll, depreciation, loans, equity, inventory, bad debt).
+The Quick Start gets a model posting. The rest of this README builds up the full mental model: what each piece is called and why ([Core Concepts](#core-concepts)), how they fit together ([Architecture](#architecture)), how to configure and install the package ([Configuration](#configuration), [Manual Installation](#manual-installation-and-resources-publishing)), the full posting/reversal/closing workflow ([Posting Transactions](#posting-transactions), [Reversing and Voiding](#reversing-and-voiding), [Fiscal Periods](#fiscal-periods)), cross-cutting concerns ([Multi-Currency & Multi-Tenancy](#multi-currency--multi-tenancy)), [Reporting](#reporting), and a [Troubleshooting & FAQ](#troubleshooting--faq) for when something doesn't behave as expected.
 
 ### Core Concepts
 
@@ -218,7 +154,46 @@ graph LR
 ```
 > Note: Templates never touch the database directly. They only describe *which* presets to debit/credit and *how much*. You can create your own Templates by extending the `AcountingTemplate` class
 
+### Configuration
 
+The installer (or a manual `vendor:publish`, see below) publishes `config/laravel_accounting.php` into your Laravel application:
+
+```php
+return [
+    'table_prefix' => 'la',                 // DB table prefix for this package's tables
+    'multi_tenancy_field' => 'tenant_id',
+    'strict_multi_tenancy_check' => true,   // false allows null-tenant rows as shared/global data
+    'default_currency_code' => 'USD',
+    'transaction_number_prefix' => 'JE',    // e.g. JE-20260101-000001
+    'use_uuid' => false,                    // UUID vs auto-increment primary keys
+    'default_fiscal_year_start' => ['month' => 1, 'day' => 1],
+    'fiscal_periods_count' => 2,            // 12 monthly, 4 quarterly, 2 semi-annual, 1 annual
+    'cash_basis' => false,                  // informational only, not enforced - see docs/available-templates.md
+    'auto_post' => false,
+    'balance_cache_enabled' => true,
+    'report_cache_enabled' => true,
+    'report_cache_ttl' => 3600,
+    'cache_prefix' => 'laravel_accounting',
+    'supported_currencies' => [],           // empty = allow any ISO 4217 code
+    'account_code_format' => '/^[0-9]{4}(-[0-9]{2})?$/',
+    'allow_posting_on_parents' => false,
+];
+```
+
+> Posting fails with a validation error ("the fiscal period id field is required") if no fiscal period covers today — make sure `FiscalPeriodSeeder` has run, or create one via `LaravelAccounting::periods()->createPeriodsForYear($fiscalYear)`.
+
+### Manual Installation and Resources Publishing
+
+If you don't want to run the install command, you can manually publish package resources. This is what the `install` command does in the background:
+
+```bash
+php artisan vendor:publish --tag="accounting-config"
+php artisan vendor:publish --tag="accounting-migrations"
+php artisan migrate
+php artisan db:seed --class=AccountTypeSeeder
+php artisan db:seed --class=ChartOfAccountsSeeder
+php artisan db:seed --class=FiscalPeriodSeeder
+```
 
 ### Posting Transactions
 
@@ -261,6 +236,34 @@ if ($draft->canBePosted()) {
     $invoice->postJournal();
 }
 ```
+
+#### Resolving ambiguous accounts (children of a preset)
+
+Sometimes a preset (e.g. `COST_OF_GOODS_SOLD`) resolves to an account that has multiple children under it. Since accounts are never posted to a parent, posting then fails with `ParentAccountPostingException` — the package refuses to guess which child you meant. There are two ways to resolve it:
+
+1. Pass the template → account mapping as you instantiate the template:
+```php
+$purchase->postWithTemplate(
+    (new CashPurchaseTemplate())->resolveAccount(AccountPreset::COST_OF_GOODS_SOLD, $cogsSubAccount)
+);
+```
+2. Implement `ResolvesAccountPresets` on the postable model and return the mapping account via `resolveAccountForPreset()`:
+
+```php
+use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
+
+#[DefaultAccountingTemplate(PrepaidExpenseTemplate::class)]
+class Invoice extends Model implements PostableModel, ResolvesAccountPresets
+{
+    use Postable;
+    public function resolveAccountForPreset(AccountPreset $preset): Account|int|string|null
+    {
+        return $preset === AccountPreset::COST_OF_GOODS_SOLD ? $this->department->cogsAccount : null;
+    }
+}
+```
+
+> See **[docs/available-templates.md](docs/available-templates.md)** for the full catalog of 39 preset templates (sales, purchases, payroll, depreciation, loans, equity, inventory, bad debt).
 
 ### Reversing and Voiding
 
@@ -307,7 +310,7 @@ $result = LaravelAccounting::closing()->commit($period); // posts all four steps
 
 Each of the four steps (close Revenue, close Expenses, close Income Summary → Retained Earnings, close Dividends → Retained Earnings) also has its own `previewCloseX()`/`commitCloseX()` pair if you want to run them independently rather than all at once — e.g. `commitCloseRevenue($period)`. Every step reads the ledger's actual current state, not a cached calculation, so calling them in any order, or calling the same one twice, is safe: a step with nothing left to close just returns `null`. Requires `INCOME_SUMMARY` and `RETAINED_EARNINGS` accounts to be seeded (throws `AccountNotFoundException` if not); a missing `DIVIDENDS_DECLARED` account just means that step is skipped, since most businesses never declare dividends at all. Must run before `PeriodService::closePeriod()`, since posting is rejected once a period is closed.
 
-## Multi-Currency & Multi-Tenancy
+### Multi-Currency & Multi-Tenancy
 
 ```php
 $voucher = VoucherData::make()
@@ -319,11 +322,11 @@ $voucher = VoucherData::make()
 
 Multi-tenancy isn't a toggle — any model using the `MultiTenant` trait (Account, JournalEntry, FiscalYear, FiscalPeriod, AccountBalance all do) is always scoped to a `tenant_id` column via a global scope. `multi_tenancy_field` only controls which attribute is read off the authenticated user to populate it on create (defaults to `tenant_id`); if there's no authenticated user (queues, CLI) it's left unset.
 
-By default (`strict_multi_tenancy_check => false`). When set to `true`, every record must belong to exactly one resolvable tenant: a row with a `null` `tenant_id` is never visible to an authenticated tenant, and creating a record with no resolvable tenant_id (no authenticated user, and none set explicitly) throws `TenantRequiredException`. 
+By default (`strict_multi_tenancy_check => true`), every record must belong to exactly one resolvable tenant: a row with a `null` `tenant_id` is never visible to an authenticated tenant, and creating a record with no resolvable tenant_id (no authenticated user, and none set explicitly) throws `TenantRequiredException`.
 Set it to `false` to allow genuinely global/shared records instead — `null`-tenant rows become visible to every tenant, and can be created without a resolvable tenant (e.g. from a seeder or console command) without being rejected.
-Recommended is `true` whenever using multitenancy.
+Recommended is `true` whenever using multi-tenancy.
 
-## Reporting
+### Reporting
 
 Every report goes through `LaravelAccounting::reports()->{reportType}($params)`, which returns an already-generated report - call `->getData()` (or `->toArray()`/`->toJson()`) directly. `$params` keys are snake_case and vary per report:
 
@@ -355,7 +358,7 @@ $ledger = LaravelAccounting::reports()
 
 Results are cached per `report_cache_ttl`, keyed by report type + params, and invalidated automatically whenever a journal entry posts, reverses, or voids - `LaravelAccounting::reports()->clearCache($reportType)` clears it manually if needed. Calling `->generate()` again on a returned report is safe but recomputes live and bypasses the cache for that call, so there's no need to.
 
-## Troubleshooting & FAQ
+### Troubleshooting & FAQ
 
 **"Failed to post to journal. The fiscal period id field is required."**
 No fiscal period covers the transaction date. Seed one (`FiscalPeriodSeeder`) or create it directly: `LaravelAccounting::periods()->createPeriodsForYear($fiscalYear)`.

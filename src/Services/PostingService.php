@@ -409,6 +409,102 @@ class PostingService
     }
 
     /**
+     * Post a fixed asset sale at a gain
+     * Debit: Cash + Accumulated Depreciation
+     * Credit: Fixed Assets (at cost) + Gain on Sale
+     */
+    public function assetSaleGain(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('asset.sale_gain');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post a fixed asset sale at a loss
+     * Debit: Cash + Accumulated Depreciation + Loss on Sale
+     * Credit: Fixed Assets (at cost)
+     */
+    public function assetSaleLoss(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('asset.sale_loss');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post a fixed asset disposal with no sale (scrapped/retired)
+     * Debit: Accumulated Depreciation + Loss on Disposal
+     * Credit: Fixed Assets (at cost)
+     */
+    public function assetDisposal(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('asset.disposal');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post an investment sale at a gain
+     * Debit: Cash
+     * Credit: Investment (at cost) + Gain on Sale
+     */
+    public function investmentSaleGain(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('investment.sale_gain');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post an investment sale at a loss
+     * Debit: Cash + Loss on Sale
+     * Credit: Investment (at cost)
+     */
+    public function investmentSaleLoss(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('investment.sale_loss');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post a VAT payment net of input VAT
+     * Debit: Output VAT
+     * Credit: Input VAT (offset) + Cash (net remittance)
+     */
+    public function vatPayment(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('tax.vat_payment');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post a realized foreign exchange gain
+     * Debit: Cash/Accounts Receivable
+     * Credit: Foreign Exchange Gain
+     */
+    public function foreignExchangeGain(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('fx.gain');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post a realized foreign exchange loss
+     * Debit: Foreign Exchange Loss
+     * Credit: Cash/Accounts Payable
+     */
+    public function foreignExchangeLoss(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('fx.loss');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
      * Post adjusting entry
      * Custom debit and credit accounts
      * Note: This is a custom transaction that requires the model to implement toVoucher()

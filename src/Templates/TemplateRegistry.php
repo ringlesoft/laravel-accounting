@@ -38,6 +38,14 @@ class TemplateRegistry
         'payroll.payment_detailed' => PayrollPaymentDetailedTemplate::class,
         'debt.bond_issuance' => BondIssuanceTemplate::class,
         'revenue.unearned_recognition' => UnearnedRevenueRecognitionTemplate::class,
+        'asset.sale_gain' => AssetSaleGainTemplate::class,
+        'asset.sale_loss' => AssetSaleLossTemplate::class,
+        'asset.disposal' => AssetDisposalTemplate::class,
+        'investment.sale_gain' => InvestmentSaleGainTemplate::class,
+        'investment.sale_loss' => InvestmentSaleLossTemplate::class,
+        'tax.vat_payment' => VatPaymentTemplate::class,
+        'fx.gain' => ForeignExchangeGainTemplate::class,
+        'fx.loss' => ForeignExchangeLossTemplate::class,
     ];
 
     /**

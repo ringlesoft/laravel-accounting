@@ -68,8 +68,9 @@ The package ships templates for both styles side by side. Which basis your books
 | **Payroll Expense** | `PayrollExpenseTemplate` | Records payroll expensed and paid in one step (no accrual) | Dr: `SALARIES_EXPENSE`<br>Cr: `CASH` | `$salaryExpenseAccount`, `$cashAccount` | `payroll.expense` | `payroll()` |
 | **Payroll Accrual** | `PayrollAccrualTemplate` | Records payroll expense with tax withholding, before it's paid | Dr: `SALARIES_EXPENSE`<br>Cr: `WAGES_PAYABLE`<br>Cr: `PAYROLL_TAX_PAYABLE` (if `taxWithholdingRate` > 0) | `$salaryExpenseAccount`, `$wagesPayableAccount`, `$taxPayableAccount`, `$taxWithholdingRate` | `payroll.accrual` | `accruedExpense()` |
 | **Payroll Payment** | `PayrollPaymentTemplate` | Records payment of previously-accrued wages | Dr: `WAGES_PAYABLE`<br>Cr: `CASH` | `$wagesPayableAccount`, `$cashAccount` | `payroll.payment` | `payWages()` |
+| **Payroll Payment (Detailed)** | `PayrollPaymentDetailedTemplate` | Records payment of wages plus employer payroll tax and withholding not yet remitted | Dr: `WAGES_PAYABLE`<br>Dr: `PAYROLL_TAX_EXPENSE` (if `employerTaxRate` > 0)<br>Cr: `CASH` (net of withholding)<br>Cr: `PAYROLL_TAX_PAYABLE` (if `employerTaxRate` > 0)<br>Cr: `FEDERAL_WITHHOLDING_PAYABLE` (if `withholdingRate` > 0) | `$wagesPayableAccount`, `$payrollTaxExpenseAccount`, `$cashAccount`, `$payrollTaxPayableAccount`, `$federalWithholdingPayableAccount`, `$employerTaxRate`, `$withholdingRate` | `payroll.payment_detailed` | `payrollPaymentDetailed()` |
 
-`payroll()` (Payroll Expense) and `accruedExpense()` + `payWages()` (Payroll Accrual then Payment) are two different workflows for the same real-world event — pick one depending on whether your business accrues payroll before paying it or expenses it directly at payment time.
+`payroll()` (Payroll Expense) and `accruedExpense()` + `payWages()` (Payroll Accrual then Payment) are two different workflows for the same real-world event — pick one depending on whether your business accrues payroll before paying it or expenses it directly at payment time. Use `PayrollPaymentDetailedTemplate` instead of the plain `PayrollPaymentTemplate` when the payment itself also needs to recognize employer tax/withholding, rather than those having been fully settled at accrual time.
 
 ### Asset & Depreciation Templates
 
@@ -77,6 +78,11 @@ The package ships templates for both styles side by side. Which basis your books
 |----------|-------|-------------|-------------------|------------|---------------|------------------------|
 | **Fixed Asset Purchase** | `FixedAssetPurchaseTemplate` | Records acquisition of fixed assets (cash or credit) | Dr: `FIXED_ASSETS`<br>Cr: `CASH` / `ACCOUNTS_PAYABLE` | `$fixedAssetAccount`, `$cashAccount`, `$payableAccount`, `$isCashPurchase` | `asset.purchase` | *(none — use `TemplateRegistry::make()`)* |
 | **Depreciation** | `DepreciationTemplate` | Records periodic depreciation expense | Dr: `DEPRECIATION_EXPENSE`<br>Cr: `ACCUMULATED_DEPRECIATION` | `$depreciationExpenseAccount`, `$accumulatedDepreciationAccount` | `asset.depreciation` | `depreciation()` |
+| **Asset Sale (Gain)** | `AssetSaleGainTemplate` | Records selling a fixed asset above its book value | Dr: `CASH` + `ACCUMULATED_DEPRECIATION`<br>Cr: `FIXED_ASSETS` (at cost) + `GAIN_ON_SALE_OF_ASSETS` | `$cashAccount`, `$accumulatedDepreciationAccount`, `$fixedAssetAccount`, `$gainAccount`, `$originalCost`, `$accumulatedDepreciation` | `asset.sale_gain` | `assetSaleGain()` |
+| **Asset Sale (Loss)** | `AssetSaleLossTemplate` | Records selling a fixed asset below its book value | Dr: `CASH` + `ACCUMULATED_DEPRECIATION` + `LOSS_ON_SALE_OF_ASSETS`<br>Cr: `FIXED_ASSETS` (at cost) | `$cashAccount`, `$accumulatedDepreciationAccount`, `$fixedAssetAccount`, `$lossAccount`, `$originalCost`, `$accumulatedDepreciation` | `asset.sale_loss` | `assetSaleLoss()` |
+| **Asset Disposal** | `AssetDisposalTemplate` | Records scrapping/retiring an asset with no sale - the full remaining book value is a loss | Dr: `ACCUMULATED_DEPRECIATION` + `LOSS_ON_SALE_OF_ASSETS`<br>Cr: `FIXED_ASSETS` (at cost) | `$accumulatedDepreciationAccount`, `$lossAccount`, `$fixedAssetAccount`, `$accumulatedDepreciation` | `asset.disposal` | `assetDisposal()` |
+
+`$originalCost`/`$accumulatedDepreciation`/`$costBasis` on these and the Investment templates below are supplied by the caller (e.g. read off your own asset/investment model) - none of these templates query the ledger for them. The Gain/Loss split exists because a template's `configure()` can't see `$model->getAmount()` to decide which direction to post in; each template's `validate()` rejects the wrong one (e.g. `AssetSaleGainTemplate` throws if the numbers actually describe a loss) and names the correct template to use instead. `$model->getAmount()` is the sale proceeds for the Sale templates, and the asset's original cost for `AssetDisposalTemplate` (which has no proceeds at all).
 
 ### Inventory Templates
 
@@ -92,6 +98,9 @@ The package ships templates for both styles side by side. Which basis your books
 |----------|-------|-------------|-------------------|------------|---------------|------------------------|
 | **Loan Receipt** | `LoanReceiptTemplate` | Records receipt of loan proceeds | Dr: `CASH`<br>Cr: `LOAN_PAYABLE` | `$cashAccount`, `$loanPayableAccount` | `loan.receipt` | `loanReceived()` |
 | **Loan Payment** | `LoanPaymentTemplate` | Records loan principal and interest payments | Dr: `LOAN_PAYABLE`<br>Dr: `INTEREST_EXPENSE` (if `interestAmount` > 0)<br>Cr: `CASH` | `$loanPayableAccount`, `$interestExpenseAccount`, `$cashAccount`, `$interestAmount` | `loan.payment` | `loanPayment()` |
+| **Bond Issuance** | `BondIssuanceTemplate` | Records issuing corporate bonds, net of issuance costs | Dr: `CASH` (net of `issuanceCosts`)<br>Dr: `BOND_ISSUANCE_COSTS` (if `issuanceCosts` > 0)<br>Cr: `BONDS_PAYABLE` (face value) | `$cashAccount`, `$bondIssuanceCostsAccount`, `$bondsPayableAccount`, `$issuanceCosts` | `debt.bond_issuance` | `bondIssuance()` |
+
+`$model->getAmount()` on `BondIssuanceTemplate` is the bond's face value (what `BONDS_PAYABLE` is credited for); `$issuanceCosts` is a flat deducted amount, not a rate.
 
 ### Equity Templates
 
@@ -99,26 +108,53 @@ The package ships templates for both styles side by side. Which basis your books
 |----------|-------|-------------|-------------------|------------|---------------|------------------------|
 | **Owner Investment** | `OwnerInvestmentTemplate` | Records capital contributions by owners | Dr: `CASH`<br>Cr: `OWNERS_EQUITY` | `$cashAccount`, `$equityAccount` | `equity.investment` | `ownerInvestment()` |
 | **Dividend** | `DividendTemplate` | Records a dividend/owner's-draw declared and paid in one step | Dr: `DIVIDENDS_DECLARED`<br>Cr: `CASH` | `$dividendsAccount`, `$cashAccount` | `equity.dividend` | `ownerWithdrawal()` |
+| **Stock Issuance** | `StockIssuanceTemplate` | Records issuing shares for cash, split between par value and the excess | Dr: `CASH`<br>Cr: `COMMON_STOCK` (`parValuePerShare × numberOfShares`)<br>Cr: `ADDITIONAL_PAID_IN_CAPITAL` (remainder, if `parValuePerShare` > 0) | `$cashAccount`, `$commonStockAccount`, `$additionalPaidInCapitalAccount`, `$parValuePerShare`, `$numberOfShares` | `equity.stock_issuance` | `stockIssuance()` |
+| **Treasury Stock Reissuance** | `TreasuryStockReissuanceTemplate` | Records reselling treasury shares at or above their cost basis | Dr: `CASH`<br>Cr: `TREASURY_STOCK` (at `costBasis`)<br>Cr: `ADDITIONAL_PAID_IN_CAPITAL` (gain over cost, if `costBasis` > 0) | `$cashAccount`, `$treasuryStockAccount`, `$additionalPaidInCapitalAccount`, `$costBasis` | `equity.treasury_reissuance` | `treasuryStockReissuance()` |
 
-`DividendTemplate` collapses declaration and payment into a single entry. If you need the two-step textbook flow (`Dr RETAINED_EARNINGS / Cr DIVIDENDS_PAYABLE` at declaration, then `Dr DIVIDENDS_PAYABLE / Cr CASH` at payment), that isn't implemented — see **Known Gaps**.
+`DividendTemplate` collapses declaration and payment into a single entry. If you need the two-step textbook flow (`Dr RETAINED_EARNINGS / Cr DIVIDENDS_PAYABLE` at declaration, then `Dr DIVIDENDS_PAYABLE / Cr CASH` at payment), that isn't implemented — see **Known Gaps**. `TreasuryStockReissuanceTemplate` only covers reissuing at or above cost (a gain); reissuing below cost is a loss posted in the opposite direction, which this template doesn't model — build that one directly via `VoucherData`.
+
+### Investment Templates
+
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Investment Sale (Gain)** | `InvestmentSaleGainTemplate` | Records selling an investment above its cost basis | Dr: `CASH`<br>Cr: `SHORT_TERM_INVESTMENTS` (at cost) + `GAIN_ON_SALE_OF_ASSETS` | `$cashAccount`, `$investmentAccount`, `$gainAccount`, `$costBasis` | `investment.sale_gain` | `investmentSaleGain()` |
+| **Investment Sale (Loss)** | `InvestmentSaleLossTemplate` | Records selling an investment below its cost basis | Dr: `CASH` + `LOSS_ON_SALE_OF_ASSETS`<br>Cr: `SHORT_TERM_INVESTMENTS` (at cost) | `$cashAccount`, `$investmentAccount`, `$lossAccount`, `$costBasis` | `investment.sale_loss` | `investmentSaleLoss()` |
+
+Same Gain/Loss split and `$costBasis`-is-caller-supplied reasoning as the Asset Sale templates above.
+
+### Tax Templates
+
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **VAT Payment** | `VatPaymentTemplate` | Records remitting VAT net of input VAT credit | Dr: `OUTPUT_VAT`<br>Cr: `INPUT_VAT` (offset, if `inputVatAmount` > 0) + `CASH` (net remittance) | `$outputVatAccount`, `$inputVatAccount`, `$cashAccount`, `$inputVatAmount` | `tax.vat_payment` | `vatPayment()` |
+
+`$model->getAmount()` is the Output VAT balance being cleared; `$inputVatAmount` is the Input VAT balance to offset against it, supplied by the caller (e.g. read off the ledger before constructing this template) - this template never queries it. If input VAT exceeds output VAT, that's a refund due, not a payment - `validate()` rejects that case; see row 99 in `financial-transactions.md` for the refund side.
+
+### Foreign Exchange Templates
+
+| Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
+|----------|-------|-------------|-------------------|------------|---------------|------------------------|
+| **Foreign Exchange Gain** | `ForeignExchangeGainTemplate` | Records a realized FX gain of an already-known amount | Dr: `CASH` / `ACCOUNTS_RECEIVABLE`<br>Cr: `FOREIGN_EXCHANGE_GAIN` | `$cashOrReceivableAccount`, `$gainAccount` | `fx.gain` | `foreignExchangeGain()` |
+| **Foreign Exchange Loss** | `ForeignExchangeLossTemplate` | Records a realized FX loss of an already-known amount | Dr: `FOREIGN_EXCHANGE_LOSS`<br>Cr: `CASH` / `ACCOUNTS_PAYABLE` | `$lossAccount`, `$cashOrPayableAccount` | `fx.loss` | `foreignExchangeLoss()` |
+
+These post an amount you already know (`$model->getAmount()`) - neither template calculates a gain/loss from exchange rate data. *Unrealized* FX revaluation (scanning every open foreign-currency balance at period end) is a different, batch-shaped problem these don't cover - see **Known Gaps**.
 
 ### Receivables Management Templates
 
 | Template | Class | Description | Accounts Affected | Parameters | Registry Key | PostingService Method |
 |----------|-------|-------------|-------------------|------------|---------------|------------------------|
-| **Bad Debt** | `BadDebtTemplate` | Records the *estimate* of uncollectible receivables (not a specific write-off) | Dr: `BAD_DEBT_EXPENSE`<br>Cr: `ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS` | `$badDebtExpenseAccount`, `$allowanceAccount` | `debt.writeoff` | *(none — use `TemplateRegistry::make()`)* |
+| **Bad Debt Estimate** | `BadDebtTemplate` | Records the *estimate* of uncollectible receivables (not a specific write-off) | Dr: `BAD_DEBT_EXPENSE`<br>Cr: `ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS` | `$badDebtExpenseAccount`, `$allowanceAccount` | `debt.estimate` | *(none — use `TemplateRegistry::make()`)* |
+| **Bad Debt Writeoff** | `BadDebtWriteoffTemplate` | Writes off one customer's specific uncollectible balance against the allowance | Dr: `ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS`<br>Cr: `ACCOUNTS_RECEIVABLE` | `$allowanceAccount`, `$receivableAccount` | `debt.writeoff` | `writeOffBadDebt()` |
+| **Bad Debt Recovery** | `BadDebtRecoveryTemplate` | Records collecting a previously written-off debt | Dr: `CASH`<br>Cr: `ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS` | `$cashAccount`, `$allowanceAccount` | `debt.recovery` | `recoverBadDebt()` |
 
-Despite its registry key (`debt.writeoff`) and class name, this template records the *allowance estimation* step, not writing off one specific customer's balance (`Dr ALLOWANCE... / Cr ACCOUNTS_RECEIVABLE`) — that specific write-off, and recovering a previously written-off debt, aren't implemented. See **Known Gaps**.
+The `debt.writeoff` registry key used to point at `BadDebtTemplate` (the estimation step) despite its name — fixed; it now points at `BadDebtWriteoffTemplate`, and the estimation template has its own correctly-named `debt.estimate` key. `BadDebtRecoveryTemplate` defaults to crediting the allowance (the standard treatment); override `$allowanceAccount` to `BAD_DEBT_EXPENSE` if your policy credits recoveries straight to the expense account instead.
 
 ## Known Gaps
 
 Correct, standard accounting events that are **not yet implemented** as a template (confirmed by checking every registered template and `PostingService` method):
 
-- **Recognizing previously-unearned revenue as earned** (`Dr UNEARNED_REVENUE / Cr SALES_REVENUE`) — the counterpart to `UnearnedRevenueTemplate`.
-- **Bad debt write-off of a specific account** (`Dr ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS / Cr ACCOUNTS_RECEIVABLE`) and **bad debt recovery** (`Dr CASH / Cr ALLOWANCE...`) — only the estimation step exists.
 - **Two-step dividend** (declare to a payable, then pay it) — only the one-step version exists.
-- **Fixed asset sale/disposal** (removing the asset and its accumulated depreciation, recognizing a gain or loss) — no template at all; only *purchase* of fixed assets is covered.
-- **Closing entries** (closing Revenue/Expense to Income Summary, Income Summary to Retained Earnings, Dividends to Retained Earnings) — the package has no closing-entry mechanism; see `roadmap.md`'s "Future Consideration" list.
+- **Unrealized mark-to-market / FX revaluation** — posting a known gain/loss is trivial (same shape as `ForeignExchangeGainTemplate`), but nothing calculates it: scanning every open foreign-currency or investment balance at period end is a batch process, closer in shape to `ClosingService` than a per-transaction template.
 
 ## Usage Examples
 
@@ -269,7 +305,7 @@ $sale->postWithTemplate(new CustomRefundTemplate(taxRate: 0.15));
 class Sale extends Model implements PostableModel { use Postable; /* ... */ }
 ```
 
-If you also want it resolvable by key (`TemplateRegistry::make('refund.custom')`) or selectable in the Journal Voucher "Posting Template" picker, register it — nothing does this for you automatically, only the 31 shipped templates are pre-registered:
+If you also want it resolvable by key (`TemplateRegistry::make('refund.custom')`) or selectable in the Journal Voucher "Posting Template" picker, register it — nothing does this for you automatically, only the 39 shipped templates are pre-registered:
 
 ```php
 use RingleSoft\LaravelAccounting\Templates\TemplateRegistry;

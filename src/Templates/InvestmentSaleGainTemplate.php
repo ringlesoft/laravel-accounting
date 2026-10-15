@@ -1,0 +1,44 @@
+<?php
+
+namespace RingleSoft\LaravelAccounting\Templates;
+
+use RingleSoft\LaravelAccounting\Contracts\PostableModel;
+use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+
+/**
+ * $model->getAmount() is the cash proceeds received. $costBasis is the
+ * investment's own cost, known to the caller beforehand - this template
+ * never queries it. Covers only the case where proceeds exceed cost (a
+ * gain); use InvestmentSaleLossTemplate for a loss.
+ */
+class InvestmentSaleGainTemplate extends AccountingTemplate
+{
+    public function __construct(
+        protected AccountPreset $cashAccount = AccountPreset::CASH,
+        protected AccountPreset $investmentAccount = AccountPreset::SHORT_TERM_INVESTMENTS,
+        protected AccountPreset $gainAccount = AccountPreset::GAIN_ON_SALE_OF_ASSETS,
+        protected float $costBasis = 0.0,
+    ) {}
+
+    public function configure(): void
+    {
+        // Cash (proceeds) → Investment (at cost) + Gain on Sale
+        $this->debit($this->cashAccount);
+        $this->credit($this->investmentAccount, fn () => $this->costBasis);
+        $this->credit($this->gainAccount, fn ($amount) => $amount - $this->costBasis);
+    }
+
+    public function validate(PostableModel $model): void
+    {
+        if ($this->costBasis < 0) {
+            throw new InvalidVoucherException("costBasis must be >= 0, got {$this->costBasis}");
+        }
+
+        if ($model->getAmount() < $this->costBasis) {
+            throw new InvalidVoucherException(
+                "Proceeds ({$model->getAmount()}) are below costBasis ({$this->costBasis}) - this is a loss, not a gain; use InvestmentSaleLossTemplate instead."
+            );
+        }
+    }
+}

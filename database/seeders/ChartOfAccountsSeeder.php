@@ -25,6 +25,7 @@ class ChartOfAccountsSeeder extends Seeder
      * @var string[]
      */
     private $presets = [];
+
     public function run(string $industry = 'full'): void
     {
         // Ensure account types exist
@@ -2229,6 +2230,7 @@ class ChartOfAccountsSeeder extends Seeder
         if (($attributes['preset'] ?? null) && ! in_array($attributes['preset'], $this->presets, true)) {
             return null;
         }
+
         return Account::updateOrCreate(
             ['code' => $attributes['code']],
             array_merge([

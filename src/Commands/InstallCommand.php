@@ -52,7 +52,7 @@ class InstallCommand extends Command
             $this->call('db:seed', [
                 '--class' => 'AccountTypeSeeder',
             ]);
-            (new ChartOfAccountsSeeder())->run();
+            (new ChartOfAccountsSeeder)->run();
             $this->call('db:seed', [
                 '--class' => 'FiscalPeriodSeeder',
             ]);

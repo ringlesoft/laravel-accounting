@@ -16,7 +16,7 @@ Templates use the `AccountPreset` enum to reference standard chart of accounts, 
 4. **Dynamic Amounts**: Templates support closures for calculating amounts (e.g., tax calculations)
 5. **Automatic Application**: Attach templates to models using the `#[DefaultAccountingTemplate]` attribute
 
-Most templates are also reachable through a convenience method on `PostingService` (`app(PostingService::class)` or `LaravelAccounting::posting()`), which wraps `createDraft()` + `post()` for you. The **PostingService Method** column below names it where one exists; `TemplateRegistry::make('<key>')` always works as the lower-level alternative.
+Most templates are also reachable through a convenience method on `PostingService` (`LaravelAccounting::posting()`), which wraps `createDraft()` + `post()` for you. The **PostingService Method** column below names it where one exists; `TemplateRegistry::make('<key>')` always works as the lower-level alternative.
 
 ## Accounting Basis: Accrual vs Cash
 

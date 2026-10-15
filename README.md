@@ -14,7 +14,7 @@ A double-entry accounting engine for Laravel. Any model can become a source of a
 - **Multi-currency**, **multi-tenancy**, and **fiscal period** support
 - **Reports**: Trial Balance, Balance Sheet, Income Statement, Cash Flow Statement, General Ledger, Account Ledger, Chart of Accounts
 
-> **Project status**: functional and under active development, not yet 1.0 (currently `1.0.0-alpha`). See [roadmap.md](roadmap.md) for what's done and what's planned — in particular, there's no closing-entries mechanism yet, so Balance Sheet won't balance until the current period's net income is manually accounted for, and automated test coverage is thin. Treat this as a solid engine to build on, not a finished product.
+> **Project status**: Fully functional and under active development, not yet 1.0 (still collecting feedback and improving).
 
 ## Table of Contents
 
@@ -58,7 +58,7 @@ php artisan db:seed --class=ChartOfAccountsSeeder
 php artisan db:seed --class=FiscalPeriodSeeder
 ```
 
-Posting fails with a validation error ("the fiscal period id field is required") if no fiscal period covers today — make sure `FiscalPeriodSeeder` has run, or create one via `app(PeriodService::class)->createPeriodsForYear($fiscalYear)`.
+Posting fails with a validation error ("the fiscal period id field is required") if no fiscal period covers today — make sure `FiscalPeriodSeeder` has run, or create one via `LaravelAccounting::periods()->createPeriodsForYear($fiscalYear)`.
 
 ## Configuration
 
@@ -142,6 +142,7 @@ For a model-wide policy instead of a one-off call (e.g. "this model's COGS accou
 ```php
 use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
 
+#[DefaultAccountingTemplate(PrepaidExpenseTemplate::class)]
 class Invoice extends Model implements PostableModel, ResolvesAccountPresets
 {
     use Postable;
@@ -262,14 +263,14 @@ if ($entry->canBeReversed()) {       // true once posted
 ## Fiscal Periods
 
 ```php
-use RingleSoft\LaravelAccounting\Services\PeriodService;
+use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Models\FiscalYear;
 
 $year = FiscalYear::create(['name' => '2026', 'start_date' => '2026-01-01', 'end_date' => '2026-12-31']);
-$periods = app(PeriodService::class)->createPeriodsForYear($year); // generates periods per fiscal_periods_count
+$periods = LaravelAccounting::periods()->createPeriodsForYear($year); // generates periods per fiscal_periods_count
 
-app(PeriodService::class)->closePeriod($periods[0]); // recalculates & caches balances, then closes
-app(PeriodService::class)->lockPeriod($periods[0]);  // freezes it completely (only unlock() can undo)
+LaravelAccounting::periods()->closePeriod($periods[0]); // recalculates & caches balances, then closes
+LaravelAccounting::periods()->lockPeriod($periods[0]);  // freezes it completely (only unlock() can undo)
 ```
 
 Posting validates the fiscal period is open; closing validates every entry in it is posted and the trial balance is in balance.
@@ -341,7 +342,7 @@ Results are cached per `report_cache_ttl`, keyed by report type + params, and in
 ## Troubleshooting & FAQ
 
 **"Failed to post to journal. The fiscal period id field is required."**
-No fiscal period covers the transaction date. Seed one (`FiscalPeriodSeeder`) or create it directly: `app(PeriodService::class)->createPeriodsForYear($fiscalYear)`.
+No fiscal period covers the transaction date. Seed one (`FiscalPeriodSeeder`) or create it directly: `LaravelAccounting::periods()->createPeriodsForYear($fiscalYear)`.
 
 **`ArgumentCountError` when calling `TemplateRegistry::make('key')` or `YourTemplate::getPostableAccounts()`**
 Both call `new $class()` with zero arguments. Every constructor parameter on a template needs a default value — see **Gotchas** in [docs/available-templates.md](docs/available-templates.md).

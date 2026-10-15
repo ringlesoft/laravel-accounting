@@ -1,6 +1,6 @@
 {
     "name": "ringlesoft/laravel-accounting",
-    "description": "This is my package laravel-accounting",
+    "description": "A double-entry accounting engine for Laravel - attach any model via a trait, post through templates or raw vouchers, and get balanced, immutable journal entries with multi-currency, multi-tenancy, fiscal periods, and financial reports built in.",
     "keywords": [
         "RingleSoft",
         "laravel",
@@ -8,7 +8,8 @@
         "accounting",
         "finance",
         "charts of accounts",
-        "ledger"
+        "ledger",
+        "ifrs"
     ],
     "homepage": "https://github.com/ringlesoft/laravel-accounting",
     "license": "MIT",
@@ -20,11 +21,15 @@
             "role": "Developer"
         }
     ],
+    "support": {
+        "issues": "https://github.com/ringlesoft/laravel-accounting/issues",
+        "source": "https://github.com/ringlesoft/laravel-accounting"
+    },
     "require": {
         "php": "^8.1",
-        "illuminate/contracts": "^10.0|^11.0",
-        "illuminate/database": "^10.0|^11.0",
-        "illuminate/routing": "^10.24|^11.0"
+        "illuminate/contracts": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/routing": "^10.24|^11.0|^12.0|^13.0"
     },
     "require-dev": {
         "laravel/pint": "^1.0",
@@ -86,7 +91,5 @@
             }
         }
     },
-    "minimum-stability": "dev",
-    "prefer-stable": true,
-    "version": "0.1.0"
+    "prefer-stable": true
 }

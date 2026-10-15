@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Support\Carbon;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Models\Account;
 
 interface PostableTemplate
@@ -65,7 +66,7 @@ interface PostableTemplate
      * reject an invalid model/parameter combination without needing to override
      * make() itself.
      *
-     * @throws \RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException
+     * @throws InvalidVoucherException
      */
     public function validate(PostableModel $model): void;
 }

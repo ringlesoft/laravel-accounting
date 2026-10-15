@@ -29,9 +29,6 @@ class JournalService
     /**
      * Create a draft journal entry from voucher data
      *
-     * @param VoucherData $voucher
-     * @param int|string|null $userId
-     * @return JournalEntry
      * @throws Throwable
      */
     public function createDraft(VoucherData $voucher, int|string|null $userId = null): JournalEntry
@@ -49,9 +46,6 @@ class JournalService
     }
 
     /**
-     * @param VoucherData $voucher
-     * @param int|string|null $userId
-     * @return JournalEntry
      * @throws Throwable
      */
     protected function createDraftOnce(VoucherData $voucher, int|string|null $userId = null): JournalEntry
@@ -103,8 +97,6 @@ class JournalService
     /**
      * Validate that journal entry is balanced
      *
-     * @param JournalEntry $entry
-     * @return bool
      * @throws JournalNotBalancedException
      */
     public function validateBalance(JournalEntry $entry): bool
@@ -126,8 +118,6 @@ class JournalService
     /**
      * Validate that the fiscal period is open
      *
-     * @param JournalEntry $entry
-     * @return bool
      * @throws PeriodClosedException
      */
     public function validatePeriod(JournalEntry $entry): bool
@@ -154,8 +144,6 @@ class JournalService
     /**
      * Validate that no parent accounts are being posted to
      *
-     * @param JournalEntry $entry
-     * @return bool
      * @throws ParentAccountPostingException
      */
     public function validateParentAccounts(JournalEntry $entry): bool
@@ -180,9 +168,6 @@ class JournalService
     /**
      * Post a journal entry
      *
-     * @param JournalEntry $entry
-     * @param int|null $userId
-     * @return bool
      * @throws Throwable
      */
     public function post(JournalEntry $entry, ?int $userId = null): bool
@@ -223,10 +208,6 @@ class JournalService
     /**
      * Reverse a journal entry
      *
-     * @param JournalEntry $entry
-     * @param string|null $reason
-     * @param int|null $userId
-     * @return JournalEntry
      * @throws Throwable
      */
     public function reverse(JournalEntry $entry, ?string $reason = null, ?int $userId = null): JournalEntry
@@ -295,10 +276,6 @@ class JournalService
     /**
      * Void a journal entry
      *
-     * @param JournalEntry $entry
-     * @param string|null $reason
-     * @param int|string|null $userId
-     * @return bool
      * @throws Throwable
      */
     public function void(JournalEntry $entry, ?string $reason = null, int|string|null $userId = null): bool
@@ -335,9 +312,6 @@ class JournalService
 
     /**
      * Get journal entries for a specific period
-     * @param FiscalPeriod $period
-     * @param bool $postedOnly
-     * @return Collection|array
      */
     public function getEntriesForPeriod(FiscalPeriod $period, bool $postedOnly = true): Collection|array
     {
@@ -396,9 +370,6 @@ class JournalService
 
     /**
      * Get database-specific accounts aggregation query
-     * @param string $driver
-     * @param string $prefix
-     * @return string
      */
     protected function getAccountsAggregationQuery(string $driver, string $prefix): string
     {
@@ -424,8 +395,6 @@ class JournalService
 
     /**
      * Apply filters to transaction query
-     * @param $query
-     * @param array $filters
      */
     protected function applyTransactionFilters($query, array $filters): void
     {
@@ -477,7 +446,6 @@ class JournalService
     /**
      * Validate voucher data
      *
-     * @param VoucherData $voucher
      * @throws InvalidVoucherException
      * @throws JournalNotBalancedException
      */
@@ -503,8 +471,6 @@ class JournalService
 
     /**
      * Find the fiscal period for a given date
-     * @param Carbon $date
-     * @return FiscalPeriod|null
      */
     protected function findFiscalPeriod(Carbon $date): ?FiscalPeriod
     {

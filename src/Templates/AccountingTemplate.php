@@ -52,7 +52,7 @@ abstract class AccountingTemplate implements PostableTemplate
     protected Closure|string|null $reference = null;
 
     /**
-     * @var Closure(PostableModel): CurrencyCode|CurrencyCOde
+     * @var Closure(PostableModel): CurrencyCode|CurrencyCode
      */
     protected Closure|CurrencyCode $currency = CurrencyCode::USD;
 
@@ -68,7 +68,7 @@ abstract class AccountingTemplate implements PostableTemplate
     }
 
     /**
-     * @param Closure(float): float|null $amount
+     * @param  Closure(float): float|null  $amount
      * @return $this
      */
     public function debit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
@@ -79,7 +79,7 @@ abstract class AccountingTemplate implements PostableTemplate
     }
 
     /**
-     * @param Closure(float): float|null $amount
+     * @param  Closure(float): float|null  $amount
      * @return $this
      */
     public function credit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
@@ -92,7 +92,7 @@ abstract class AccountingTemplate implements PostableTemplate
     /**
      * Set the description of the voucher
      *
-     * @param Closure(PostableModel $model): string|string $description
+     * @param  Closure(PostableModel $model): string|string  $description
      */
     public function describe(Closure|string $description): self
     {
@@ -104,7 +104,7 @@ abstract class AccountingTemplate implements PostableTemplate
     /**
      * Set the date of the voucher
      *
-     * @param Closure(PostableModel $model): Carbon|Carbon $date
+     * @param  Closure(PostableModel $model): Carbon|Carbon  $date
      */
     public function date(Closure|Carbon $date): self
     {
@@ -120,7 +120,7 @@ abstract class AccountingTemplate implements PostableTemplate
      * COST_OF_GOODS_SOLD with several children), or to target a fully
      * custom account that carries no preset at all.
      *
-     * @param AccountAlias|int|string $account An Account instance, or its id/UUID
+     * @param  AccountAlias|int|string  $account  An Account instance, or its id/UUID
      * @return $this
      */
     public function resolveAccount(AccountPreset $preset, AccountAlias|int|string $account): self
@@ -140,8 +140,10 @@ abstract class AccountingTemplate implements PostableTemplate
 
         if ($accountModel) {
             $this->warnIfNotChildOfPreset($preset, $accountModel);
+
             return $accountModel->getKey();
         }
+
         return $account;
     }
 
@@ -172,22 +174,24 @@ abstract class AccountingTemplate implements PostableTemplate
 
     /**
      * De-duplicate entries by account and type
+     *
      * @return $this
      */
     public function deDuplicate(): self
     {
         $deduplicated = [];
         foreach ($this->entries as $entry) {
-            $key = $entry->account->value . '_' . $entry->type->value;
+            $key = $entry->account->value.'_'.$entry->type->value;
             if (isset($deduplicated[$key])) {
                 $existingAmount = $deduplicated[$key]->getAmount(0);
                 $newAmount = $entry->getAmount(0);
-                $deduplicated[$key]->amount = fn($total) => $existingAmount + $newAmount;
+                $deduplicated[$key]->amount = fn ($total) => $existingAmount + $newAmount;
             } else {
                 $deduplicated[$key] = $entry;
             }
         }
         $this->entries = array_values($deduplicated);
+
         return $this;
     }
 
@@ -196,19 +200,19 @@ abstract class AccountingTemplate implements PostableTemplate
      */
     public static function getPostableAccounts(): array
     {
-        $instance = new static();
+        $instance = new static;
         $instance->configure();
         $entries = $instance->getEntries();
         $accounts = ['DEBIT' => [], 'CREDIT' => []];
         foreach ($entries as $entry) {
-            if(!isset($accounts[$entry->type->value][$entry->account->value])){
+            if (! isset($accounts[$entry->type->value][$entry->account->value])) {
                 $accounts[$entry->type->value][$entry->account->value] = [];
             }
-            $accounts[$entry->type->value][$entry->account->value] = array_merge($accounts[$entry->type->value][$entry->account->value] , (LaravelAccounting::accounts()->getLastChildrenByPreset($entry->account)->toArray() ?? []));
+            $accounts[$entry->type->value][$entry->account->value] = array_merge($accounts[$entry->type->value][$entry->account->value], (LaravelAccounting::accounts()->getLastChildrenByPreset($entry->account)->toArray() ?? []));
         }
+
         return $accounts;
     }
-
 
     /**
      * @throws AccountNotFoundException|InvalidVoucherException|JournalNotBalancedException
@@ -220,7 +224,7 @@ abstract class AccountingTemplate implements PostableTemplate
         $this->validate($model); // Then let subclasses reject a bad model/parameter combo early
 
         $voucherEntries = [];
-        $journalPresets = array_map(static fn(AccountTemplateEntry $entry) => $entry->account->value, $this->entries);
+        $journalPresets = array_map(static fn (AccountTemplateEntry $entry) => $entry->account->value, $this->entries);
         $presetAccounts = AccountAlias::whereIn('preset', $journalPresets)->with('children')->get()->keyBy('preset');
         foreach ($this->entries as $entry) {
             $accountId = $this->resolveEntryAccountId($entry->account, $presetAccounts, $model);
@@ -245,7 +249,8 @@ abstract class AccountingTemplate implements PostableTemplate
      * 2. The model's own resolveAccountForPreset(), if it implements ResolvesAccountPresets and returns a non-null answer;
      * 3. the default preset lookup - a preset with no children (a real postable account) or exactly one child (unambiguous)
      *
-     * @param Collection<string, AccountAlias> $presetAccounts Keyed by preset value
+     * @param  Collection<string, AccountAlias>  $presetAccounts  Keyed by preset value
+     *
      * @throws AccountNotFoundException|ParentAccountPostingException
      */
     protected function resolveEntryAccountId(AccountPreset $preset, Collection $presetAccounts, PostableModel $model): int|string
@@ -289,6 +294,7 @@ abstract class AccountingTemplate implements PostableTemplate
 
     /**
      * Get the entries that will be posted
+     *
      * @return AccountTemplateEntry[]
      */
     public function getEntries(): array

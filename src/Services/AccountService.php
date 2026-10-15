@@ -2,6 +2,8 @@
 
 namespace RingleSoft\LaravelAccounting\Services;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -232,14 +234,14 @@ class AccountService
     /**
      * Get account with balance
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException No account with this id
+     * @throws ModelNotFoundException No account with this id
      */
     public function getWithBalance(int $accountId, ?\DateTimeInterface $asOfDate = null): array
     {
         $account = Account::with('accountType')->findOrFail($accountId);
         $balanceService = app(BalanceService::class);
 
-        $balance = $balanceService->getAccountBalance($account, $asOfDate ? \Carbon\Carbon::parse($asOfDate) : null);
+        $balance = $balanceService->getAccountBalance($account, $asOfDate ? Carbon::parse($asOfDate) : null);
 
         return [
             'account' => $account,

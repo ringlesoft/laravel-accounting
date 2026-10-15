@@ -8,7 +8,7 @@ use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 
 /**
  * Retiring/scrapping an asset with no sale at all - the entire remaining
- * book value is a loss, unconditionally. $model->getAmount() is the
+ * book value is a loss, unconditionally. $model->getPostableAmount() is the
  * asset's original cost; $accumulatedDepreciation is its own figure as of
  * disposal, known to the caller beforehand. For a disposal with proceeds,
  * use AssetSaleGainTemplate/AssetSaleLossTemplate instead.
@@ -32,9 +32,9 @@ class AssetDisposalTemplate extends AccountingTemplate
 
     public function validate(PostableModel $model): void
     {
-        if ($this->accumulatedDepreciation < 0 || $this->accumulatedDepreciation > $model->getAmount()) {
+        if ($this->accumulatedDepreciation < 0 || $this->accumulatedDepreciation > $model->getPostableAmount()) {
             throw new InvalidVoucherException(
-                "accumulatedDepreciation must be between 0 and the asset's original cost ({$model->getAmount()}), got {$this->accumulatedDepreciation}"
+                "accumulatedDepreciation must be between 0 and the asset's original cost ({$model->getPostableAmount()}), got {$this->accumulatedDepreciation}"
             );
         }
     }

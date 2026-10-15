@@ -66,7 +66,7 @@ This is a reference of standard accounting transactions and the debit/credit pat
 | 49 | Bill Payment | Pay supplier invoice | DR: `ACCOUNTS_PAYABLE`<br>CR: `CASH` | ✅ `BillPaymentTemplate` / `paymentToSupplier()` |
 | 50 | Loan Payment | Repay principal + interest | DR: `LOAN_PAYABLE`<br>DR: `INTEREST_EXPENSE` / `ACCRUED_INTEREST`<br>CR: `CASH` | ✅ `LoanPaymentTemplate` / `loanPayment()` |
 | 51 | Accrued Expense Payment | Pay previously accrued expense | DR: `ACCRUED_EXPENSES`<br>CR: `CASH` | 🔧 `BillPaymentTemplate` with `$payableAccount` overridden |
-| 52 | Bond Issuance | Issue corporate bonds | DR: `CASH`<br>CR: `BONDS_PAYABLE`<br>DR: `BOND_ISSUANCE_COSTS` | ✅ `BondIssuanceTemplate` / `bondIssuance()` - `$model->getAmount()` is the face value; `issuanceCosts` is a flat amount, not a rate |
+| 52 | Bond Issuance | Issue corporate bonds | DR: `CASH`<br>CR: `BONDS_PAYABLE`<br>DR: `BOND_ISSUANCE_COSTS` | ✅ `BondIssuanceTemplate` / `bondIssuance()` - `$model->getPostableAmount()` is the face value; `issuanceCosts` is a flat amount, not a rate |
 | 53 | Payment on Account | Pay supplier without specific invoice | DR: `ACCOUNTS_PAYABLE`<br>CR: `CASH` | ✅ `BillPaymentTemplate` (same as row 49) |
 | 54 | Supplier Refund | Receive refund from supplier | DR: `CASH`<br>CR: `ACCOUNTS_PAYABLE` / `OPERATING_EXPENSES` | 🔧 plain 2-line entry |
 | 55 | Lease Liability Payment | Pay lease (IFRS 16/ASC 842) | DR: `LEASE_LIABILITIES`<br>DR: `INTEREST_EXPENSE`<br>CR: `CASH` | 🔧 `LoanPaymentTemplate` shape fits exactly (override `$loanPayableAccount` to `LEASE_LIABILITIES`) |
@@ -118,7 +118,7 @@ This is a reference of standard accounting transactions and the debit/credit pat
 | 96 | Petty Cash Replenishment | Replenish petty cash | DR: `OPERATING_EXPENSES`<br>CR: `CASH` | 🔧 `CashPurchaseTemplate` with presets overridden |
 | 97 | Cash Over/Short | Register discrepancies | DR: `OTHER_EXPENSES` (if short)<br>CR: `CASH` (or vice versa if over) | 🔧 plain 2-line entry |
 | | **XI. TAX TRANSACTIONS** | | | |
-| 98 | VAT Payment | Pay VAT to tax authority | DR: `OUTPUT_VAT`<br>CR: `INPUT_VAT`<br>CR: `CASH` (net payment) | ✅ `VatPaymentTemplate` / `vatPayment()` - `$model->getAmount()` is the Output VAT balance; `$inputVatAmount` is caller-supplied, not queried |
+| 98 | VAT Payment | Pay VAT to tax authority | DR: `OUTPUT_VAT`<br>CR: `INPUT_VAT`<br>CR: `CASH` (net payment) | ✅ `VatPaymentTemplate` / `vatPayment()` - `$model->getPostableAmount()` is the Output VAT balance; `$inputVatAmount` is caller-supplied, not queried |
 | 99 | Tax Refund | Receive tax refund | DR: `CASH`<br>CR: `INPUT_VAT` / `PREPAID_TAXES` | 🔧 plain 2-line entry |
 | 100 | Withholding Tax Payment | Remit withheld taxes | DR: `WITHHOLDING_TAX_PAYABLE`<br>CR: `CASH` | 🔧 `BillPaymentTemplate` with `$payableAccount` overridden |
 | 101 | Sales Tax Payment | Pay sales tax collected | DR: `SALES_TAX_PAYABLE`<br>CR: `CASH` | 🔧 `BillPaymentTemplate` with `$payableAccount` overridden |

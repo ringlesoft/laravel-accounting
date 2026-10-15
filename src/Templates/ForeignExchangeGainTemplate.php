@@ -6,7 +6,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 /**
  * Records a realized FX gain whose amount is already known
- * ($model->getAmount()) - this template doesn't calculate it from exchange
+ * ($model->getPostableAmount()) - this template doesn't calculate it from exchange
  * rates. Defaults to debiting Cash; override $cashOrReceivableAccount to
  * ACCOUNTS_RECEIVABLE if the gain arose from revaluing an open receivable
  * rather than settling in cash.

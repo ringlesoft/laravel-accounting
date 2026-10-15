@@ -7,7 +7,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 
 /**
- * $model->getAmount() is the bond's face value (what Bonds Payable is
+ * $model->getPostableAmount() is the bond's face value (what Bonds Payable is
  * credited for) - issuanceCosts is a flat amount deducted from the cash
  * actually received, not a rate.
  */
@@ -38,9 +38,9 @@ class BondIssuanceTemplate extends AccountingTemplate
             throw new InvalidVoucherException("issuanceCosts must be >= 0, got {$this->issuanceCosts}");
         }
 
-        if ($this->issuanceCosts > $model->getAmount()) {
+        if ($this->issuanceCosts > $model->getPostableAmount()) {
             throw new InvalidVoucherException(
-                "issuanceCosts ({$this->issuanceCosts}) cannot exceed the bond's face value ({$model->getAmount()})"
+                "issuanceCosts ({$this->issuanceCosts}) cannot exceed the bond's face value ({$model->getPostableAmount()})"
             );
         }
     }

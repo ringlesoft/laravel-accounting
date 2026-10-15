@@ -5,8 +5,9 @@
 <a href="https://packagist.org/packages/ringlesoft/laravel-accounting"><img src="https://img.shields.io/packagist/dt/ringlesoft/laravel-accounting.svg?style=flat-square" alt="Total Downloads"></a>
 <a href="https://github.com/ringlesoft/laravel-accounting/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square" alt="License"></a>
 </p>
-
-A double-entry accounting engine for Laravel. Any model can become a source of accounting transactions — attach a `Postable` trait, map it to an `AccountingTemplate`, and posting produces a balanced, immutable journal entry.
+# Laravel Accounting
+A double-entry accounting engine for Laravel. 
+Turn any model to a source of accounting transactions. Attach a `Postable` trait, map it to an `AccountingTemplate`, and posting produces a balanced, immutable journal entry.
 
 - **Double-entry bookkeeping** — every transaction maintains balanced debits and credits
 - **Immutable records** — posted entries can't be edited, only reversed or voided
@@ -14,7 +15,7 @@ A double-entry accounting engine for Laravel. Any model can become a source of a
 - **Multi-currency**, **multi-tenancy**, and **fiscal period** support
 - **Reports**: Trial Balance, Balance Sheet, Income Statement, Cash Flow Statement, General Ledger, Account Ledger, Chart of Accounts
 
-> **Project status**: Fully functional and under active development, not yet 1.0 (still collecting feedback and improving).
+> **Project status**: Fully functional and under active development, not yet 1.0 (still improving based on feedback).
 
 ## Table of Contents
 
@@ -35,12 +36,12 @@ A double-entry accounting engine for Laravel. Any model can become a source of a
 - [License](#license)
 
 ## Installation
-
+1. Install using composer
 ```bash
 composer require ringlesoft/laravel-accounting
 ```
 
-Run the installer — it publishes the config, migrations and seeders, offers to run migrations, and offers to seed account types + a full chart of accounts + fiscal periods for the current year:
+2. Run the installer: it publishes the config, migrations and seeders, offers to run migrations, and offers to seed account types + a full chart of accounts + fiscal periods for the current year:
 
 ```bash
 php artisan laravel-accounting:install
@@ -101,14 +102,14 @@ class Invoice extends Model implements PostableModel
 {
     use Postable;
 
-    public function getAmount(): float
+    public function getPostableAmount(): float // You must implement this
     {
         return $this->total;
     }
 }
 ```
 
-### 2. Post it
+### 2. Post it when you are ready
 
 ```php
 $invoice = Invoice::create(['total' => 5000]);

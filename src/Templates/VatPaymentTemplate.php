@@ -7,7 +7,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 
 /**
- * $model->getAmount() is the Output VAT balance being cleared. $inputVatAmount
+ * $model->getPostableAmount() is the Output VAT balance being cleared. $inputVatAmount
  * is the Input VAT balance to offset against it, known to the caller
  * beforehand (e.g. read from the ledger by the caller's own code before
  * constructing this template) - this template never queries it. If input
@@ -40,9 +40,9 @@ class VatPaymentTemplate extends AccountingTemplate
             throw new InvalidVoucherException("inputVatAmount must be >= 0, got {$this->inputVatAmount}");
         }
 
-        if ($this->inputVatAmount > $model->getAmount()) {
+        if ($this->inputVatAmount > $model->getPostableAmount()) {
             throw new InvalidVoucherException(
-                "inputVatAmount ({$this->inputVatAmount}) exceeds outputVat ({$model->getAmount()}) - this is a refund due, not a payment."
+                "inputVatAmount ({$this->inputVatAmount}) exceeds outputVat ({$model->getPostableAmount()}) - this is a refund due, not a payment."
             );
         }
     }

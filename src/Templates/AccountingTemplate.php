@@ -215,7 +215,7 @@ abstract class AccountingTemplate implements PostableTemplate
      */
     public function make(PostableModel $model): VoucherData
     {
-        $amount = $model->getAmount();
+        $amount = $model->getPostableAmount();
         $this->configure(); // Configure the template first
         $this->validate($model); // Then let subclasses reject a bad model/parameter combo early
 

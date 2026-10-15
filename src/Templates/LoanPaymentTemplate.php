@@ -33,9 +33,9 @@ class LoanPaymentTemplate extends AccountingTemplate
             throw new InvalidVoucherException("interestAmount must be >= 0, got {$this->interestAmount}");
         }
 
-        if ($this->interestAmount > $model->getAmount()) {
+        if ($this->interestAmount > $model->getPostableAmount()) {
             throw new InvalidVoucherException(
-                "interestAmount ({$this->interestAmount}) cannot exceed the total payment amount ({$model->getAmount()})"
+                "interestAmount ({$this->interestAmount}) cannot exceed the total payment amount ({$model->getPostableAmount()})"
             );
         }
     }

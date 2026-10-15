@@ -41,9 +41,9 @@ class StockIssuanceTemplate extends AccountingTemplate
 
         $parValue = $this->parValuePerShare * $this->numberOfShares;
 
-        if ($parValue > $model->getAmount()) {
+        if ($parValue > $model->getPostableAmount()) {
             throw new InvalidVoucherException(
-                "Total par value ({$parValue}) cannot exceed the total proceeds ({$model->getAmount()})"
+                "Total par value ({$parValue}) cannot exceed the total proceeds ({$model->getPostableAmount()})"
             );
         }
     }

@@ -82,7 +82,7 @@ The package ships templates for both styles side by side. Which basis your books
 | **Asset Sale (Loss)** | `AssetSaleLossTemplate` | Records selling a fixed asset below its book value | Dr: `CASH` + `ACCUMULATED_DEPRECIATION` + `LOSS_ON_SALE_OF_ASSETS`<br>Cr: `FIXED_ASSETS` (at cost) | `$cashAccount`, `$accumulatedDepreciationAccount`, `$fixedAssetAccount`, `$lossAccount`, `$originalCost`, `$accumulatedDepreciation` | `asset.sale_loss` | `assetSaleLoss()` |
 | **Asset Disposal** | `AssetDisposalTemplate` | Records scrapping/retiring an asset with no sale - the full remaining book value is a loss | Dr: `ACCUMULATED_DEPRECIATION` + `LOSS_ON_SALE_OF_ASSETS`<br>Cr: `FIXED_ASSETS` (at cost) | `$accumulatedDepreciationAccount`, `$lossAccount`, `$fixedAssetAccount`, `$accumulatedDepreciation` | `asset.disposal` | `assetDisposal()` |
 
-`$originalCost`/`$accumulatedDepreciation`/`$costBasis` on these and the Investment templates below are supplied by the caller (e.g. read off your own asset/investment model) - none of these templates query the ledger for them. The Gain/Loss split exists because a template's `configure()` can't see `$model->getAmount()` to decide which direction to post in; each template's `validate()` rejects the wrong one (e.g. `AssetSaleGainTemplate` throws if the numbers actually describe a loss) and names the correct template to use instead. `$model->getAmount()` is the sale proceeds for the Sale templates, and the asset's original cost for `AssetDisposalTemplate` (which has no proceeds at all).
+`$originalCost`/`$accumulatedDepreciation`/`$costBasis` on these and the Investment templates below are supplied by the caller (e.g. read off your own asset/investment model) - none of these templates query the ledger for them. The Gain/Loss split exists because a template's `configure()` can't see `$model->getPostableAmount()` to decide which direction to post in; each template's `validate()` rejects the wrong one (e.g. `AssetSaleGainTemplate` throws if the numbers actually describe a loss) and names the correct template to use instead. `$model->getPostableAmount()` is the sale proceeds for the Sale templates, and the asset's original cost for `AssetDisposalTemplate` (which has no proceeds at all).
 
 ### Inventory Templates
 
@@ -100,7 +100,7 @@ The package ships templates for both styles side by side. Which basis your books
 | **Loan Payment** | `LoanPaymentTemplate` | Records loan principal and interest payments | Dr: `LOAN_PAYABLE`<br>Dr: `INTEREST_EXPENSE` (if `interestAmount` > 0)<br>Cr: `CASH` | `$loanPayableAccount`, `$interestExpenseAccount`, `$cashAccount`, `$interestAmount` | `loan.payment` | `loanPayment()` |
 | **Bond Issuance** | `BondIssuanceTemplate` | Records issuing corporate bonds, net of issuance costs | Dr: `CASH` (net of `issuanceCosts`)<br>Dr: `BOND_ISSUANCE_COSTS` (if `issuanceCosts` > 0)<br>Cr: `BONDS_PAYABLE` (face value) | `$cashAccount`, `$bondIssuanceCostsAccount`, `$bondsPayableAccount`, `$issuanceCosts` | `debt.bond_issuance` | `bondIssuance()` |
 
-`$model->getAmount()` on `BondIssuanceTemplate` is the bond's face value (what `BONDS_PAYABLE` is credited for); `$issuanceCosts` is a flat deducted amount, not a rate.
+`$model->getPostableAmount()` on `BondIssuanceTemplate` is the bond's face value (what `BONDS_PAYABLE` is credited for); `$issuanceCosts` is a flat deducted amount, not a rate.
 
 ### Equity Templates
 
@@ -128,7 +128,7 @@ Same Gain/Loss split and `$costBasis`-is-caller-supplied reasoning as the Asset 
 |----------|-------|-------------|-------------------|------------|---------------|------------------------|
 | **VAT Payment** | `VatPaymentTemplate` | Records remitting VAT net of input VAT credit | Dr: `OUTPUT_VAT`<br>Cr: `INPUT_VAT` (offset, if `inputVatAmount` > 0) + `CASH` (net remittance) | `$outputVatAccount`, `$inputVatAccount`, `$cashAccount`, `$inputVatAmount` | `tax.vat_payment` | `vatPayment()` |
 
-`$model->getAmount()` is the Output VAT balance being cleared; `$inputVatAmount` is the Input VAT balance to offset against it, supplied by the caller (e.g. read off the ledger before constructing this template) - this template never queries it. If input VAT exceeds output VAT, that's a refund due, not a payment - `validate()` rejects that case; see row 99 in `financial-transactions.md` for the refund side.
+`$model->getPostableAmount()` is the Output VAT balance being cleared; `$inputVatAmount` is the Input VAT balance to offset against it, supplied by the caller (e.g. read off the ledger before constructing this template) - this template never queries it. If input VAT exceeds output VAT, that's a refund due, not a payment - `validate()` rejects that case; see row 99 in `financial-transactions.md` for the refund side.
 
 ### Foreign Exchange Templates
 
@@ -137,7 +137,7 @@ Same Gain/Loss split and `$costBasis`-is-caller-supplied reasoning as the Asset 
 | **Foreign Exchange Gain** | `ForeignExchangeGainTemplate` | Records a realized FX gain of an already-known amount | Dr: `CASH` / `ACCOUNTS_RECEIVABLE`<br>Cr: `FOREIGN_EXCHANGE_GAIN` | `$cashOrReceivableAccount`, `$gainAccount` | `fx.gain` | `foreignExchangeGain()` |
 | **Foreign Exchange Loss** | `ForeignExchangeLossTemplate` | Records a realized FX loss of an already-known amount | Dr: `FOREIGN_EXCHANGE_LOSS`<br>Cr: `CASH` / `ACCOUNTS_PAYABLE` | `$lossAccount`, `$cashOrPayableAccount` | `fx.loss` | `foreignExchangeLoss()` |
 
-These post an amount you already know (`$model->getAmount()`) - neither template calculates a gain/loss from exchange rate data. *Unrealized* FX revaluation (scanning every open foreign-currency balance at period end) is a different, batch-shaped problem these don't cover - see **Known Gaps**.
+These post an amount you already know (`$model->getPostableAmount()`) - neither template calculates a gain/loss from exchange rate data. *Unrealized* FX revaluation (scanning every open foreign-currency balance at period end) is a different, batch-shaped problem these don't cover - see **Known Gaps**.
 
 ### Receivables Management Templates
 
@@ -185,7 +185,7 @@ class Invoice extends Model implements PostableModel
 {
     use Postable;
     
-    public function getAmount(): float
+    public function getPostableAmount(): float
     {
         return $this->total;
     }

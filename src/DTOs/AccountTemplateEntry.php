@@ -9,7 +9,7 @@ use RingleSoft\LaravelAccounting\Enums\EntryType;
 class AccountTemplateEntry
 {
     /**
-     * @param  Closure(float $amount): float|float|null  $amount  function that manipulates the amount fetched from the model's `getAmount()` method
+     * @param  Closure(float $amount): float|float|null  $amount  function that manipulates the amount fetched from the model's `getPostableAmount()` method
      * @param  Closure(): string|string|null  $memo  the memo for the specific entry
      */
     public function __construct(
@@ -32,7 +32,7 @@ class AccountTemplateEntry
     /**
      * Resolve the amount from the closure
      *
-     * @param  float  $amount  the amount fetched from the model's `getAmount()` method
+     * @param  float  $amount  the amount fetched from the model's `getPostableAmount()` method
      */
     public function getAmount(float $amount): float
     {

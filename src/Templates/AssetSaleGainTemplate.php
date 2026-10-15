@@ -7,7 +7,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 
 /**
- * $model->getAmount() is the cash proceeds received. $originalCost and
+ * $model->getPostableAmount() is the cash proceeds received. $originalCost and
  * $accumulatedDepreciation are the asset's own figures as of disposal,
  * known to the caller beforehand - this template never queries them.
  * Covers only the case where proceeds exceed book value (a gain); use
@@ -50,9 +50,9 @@ class AssetSaleGainTemplate extends AccountingTemplate
 
         $bookValue = $this->originalCost - $this->accumulatedDepreciation;
 
-        if ($model->getAmount() < $bookValue) {
+        if ($model->getPostableAmount() < $bookValue) {
             throw new InvalidVoucherException(
-                "Proceeds ({$model->getAmount()}) are below book value ({$bookValue}) - this is a loss, not a gain; use AssetSaleLossTemplate instead."
+                "Proceeds ({$model->getPostableAmount()}) are below book value ({$bookValue}) - this is a loss, not a gain; use AssetSaleLossTemplate instead."
             );
         }
     }

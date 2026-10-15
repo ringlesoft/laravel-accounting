@@ -6,7 +6,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 /**
  * Records a realized FX loss whose amount is already known
- * ($model->getAmount()) - this template doesn't calculate it from exchange
+ * ($model->getPostableAmount()) - this template doesn't calculate it from exchange
  * rates. Defaults to crediting Cash; override $cashOrPayableAccount to
  * ACCOUNTS_PAYABLE if the loss arose from revaluing an open payable rather
  * than settling in cash.

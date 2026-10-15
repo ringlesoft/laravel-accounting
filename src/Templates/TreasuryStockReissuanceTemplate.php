@@ -39,9 +39,9 @@ class TreasuryStockReissuanceTemplate extends AccountingTemplate
             throw new InvalidVoucherException("costBasis must be >= 0, got {$this->costBasis}");
         }
 
-        if ($this->costBasis > $model->getAmount()) {
+        if ($this->costBasis > $model->getPostableAmount()) {
             throw new InvalidVoucherException(
-                "costBasis ({$this->costBasis}) cannot exceed the reissue proceeds ({$model->getAmount()}) - ".
+                "costBasis ({$this->costBasis}) cannot exceed the reissue proceeds ({$model->getPostableAmount()}) - ".
                 'reissuing below cost is a loss, which this template does not model.'
             );
         }

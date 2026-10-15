@@ -7,7 +7,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 
 /**
- * $model->getAmount() is the cash proceeds received. $costBasis is the
+ * $model->getPostableAmount() is the cash proceeds received. $costBasis is the
  * investment's own cost, known to the caller beforehand - this template
  * never queries it. Covers only the case where proceeds exceed cost (a
  * gain); use InvestmentSaleLossTemplate for a loss.
@@ -35,9 +35,9 @@ class InvestmentSaleGainTemplate extends AccountingTemplate
             throw new InvalidVoucherException("costBasis must be >= 0, got {$this->costBasis}");
         }
 
-        if ($model->getAmount() < $this->costBasis) {
+        if ($model->getPostableAmount() < $this->costBasis) {
             throw new InvalidVoucherException(
-                "Proceeds ({$model->getAmount()}) are below costBasis ({$this->costBasis}) - this is a loss, not a gain; use InvestmentSaleLossTemplate instead."
+                "Proceeds ({$model->getPostableAmount()}) are below costBasis ({$this->costBasis}) - this is a loss, not a gain; use InvestmentSaleLossTemplate instead."
             );
         }
     }

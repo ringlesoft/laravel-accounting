@@ -166,7 +166,7 @@ An accounting template encapsulates the debit/credit pattern for a transaction t
 per side, optional conditional lines (e.g. tax), and dynamic amounts via closures.
 The package comes with 39 prebuilt accounting templates that cover most of the well known accounting operations. You
 can always create yours on the fly, or by extending the `AccountingTemplate` class — see **Creating Custom Templates**
-in [docs/available-templates.md](docs/available-templates.md).
+in [docs/templates-api.md](docs/templates-api.md).
 
 #### The Postable Trait
 
@@ -209,7 +209,7 @@ LaravelAccounting::posting()->purchaseOnAccount($purchase, auth()->id());
 LaravelAccounting::posting()->payroll($payrollRun, auth()->id());
 ```
 
-See the **PostingService Method** column in [docs/available-templates.md](docs/available-templates.md) for every
+See the **PostingService Method** column in [docs/templates-api.md](docs/templates-api.md) for every
 available method.
 
 ##### Two-step posting (review before posting)
@@ -253,7 +253,7 @@ class Invoice extends Model implements PostableModel, ResolvesAccountPresets
 }
 ```
 
-> See **[docs/available-templates.md](docs/available-templates.md)** for the full catalog of 39 preset templates (sales,
+> See **[docs/templates-api.md](docs/templates-api.md)** for the full catalog of 39 preset templates (sales,
 > purchases, payroll, depreciation, loans, equity, inventory, bad debt).
 
 #### Reversing and Voiding
@@ -388,7 +388,7 @@ return [
     'use_uuid' => false,                    // UUID vs auto-increment primary keys
     'default_fiscal_year_start' => ['month' => 1, 'day' => 1],
     'fiscal_periods_count' => 2,            // 12 monthly, 4 quarterly, 2 semi-annual, 1 annual
-    'cash_basis' => false,                  // informational only, not enforced - see docs/available-templates.md
+    'cash_basis' => false,                  // informational only, not enforced - see docs/templates-api.md
     'auto_post' => false,
     'balance_cache_enabled' => true,
     'report_cache_enabled' => true,
@@ -426,7 +426,7 @@ No fiscal period covers the transaction date. Seed one (`FiscalPeriodSeeder`) or
 
 **`ArgumentCountError` when calling `TemplateRegistry::make('key')` or `YourTemplate::getPostableAccounts()`**
 Both call `new $class()` with zero arguments. Every constructor parameter on a template needs a default value — see
-**Gotchas** in [docs/available-templates.md](docs/available-templates.md).
+**Gotchas** in [docs/templates-api.md](docs/templates-api.md).
 
 **`ParentAccountPostingException`**
 A preset (e.g. `COST_OF_GOODS_SOLD`, `ACCOUNTS_RECEIVABLE`) resolved to a parent/category account with more than one
@@ -472,14 +472,14 @@ as before — this only changes how `null`-tenant rows behave.
 **Can I use cash-basis instead of accrual accounting?**
 The `cash_basis` config flag is informational only — it isn't enforced anywhere. All shipped templates post on an
 accrual basis (revenue/expense recognized when earned/incurred, not when cash moves). See **Accounting Basis: Accrual vs
-Cash** in [docs/available-templates.md](docs/available-templates.md) before building cash-basis behavior yourself.
+Cash** in [docs/templates-api.md](docs/templates-api.md) before building cash-basis behavior yourself.
 
 **UUIDs or auto-incrementing IDs?**
 A one-time choice at install (`config('laravel_accounting.use_uuid')`). Switching after you have real data requires a
 manual data migration — decide before going to production.
 
 **How do I write my own template?**
-See **Creating Custom Templates** in [docs/available-templates.md](docs/available-templates.md) — covers registration,
+See **Creating Custom Templates** in [docs/templates-api.md](docs/templates-api.md) — covers registration,
 `validate()`, testing it without a database, and common gotchas.
 
 **Does the package handle authorization (who's allowed to post, close a period, etc.)?**

@@ -15,5 +15,5 @@
 - [ ] `composer test` passes
 - [ ] `composer analyse` passes (or the new PHPStan errors are pre-existing/unrelated)
 - [ ] `composer format` run (Pint)
-- [ ] `docs/available-templates.md` / `docs/financial-transactions.md` updated if this changes a template's behavior
+- [ ] `docs/templates-api.md` / `docs/financial-transactions.md` updated if this changes a template's behavior
 - [ ] No TODO comments left in the diff without an issue reference

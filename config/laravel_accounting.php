@@ -69,7 +69,7 @@ return [
      * (CashSaleTemplate, CashPurchaseTemplate, PayrollExpenseTemplate,
      * PrepaidExpensePaymentTemplate, ...) post straight to Cash. Setting this to
      * true does NOT prevent accrual-only templates from being used - see
-     * "Accounting Basis: Accrual vs Cash" in docs/available-templates.md.
+     * "Accounting Basis: Accrual vs Cash" in docs/templates-api.md.
      */
     'cash_basis' => false,
 

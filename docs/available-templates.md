@@ -43,8 +43,10 @@ The package ships templates for both styles side by side. Which basis your books
 | **Payment Receipt** | `PaymentReceiptTemplate` | Records cash received from customers against receivables | Dr: `CASH`<br>Cr: `ACCOUNTS_RECEIVABLE` | `$cashAccount`, `$receivableAccount` | `payment.receipt` | `receivingPayment()` |
 | **Accrued Revenue** | `AccruedRevenueTemplate` | Records revenue that has been earned but not yet billed or collected | Dr: `ACCRUED_REVENUE`<br>Cr: `SALES_REVENUE` | `$accruedRevenueAccount`, `$revenueAccount` | `revenue.accrued` | `recognizeAccruedRevenue()` |
 | **Unearned Revenue** | `UnearnedRevenueTemplate` | Records cash received in advance of delivering the goods/service | Dr: `CASH`<br>Cr: `UNEARNED_REVENUE` | `$cashAccount`, `$unearnedRevenueAccount` | `revenue.unearned` | `unearnedRevenue()` |
+| **Unearned Revenue Recognition** | `UnearnedRevenueRecognitionTemplate` | Records previously-received unearned revenue as earned, once delivered | Dr: `UNEARNED_REVENUE`<br>Cr: `SALES_REVENUE` | `$unearnedRevenueAccount`, `$revenueAccount` | `revenue.unearned_recognition` | `recognizeUnearnedRevenueEarned()` |
+| **Sales Discount** | `SalesDiscountTemplate` | Records an early-payment discount given to a customer | Dr: `CASH` (net)<br>Dr: `SALES_DISCOUNTS` (if `discountRate` > 0)<br>Cr: `ACCOUNTS_RECEIVABLE` (full) | `$cashAccount`, `$salesDiscountAccount`, `$receivableAccount`, `$discountRate` | `sale.discount` | `salesDiscount()` |
 
-> `AccruedRevenueTemplate` and `UnearnedRevenueTemplate` are opposite-timing events, not variants of each other: Accrued Revenue is earned-but-not-billed (an asset); Unearned Revenue is billed/collected-but-not-earned (a liability). There is currently no template for the third step — recognizing previously-unearned revenue as earned (`Dr UNEARNED_REVENUE / Cr SALES_REVENUE`) once the good/service is delivered. See **Known Gaps** below.
+> `AccruedRevenueTemplate` and `UnearnedRevenueTemplate` are opposite-timing events, not variants of each other: Accrued Revenue is earned-but-not-billed (an asset); Unearned Revenue is billed/collected-but-not-earned (a liability). `UnearnedRevenueRecognitionTemplate` is the third step — recognizing previously-unearned revenue as earned once the good/service is delivered.
 
 ### Purchase & Expense Templates
 
@@ -267,7 +269,7 @@ $sale->postWithTemplate(new CustomRefundTemplate(taxRate: 0.15));
 class Sale extends Model implements PostableModel { use Postable; /* ... */ }
 ```
 
-If you also want it resolvable by key (`TemplateRegistry::make('refund.custom')`) or selectable in the Journal Voucher "Posting Template" picker, register it — nothing does this for you automatically, only the 23 shipped templates are pre-registered:
+If you also want it resolvable by key (`TemplateRegistry::make('refund.custom')`) or selectable in the Journal Voucher "Posting Template" picker, register it — nothing does this for you automatically, only the 31 shipped templates are pre-registered:
 
 ```php
 use RingleSoft\LaravelAccounting\Templates\TemplateRegistry;
@@ -368,7 +370,7 @@ Then confirm every preset you referenced actually resolves to a seeded account: 
 
 ## Template Registry
 
-The 23 shipped templates are pre-registered in `TemplateRegistry::$templates`; your own custom templates are **not** added automatically — call `TemplateRegistry::register('your.key', YourTemplate::class)` yourself if you want key-based resolution or a slot in the Journal Voucher UI's template picker. Any registered template can be resolved via `TemplateRegistry::make('<key>')`. The **Registry Key** column in each table above is the exact key to use for the shipped ones.
+The 31 shipped templates are pre-registered in `TemplateRegistry::$templates`; your own custom templates are **not** added automatically — call `TemplateRegistry::register('your.key', YourTemplate::class)` yourself if you want key-based resolution or a slot in the Journal Voucher UI's template picker. Any registered template can be resolved via `TemplateRegistry::make('<key>')`. The **Registry Key** column in each table above is the exact key to use for the shipped ones.
 
 ## See Also
 

@@ -10,7 +10,7 @@ A double-entry accounting engine for Laravel. Any model can become a source of a
 
 - **Double-entry bookkeeping** — every transaction maintains balanced debits and credits
 - **Immutable records** — posted entries can't be edited, only reversed or voided
-- **Template-based posting** — 23 ready-made templates for common transactions (sales, purchases, payroll, depreciation, loans, equity...), or write your own
+- **Template-based posting** — 31 ready-made templates for common transactions (sales, purchases, payroll, depreciation, loans, equity...), or write your own
 - **Multi-currency**, **multi-tenancy**, and **fiscal period** support
 - **Reports**: Trial Balance, Balance Sheet, Income Statement, Cash Flow Statement, General Ledger, Account Ledger, Chart of Accounts
 
@@ -155,7 +155,7 @@ class Invoice extends Model implements PostableModel, ResolvesAccountPresets
 }
 ```
 
-See **[docs/available-templates.md](docs/available-templates.md)** for the full catalog of 23 templates (sales, purchases, payroll, depreciation, loans, equity, inventory, bad debt) with their exact debit/credit accounts and parameters, and **[docs/financial-transactions.md](docs/financial-transactions.md)** for ~100 standard accounting transactions cross-referenced against what's actually implemented today.
+See **[docs/available-templates.md](docs/available-templates.md)** for the full catalog of 31 templates (sales, purchases, payroll, depreciation, loans, equity, inventory, bad debt) with their exact debit/credit accounts and parameters, and **[docs/financial-transactions.md](docs/financial-transactions.md)** for ~100 standard accounting transactions cross-referenced against what's actually implemented today.
 
 ## Core Concepts
 

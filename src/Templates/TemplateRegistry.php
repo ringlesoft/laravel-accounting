@@ -29,7 +29,15 @@ class TemplateRegistry
         'equity.investment' => OwnerInvestmentTemplate::class,
         'equity.dividend' => DividendTemplate::class,
         'inventory.adjustment' => InventoryAdjustmentTemplate::class,
-        'debt.writeoff' => BadDebtTemplate::class,
+        'debt.estimate' => BadDebtTemplate::class,
+        'debt.writeoff' => BadDebtWriteoffTemplate::class,
+        'debt.recovery' => BadDebtRecoveryTemplate::class,
+        'equity.stock_issuance' => StockIssuanceTemplate::class,
+        'equity.treasury_reissuance' => TreasuryStockReissuanceTemplate::class,
+        'sale.discount' => SalesDiscountTemplate::class,
+        'payroll.payment_detailed' => PayrollPaymentDetailedTemplate::class,
+        'debt.bond_issuance' => BondIssuanceTemplate::class,
+        'revenue.unearned_recognition' => UnearnedRevenueRecognitionTemplate::class,
     ];
 
     /**

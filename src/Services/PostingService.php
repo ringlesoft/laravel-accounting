@@ -313,6 +313,102 @@ class PostingService
     }
 
     /**
+     * Post recognition of previously-received unearned revenue as earned
+     * Debit: Unearned Revenue
+     * Credit: Sales Revenue
+     */
+    public function recognizeUnearnedRevenueEarned(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('revenue.unearned_recognition');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post stock issuance
+     * Debit: Cash
+     * Credit: Common Stock (par value) + Additional Paid-in Capital (excess)
+     */
+    public function stockIssuance(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('equity.stock_issuance');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post treasury stock reissuance
+     * Debit: Cash
+     * Credit: Treasury Stock (at cost) + Additional Paid-in Capital (gain over cost)
+     */
+    public function treasuryStockReissuance(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('equity.treasury_reissuance');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post bond issuance
+     * Debit: Cash (net of issuance costs) + Bond Issuance Costs
+     * Credit: Bonds Payable (face value)
+     */
+    public function bondIssuance(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('debt.bond_issuance');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post a sale with an early-payment discount
+     * Debit: Cash (net) + Sales Discount
+     * Credit: Accounts Receivable (full)
+     */
+    public function salesDiscount(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('sale.discount');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post a detailed payroll payment including employer payroll tax and withholding
+     * Debit: Wages Payable + Payroll Tax Expense
+     * Credit: Cash (net of withholding) + Payroll Tax Payable + Federal Withholding Payable
+     */
+    public function payrollPaymentDetailed(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('payroll.payment_detailed');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post writing off a specific customer's uncollectible balance
+     * Debit: Allowance for Doubtful Accounts
+     * Credit: Accounts Receivable
+     */
+    public function writeOffBadDebt(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('debt.writeoff');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
+     * Post recovery of a previously written-off debt
+     * Debit: Cash
+     * Credit: Allowance for Doubtful Accounts
+     */
+    public function recoverBadDebt(PostableModel $model, string|int|null $userId = null): JournalEntry
+    {
+        $template = TemplateRegistry::make('debt.recovery');
+
+        return $this->postWithTemplate($model, $template, $userId);
+    }
+
+    /**
      * Post adjusting entry
      * Custom debit and credit accounts
      * Note: This is a custom transaction that requires the model to implement toVoucher()

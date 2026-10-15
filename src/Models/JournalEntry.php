@@ -230,7 +230,7 @@ class JournalEntry extends Model
         // DB::transaction()), so only one caller can compute a given sequence number.
         // It cannot lock anything when no row exists yet for today; that remaining race
         // (the first entry of the day) is caught by the retry in JournalService::createDraft().
-        $sequence = DB::transaction(function () use ($date) {
+        $sequence = DB::transaction(function () {
             $lastEntry = static::whereDate('created_at', now())
                 ->lockForUpdate()
                 ->orderBy('id', 'desc')

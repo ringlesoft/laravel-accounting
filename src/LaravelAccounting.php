@@ -22,72 +22,47 @@ class LaravelAccounting
 {
     /**
      * Account Service
-     * @return AccountService
      */
     public function accounts(): AccountService
     {
         return app(AccountService::class);
     }
 
-    /**
-     * @return BalanceService
-     */
     public function balances(): BalanceService
     {
         return app(BalanceService::class);
     }
 
-    /**
-     * @return JournalService
-     */
     public function journals(): JournalService
     {
         return app(JournalService::class);
     }
 
-    /**
-     * @return ReportService
-     */
     public function reports(): ReportService
     {
         return app(ReportService::class);
     }
 
-    /**
-     * @return PostingService
-     */
     public function posting(): PostingService
     {
         return app(PostingService::class);
     }
 
-    /**
-     * @return PeriodService
-     */
     public function periods(): PeriodService
     {
         return app(PeriodService::class);
     }
 
-    /**
-     * @return TemplateRegistry
-     */
     public function templates(): TemplateRegistry
     {
         return app(TemplateRegistry::class);
     }
 
-    /**
-     * @return ClosingService
-     */
     public function closing(): ClosingService
     {
         return app(ClosingService::class);
     }
 
-    /**
-     * @return Collection
-     */
     public function chartsOfAccounts(): Collection
     {
         return $this->accounts()->getChartOfAccounts();
@@ -125,8 +100,6 @@ class LaravelAccounting
     }
 
     /**
-     * @param JournalEntry $journalEntry
-     * @return JournalEntry
      * @throws Throwable
      */
     public function reverse(JournalEntry $journalEntry): JournalEntry

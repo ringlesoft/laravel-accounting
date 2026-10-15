@@ -4,8 +4,11 @@ namespace RingleSoft\LaravelAccounting\Services;
 
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
+use RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
+use RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException;
 use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Templates\TemplateRegistry;
@@ -239,8 +242,9 @@ class PostingService
      * Credit: Source Bank Account
      * Note: This is a custom transaction that requires manual voucher creation
      *
-     * @param int $fromAccountId Unused - $model->toVoucher() must already encode both legs; kept for signature clarity, not read by this method
-     * @param int $toAccountId Unused - see $fromAccountId
+     * @param  int  $fromAccountId  Unused - $model->toVoucher() must already encode both legs; kept for signature clarity, not read by this method
+     * @param  int  $toAccountId  Unused - see $fromAccountId
+     *
      * @throws Throwable
      */
     public function bankTransfer(PostableModel $model, int $fromAccountId, int $toAccountId, string|int|null $userId = null): JournalEntry
@@ -430,12 +434,12 @@ class PostingService
      *
      * @param  string|int|null  $userId  Attributed as created_by/posted_by; null if posting outside an authenticated context (e.g. a queued job)
      *
-     * @throws \RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException
+     * @throws AccountNotFoundException
      * @throws InvalidVoucherException
      * @throws JournalNotBalancedException
-     * @throws \RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException
+     * @throws ParentAccountPostingException
      * @throws PeriodClosedException
-     * @throws \RingleSoft\LaravelAccounting\Exceptions\DuplicatePostingException
+     * @throws DuplicatePostingException
      */
     protected function postWithTemplate(PostableModel $model, $template, string|int|null $userId = null): JournalEntry
     {

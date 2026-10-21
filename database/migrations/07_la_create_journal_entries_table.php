@@ -13,7 +13,7 @@ return new class extends Migration
 
         Schema::create($prefix.'_journal_entries', function (Blueprint $table) use ($prefix, $useUuid) {
             if ($useUuid) {
-                $table->uuid('id')->primary();
+                $table->uuid('id');
             } else {
                 $table->id();
             }
@@ -53,6 +53,10 @@ return new class extends Migration
             $table->timestamp('voided_at')->nullable();
             $table->json('metadata');
             $table->timestamps();
+
+            if ($useUuid) {
+                $table->primary('id');
+            }
 
             $table->foreign('fiscal_period_id')
                 ->references('id')

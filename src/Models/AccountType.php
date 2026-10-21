@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
+use RingleSoft\LaravelAccounting\Traits\HasUuid;
 
 /**
  * Account Type Model
@@ -16,7 +17,7 @@ use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
  */
 class AccountType extends Model
 {
-    use HasTablePrefix;
+    use HasTablePrefix, HasUuid;
 
     protected $fillable = [
         'code',

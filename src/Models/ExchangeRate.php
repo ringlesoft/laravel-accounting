@@ -6,10 +6,11 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
+use RingleSoft\LaravelAccounting\Traits\HasUuid;
 
 class ExchangeRate extends Model
 {
-    use HasTablePrefix;
+    use HasTablePrefix, HasUuid;
 
     protected $fillable = [
         'from_currency_code',

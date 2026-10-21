@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
+use RingleSoft\LaravelAccounting\Traits\HasUuid;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
 /**
@@ -22,7 +23,7 @@ use RingleSoft\LaravelAccounting\Traits\MultiTenant;
  */
 class FiscalPeriod extends Model
 {
-    use HasTablePrefix, MultiTenant;
+    use HasTablePrefix, HasUuid, MultiTenant;
 
     protected $fillable = [
         'fiscal_year_id',

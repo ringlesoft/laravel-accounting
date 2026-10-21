@@ -13,7 +13,7 @@ return new class extends Migration
 
         Schema::create($prefix.'_accounts', function (Blueprint $table) use ($prefix, $useUuid) {
             if ($useUuid) {
-                $table->uuid('id')->primary();
+                $table->uuid('id');
             } else {
                 $table->id();
             }
@@ -49,6 +49,10 @@ return new class extends Migration
             $table->boolean('is_system_account')->default(false);
             $table->boolean('allows_manual_entries')->default(true);
             $table->timestamps();
+
+            if ($useUuid) {
+                $table->primary('id');
+            }
 
             $table->foreign('account_type_id')
                 ->references('id')

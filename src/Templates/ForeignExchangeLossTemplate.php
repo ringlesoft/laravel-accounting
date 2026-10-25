@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 /**
@@ -14,8 +15,8 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 class ForeignExchangeLossTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $lossAccount = AccountPreset::FOREIGN_EXCHANGE_LOSS,
-        protected AccountPreset $cashOrPayableAccount = AccountPreset::CASH,
+        protected AccountPresetContract $lossAccount = AccountPreset::FOREIGN_EXCHANGE_LOSS,
+        protected AccountPresetContract $cashOrPayableAccount = AccountPreset::CASH,
     ) {}
 
     public function configure(): void

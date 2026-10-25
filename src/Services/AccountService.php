@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\TenantResolver;
-use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Models\Account;
@@ -178,7 +178,7 @@ class AccountService
     /**
      * Get account by preset
      */
-    public function findByPreset(AccountPreset $preset): ?Account
+    public function findByPreset(AccountPresetContract $preset): ?Account
     {
         return Account::where('preset', $preset->value)->first();
     }
@@ -190,7 +190,7 @@ class AccountService
      *
      * @throws AccountNotFoundException No account carries this preset at all
      */
-    public function getLastChildrenByPreset(AccountPreset $preset): Collection
+    public function getLastChildrenByPreset(AccountPresetContract $preset): Collection
     {
         $account = Account::where('preset', $preset->value)->with('children.children')->first();
         if (! $account) {
@@ -214,7 +214,7 @@ class AccountService
      * gracefully rather than fail - use getLastChildrenByPreset() instead when
      * the preset is expected to exist and its absence should be a hard error.
      */
-    public function getAccountsForPresetGroup(AccountPreset $preset): Collection
+    public function getAccountsForPresetGroup(AccountPresetContract $preset): Collection
     {
         $account = Account::where('preset', $preset->value)->with('children')->first();
 

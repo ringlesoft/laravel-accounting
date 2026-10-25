@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 /**
@@ -13,8 +14,8 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 class BadDebtRecoveryTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $cashAccount = AccountPreset::CASH,
-        protected AccountPreset $allowanceAccount = AccountPreset::ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS,
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH,
+        protected AccountPresetContract $allowanceAccount = AccountPreset::ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS,
     ) {}
 
     public function configure(): void

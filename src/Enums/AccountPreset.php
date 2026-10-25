@@ -2,11 +2,13 @@
 
 namespace RingleSoft\LaravelAccounting\Enums;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
+
 /**
  * Standard Chart of Accounts Presets
  * Based on IFRS/US GAAP with common industry variations
  */
-enum AccountPreset: string
+enum AccountPreset: string implements AccountPresetContract
 {
     // ====================================
     // ASSETS (1xxx - 2xxx series)

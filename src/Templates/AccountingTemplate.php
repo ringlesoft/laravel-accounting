@@ -6,13 +6,13 @@ use Closure;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Contracts\PostableTemplate;
 use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
 use RingleSoft\LaravelAccounting\DTOs\AccountTemplateEntry;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
 use RingleSoft\LaravelAccounting\DTOs\VoucherDataItem;
-use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
@@ -71,7 +71,7 @@ abstract class AccountingTemplate implements PostableTemplate
      * @param  Closure(float): float|null  $amount
      * @return $this
      */
-    public function debit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
+    public function debit(AccountPresetContract $account, ?Closure $amount = null, Closure|string|null $memo = null): self
     {
         $this->addEntry(AccountTemplateEntry::debit($account, $amount, $memo));
 
@@ -82,7 +82,7 @@ abstract class AccountingTemplate implements PostableTemplate
      * @param  Closure(float): float|null  $amount
      * @return $this
      */
-    public function credit(AccountPreset $account, ?Closure $amount = null, Closure|string|null $memo = null): self
+    public function credit(AccountPresetContract $account, ?Closure $amount = null, Closure|string|null $memo = null): self
     {
         $this->addEntry(AccountTemplateEntry::credit($account, $amount, $memo));
 
@@ -123,7 +123,7 @@ abstract class AccountingTemplate implements PostableTemplate
      * @param  AccountAlias|int|string  $account  An Account instance, or its id/UUID
      * @return $this
      */
-    public function resolveAccount(AccountPreset $preset, AccountAlias|int|string $account): self
+    public function resolveAccount(AccountPresetContract $preset, AccountAlias|int|string $account): self
     {
         $this->accountOverrides[$preset->value] = $this->normalizeAccountOverride($preset, $account);
 
@@ -134,7 +134,7 @@ abstract class AccountingTemplate implements PostableTemplate
      * Resolve an override value (an Account, id, or UUID) to the id to post
      * to, warning if it isn't a child of the preset's own account.
      */
-    protected function normalizeAccountOverride(AccountPreset $preset, AccountAlias|int|string $account): int|string
+    protected function normalizeAccountOverride(AccountPresetContract $preset, AccountAlias|int|string $account): int|string
     {
         $accountModel = $account instanceof AccountAlias ? $account : AccountAlias::find($account);
 
@@ -152,7 +152,7 @@ abstract class AccountingTemplate implements PostableTemplate
      * most likely a typo or a preset/account mismatch, but still allowed
      * since the developer may have a deliberate reason (e.g. a flatter COA).
      */
-    protected function warnIfNotChildOfPreset(AccountPreset $preset, AccountAlias $account): void
+    protected function warnIfNotChildOfPreset(AccountPresetContract $preset, AccountAlias $account): void
     {
         $presetAccount = AccountAlias::where('preset', $preset->value)->first();
 
@@ -253,7 +253,7 @@ abstract class AccountingTemplate implements PostableTemplate
      *
      * @throws AccountNotFoundException|ParentAccountPostingException
      */
-    protected function resolveEntryAccountId(AccountPreset $preset, Collection $presetAccounts, PostableModel $model): int|string
+    protected function resolveEntryAccountId(AccountPresetContract $preset, Collection $presetAccounts, PostableModel $model): int|string
     {
         if (array_key_exists($preset->value, $this->accountOverrides)) {
             return $this->accountOverrides[$preset->value];
@@ -286,7 +286,7 @@ abstract class AccountingTemplate implements PostableTemplate
         throw new ParentAccountPostingException(
             "Preset {$preset->value} resolves to '{$account->name}' (code {$account->code}), which has ".
             "{$account->children->count()} child accounts, so it's ambiguous which one to post to. Call ".
-            "->resolveAccount(AccountPreset::{$preset->name}, \$account) on the template to pick one, override ".
+            '->resolveAccount('.class_basename($preset)."::{$preset->name}, \$account) on the template to pick one, override ".
             'the relevant constructor parameter with a more specific preset, or inspect '.
             static::class.'::getPostableAccounts() to see the available options.'
         );

@@ -3,6 +3,7 @@
 namespace RingleSoft\LaravelAccounting\Services;
 
 use Illuminate\Support\Facades\DB;
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\DTOs\ClosingEntryPreview;
 use RingleSoft\LaravelAccounting\DTOs\ClosingResult;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
@@ -376,7 +377,7 @@ class ClosingService
     /**
      * @throws AccountNotFoundException
      */
-    protected function resolveClosingAccount(AccountPreset $preset): Account
+    protected function resolveClosingAccount(AccountPresetContract $preset): Account
     {
         $account = $this->accountService->findByPreset($preset);
 

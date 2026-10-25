@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
@@ -14,11 +15,11 @@ use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 class PayrollPaymentDetailedTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $wagesPayableAccount = AccountPreset::WAGES_PAYABLE,
-        protected AccountPreset $payrollTaxExpenseAccount = AccountPreset::PAYROLL_TAX_EXPENSE,
-        protected AccountPreset $cashAccount = AccountPreset::CASH,
-        protected AccountPreset $payrollTaxPayableAccount = AccountPreset::PAYROLL_TAX_PAYABLE,
-        protected ?AccountPreset $federalWithholdingPayableAccount = AccountPreset::FEDERAL_WITHHOLDING_PAYABLE,
+        protected AccountPresetContract $wagesPayableAccount = AccountPreset::WAGES_PAYABLE,
+        protected AccountPresetContract $payrollTaxExpenseAccount = AccountPreset::PAYROLL_TAX_EXPENSE,
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH,
+        protected AccountPresetContract $payrollTaxPayableAccount = AccountPreset::PAYROLL_TAX_PAYABLE,
+        protected ?AccountPresetContract $federalWithholdingPayableAccount = AccountPreset::FEDERAL_WITHHOLDING_PAYABLE,
         protected float $employerTaxRate = 0.0,
         protected float $withholdingRate = 0.0,
     ) {}

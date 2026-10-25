@@ -5,7 +5,6 @@ namespace RingleSoft\LaravelAccounting\Contracts;
 use Closure;
 use Illuminate\Support\Carbon;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
-use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Models\Account;
 
@@ -21,14 +20,14 @@ interface PostableTemplate
      *
      * @param  Closure(float): float|null  $amount
      */
-    public function debit(AccountPreset $account, ?Closure $amount, Closure|string|null $memo = null): self;
+    public function debit(AccountPresetContract $account, ?Closure $amount, Closure|string|null $memo = null): self;
 
     /**
      * Add a credit entry to the template
      *
      * @param  Closure(float): float|null  $amount
      */
-    public function credit(AccountPreset $account, ?Closure $amount, Closure|string|null $memo = null): self;
+    public function credit(AccountPresetContract $account, ?Closure $amount, Closure|string|null $memo = null): self;
 
     /**
      * Explicitly resolve a preset to a specific account, bypassing the
@@ -39,7 +38,7 @@ interface PostableTemplate
      *
      * @param  Account|int|string  $account  An Account instance, or its id/UUID
      */
-    public function resolveAccount(AccountPreset $preset, Account|int|string $account): self;
+    public function resolveAccount(AccountPresetContract $preset, Account|int|string $account): self;
 
     /**
      * Set the description of the voucher

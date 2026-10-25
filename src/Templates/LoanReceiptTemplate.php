@@ -2,13 +2,14 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 class LoanReceiptTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $cashAccount = AccountPreset::CASH,
-        protected AccountPreset $loanPayableAccount = AccountPreset::LOAN_PAYABLE
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH,
+        protected AccountPresetContract $loanPayableAccount = AccountPreset::LOAN_PAYABLE
     ) {}
 
     public function configure(): void

@@ -113,7 +113,7 @@ This is a reference of standard accounting transactions and the debit/credit pat
 | 92 | Intercompany Expense Allocation | Allocate shared costs | DR: `OPERATING_EXPENSES`<br>CR: `OTHER_PAYABLES` | 🔧 plain 2-line entry |
 | | **X. BANK & CASH MANAGEMENT** | | | |
 | 93 | Bank Deposit | Deposit undeposited funds | DR: `CASH_IN_BANK`<br>CR: `UNDEPOSITED_FUNDS` | 🔧 plain 2-line entry between two accounts already in the Cash and Cash Equivalents group |
-| 94 | Bank Transfer | Transfer between bank accounts | DR: `CASH_IN_BANK` (Bank B)<br>CR: `CASH_IN_BANK` (Bank A) | 🔧 plain 2-line entry — only one account can carry the `CASH_IN_BANK` preset at a time, so a second bank account needs its own preset or manual account selection in the Journal Voucher UI |
+| 94 | Bank Transfer | Transfer between bank accounts | DR: `CASH_IN_BANK` (Bank B)<br>CR: `CASH_IN_BANK` (Bank A) | 🔧 plain 2-line entry — only one account can carry the `CASH_IN_BANK` preset at a time, so a second bank account needs its own [custom preset](templates-api.md#using-your-own-account-presets) or manual account selection in the Journal Voucher UI |
 | 95 | Bank Reconciliation Adjustment | Reconcile book to bank | DR/CR: `CASH`<br>CR/DR: `INTEREST_REVENUE` / `BANK_CHARGES` | 🔧 plain 2-line entry |
 | 96 | Petty Cash Replenishment | Replenish petty cash | DR: `OPERATING_EXPENSES`<br>CR: `CASH` | 🔧 `CashPurchaseTemplate` with presets overridden |
 | 97 | Cash Over/Short | Register discrepancies | DR: `OTHER_EXPENSES` (if short)<br>CR: `CASH` (or vice versa if over) | 🔧 plain 2-line entry |

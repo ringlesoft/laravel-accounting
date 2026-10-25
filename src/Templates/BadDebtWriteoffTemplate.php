@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 /**
@@ -12,8 +13,8 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 class BadDebtWriteoffTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $allowanceAccount = AccountPreset::ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS,
-        protected AccountPreset $receivableAccount = AccountPreset::ACCOUNTS_RECEIVABLE,
+        protected AccountPresetContract $allowanceAccount = AccountPreset::ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS,
+        protected AccountPresetContract $receivableAccount = AccountPreset::ACCOUNTS_RECEIVABLE,
     ) {}
 
     public function configure(): void

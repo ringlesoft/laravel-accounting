@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
@@ -9,9 +10,9 @@ use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 class SalesDiscountTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $cashAccount = AccountPreset::CASH,
-        protected AccountPreset $salesDiscountAccount = AccountPreset::SALES_DISCOUNTS,
-        protected AccountPreset $receivableAccount = AccountPreset::ACCOUNTS_RECEIVABLE,
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH,
+        protected AccountPresetContract $salesDiscountAccount = AccountPreset::SALES_DISCOUNTS,
+        protected AccountPresetContract $receivableAccount = AccountPreset::ACCOUNTS_RECEIVABLE,
         protected float $discountRate = 0.0,
     ) {}
 

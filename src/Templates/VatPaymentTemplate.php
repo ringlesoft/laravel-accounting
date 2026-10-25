@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
@@ -16,9 +17,9 @@ use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 class VatPaymentTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $outputVatAccount = AccountPreset::OUTPUT_VAT,
-        protected AccountPreset $inputVatAccount = AccountPreset::INPUT_VAT,
-        protected AccountPreset $cashAccount = AccountPreset::CASH,
+        protected AccountPresetContract $outputVatAccount = AccountPreset::OUTPUT_VAT,
+        protected AccountPresetContract $inputVatAccount = AccountPreset::INPUT_VAT,
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH,
         protected float $inputVatAmount = 0.0,
     ) {}
 

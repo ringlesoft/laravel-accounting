@@ -2,13 +2,14 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 class DividendTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $dividendsAccount = AccountPreset::DIVIDENDS_DECLARED,
-        protected AccountPreset $cashAccount = AccountPreset::CASH
+        protected AccountPresetContract $dividendsAccount = AccountPreset::DIVIDENDS_DECLARED,
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH
     ) {}
 
     public function configure(): void

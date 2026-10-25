@@ -3,16 +3,15 @@
 namespace RingleSoft\LaravelAccounting\DTOs;
 
 use Closure;
-use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 
 class TaxData
 {
     public function __construct(
-        public AccountPreset $account,
+        public AccountPresetContract $account,
         public float $rate,
         public ?Closure $amount = null,
-        public ?AccountPreset $baseAccount = null,
+        public ?AccountPresetContract $baseAccount = null,
         public ?string $memo = null
     ) {}
-
 }

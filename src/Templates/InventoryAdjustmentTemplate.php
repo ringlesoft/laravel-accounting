@@ -2,13 +2,14 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 class InventoryAdjustmentTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $inventoryAccount = AccountPreset::INVENTORY,
-        protected AccountPreset $shrinkageExpenseAccount = AccountPreset::INVENTORY_ADJUSTMENTS,
+        protected AccountPresetContract $inventoryAccount = AccountPreset::INVENTORY,
+        protected AccountPresetContract $shrinkageExpenseAccount = AccountPreset::INVENTORY_ADJUSTMENTS,
         protected bool $isIncrease = false
     ) {}
 

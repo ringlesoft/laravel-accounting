@@ -3,7 +3,7 @@
 namespace RingleSoft\LaravelAccounting\DTOs;
 
 use Closure;
-use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\EntryType;
 
 class AccountTemplateEntry
@@ -14,17 +14,17 @@ class AccountTemplateEntry
      */
     public function __construct(
         public EntryType $type,
-        public AccountPreset $account,
+        public AccountPresetContract $account,
         public Closure|float|null $amount = null,
         public Closure|string|null $memo = null
     ) {}
 
-    public static function credit(AccountPreset $account, Closure|float|null $amount = null, Closure|string|null $memo = null): self
+    public static function credit(AccountPresetContract $account, Closure|float|null $amount = null, Closure|string|null $memo = null): self
     {
         return new self(EntryType::CREDIT, $account, $amount, $memo);
     }
 
-    public static function debit(AccountPreset $account, Closure|float|null $amount = null, Closure|string|null $memo = null): self
+    public static function debit(AccountPresetContract $account, Closure|float|null $amount = null, Closure|string|null $memo = null): self
     {
         return new self(EntryType::DEBIT, $account, $amount, $memo);
     }

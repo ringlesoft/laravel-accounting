@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 /**
@@ -10,8 +11,8 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 class AccruedRevenueTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $accruedRevenueAccount = AccountPreset::ACCRUED_REVENUE,
-        protected AccountPreset $revenueAccount = AccountPreset::SALES_REVENUE
+        protected AccountPresetContract $accruedRevenueAccount = AccountPreset::ACCRUED_REVENUE,
+        protected AccountPresetContract $revenueAccount = AccountPreset::SALES_REVENUE
     ) {}
 
     public function configure(): void

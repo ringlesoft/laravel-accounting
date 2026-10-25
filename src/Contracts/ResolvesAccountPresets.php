@@ -2,7 +2,6 @@
 
 namespace RingleSoft\LaravelAccounting\Contracts;
 
-use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Models\Account;
 
 /**
@@ -19,5 +18,5 @@ interface ResolvesAccountPresets
      * resolution - an explicit resolveAccount() call on the template itself
      * still takes priority over this.
      */
-    public function resolveAccountForPreset(AccountPreset $preset): Account|int|string|null;
+    public function resolveAccountForPreset(AccountPresetContract $preset): Account|int|string|null;
 }

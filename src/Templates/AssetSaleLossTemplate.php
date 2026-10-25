@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
@@ -16,10 +17,10 @@ use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 class AssetSaleLossTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $cashAccount = AccountPreset::CASH,
-        protected AccountPreset $accumulatedDepreciationAccount = AccountPreset::ACCUMULATED_DEPRECIATION,
-        protected AccountPreset $fixedAssetAccount = AccountPreset::FIXED_ASSETS,
-        protected AccountPreset $lossAccount = AccountPreset::LOSS_ON_SALE_OF_ASSETS,
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH,
+        protected AccountPresetContract $accumulatedDepreciationAccount = AccountPreset::ACCUMULATED_DEPRECIATION,
+        protected AccountPresetContract $fixedAssetAccount = AccountPreset::FIXED_ASSETS,
+        protected AccountPresetContract $lossAccount = AccountPreset::LOSS_ON_SALE_OF_ASSETS,
         protected float $originalCost = 0.0,
         protected float $accumulatedDepreciation = 0.0,
     ) {}

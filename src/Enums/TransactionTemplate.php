@@ -2,6 +2,8 @@
 
 namespace RingleSoft\LaravelAccounting\Enums;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
+
 enum TransactionTemplate: string
 {
     // I. EQUITY TRANSACTIONS
@@ -379,7 +381,7 @@ enum TransactionTemplate: string
     /**
      * Check if this template uses a specific AccountPreset
      */
-    public function usesAccount(AccountPreset $account): bool
+    public function usesAccount(AccountPresetContract $account): bool
     {
         return in_array($account, $this->getAllAccounts(), true);
     }
@@ -387,7 +389,7 @@ enum TransactionTemplate: string
     /**
      * Get the EntryType for a specific AccountPreset in this template
      */
-    public function getEntryTypeForAccount(AccountPreset $account): ?EntryType
+    public function getEntryTypeForAccount(AccountPresetContract $account): ?EntryType
     {
         $entries = $this->getEntries();
 

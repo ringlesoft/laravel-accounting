@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
@@ -15,9 +16,9 @@ use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 class InvestmentSaleGainTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $cashAccount = AccountPreset::CASH,
-        protected AccountPreset $investmentAccount = AccountPreset::SHORT_TERM_INVESTMENTS,
-        protected AccountPreset $gainAccount = AccountPreset::GAIN_ON_SALE_OF_ASSETS,
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH,
+        protected AccountPresetContract $investmentAccount = AccountPreset::SHORT_TERM_INVESTMENTS,
+        protected AccountPresetContract $gainAccount = AccountPreset::GAIN_ON_SALE_OF_ASSETS,
         protected float $costBasis = 0.0,
     ) {}
 

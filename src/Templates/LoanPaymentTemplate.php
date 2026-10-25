@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
@@ -9,9 +10,9 @@ use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 class LoanPaymentTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $loanPayableAccount = AccountPreset::LOAN_PAYABLE,
-        protected AccountPreset $interestExpenseAccount = AccountPreset::INTEREST_EXPENSE,
-        protected AccountPreset $cashAccount = AccountPreset::CASH,
+        protected AccountPresetContract $loanPayableAccount = AccountPreset::LOAN_PAYABLE,
+        protected AccountPresetContract $interestExpenseAccount = AccountPreset::INTEREST_EXPENSE,
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH,
         protected float $interestAmount = 0.0
     ) {}
 

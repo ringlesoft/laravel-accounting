@@ -2,14 +2,15 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 class SalesReturnTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $salesReturnsAccount = AccountPreset::SALES_RETURNS,
-        protected AccountPreset $receivableAccount = AccountPreset::ACCOUNTS_RECEIVABLE,
-        protected ?AccountPreset $cashAccount = AccountPreset::CASH,
+        protected AccountPresetContract $salesReturnsAccount = AccountPreset::SALES_RETURNS,
+        protected AccountPresetContract $receivableAccount = AccountPreset::ACCOUNTS_RECEIVABLE,
+        protected ?AccountPresetContract $cashAccount = AccountPreset::CASH,
         protected bool $isCashReturn = false
     ) {}
 

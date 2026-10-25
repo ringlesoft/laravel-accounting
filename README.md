@@ -150,6 +150,30 @@ $child = LaravelAccounting::accounts()->create([
 echo $child->getFullCode(); // hierarchical code, e.g. "1000.1010"
 ```
 
+##### Custom account presets
+
+When the built-in presets don't cover an account you need (e.g. a second bank account), declare your own presets as a
+**string-backed enum implementing `AccountPresetContract`**. They work everywhere a built-in preset does: in your own
+templates' `debit()`/`credit()`, in the constructor parameters of the shipped templates, in `resolveAccount()`, in
+`ResolvesAccountPresets`, and in `AccountService`'s preset lookups.
+
+```php
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
+
+enum MyPreset: string implements AccountPresetContract
+{
+    case SECONDARY_BANK = 'SECONDARY_BANK';
+}
+
+$account->update(['preset' => MyPreset::SECONDARY_BANK->value]);
+
+$sale->postWithTemplate(new CashSaleTemplate(cashAccount: MyPreset::SECONDARY_BANK));
+```
+
+Accounts are matched on the case's **value** only, so keep values unique across all your preset enums and the built-in
+`AccountPreset` (don't reuse e.g. `CASH`). Custom presets don't carry the built-in enum's metadata (`type()`,
+`normalBalance()`, `byCategory()`, ...), and the seeders don't create accounts for them.
+
 #### Journal Entries, Journal Entry Items & Voucher Data
 
 A **Journal Entry** plus its balanced debit/credit **Journal Entry Items** are the immutable ledger components —
@@ -240,13 +264,14 @@ $purchase->postWithTemplate(
    `resolveAccountForPreset()`:
 
 ```php
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
 
 #[DefaultAccountingTemplate(PrepaidExpenseTemplate::class)]
 class Invoice extends Model implements PostableModel, ResolvesAccountPresets
 {
     use Postable;
-    public function resolveAccountForPreset(AccountPreset $preset): Account|int|string|null
+    public function resolveAccountForPreset(AccountPresetContract $preset): Account|int|string|null
     {
         return $preset === AccountPreset::COST_OF_GOODS_SOLD ? $this->department->cogsAccount : null;
     }

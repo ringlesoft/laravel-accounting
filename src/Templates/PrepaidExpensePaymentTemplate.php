@@ -2,13 +2,14 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 class PrepaidExpensePaymentTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $prepaidExpenseAccount = AccountPreset::PREPAID_EXPENSES,
-        protected AccountPreset $cashAccount = AccountPreset::CASH
+        protected AccountPresetContract $prepaidExpenseAccount = AccountPreset::PREPAID_EXPENSES,
+        protected AccountPresetContract $cashAccount = AccountPreset::CASH
     ) {}
 
     public function configure(): void

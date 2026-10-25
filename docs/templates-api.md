@@ -315,6 +315,42 @@ TemplateRegistry::register('refund.custom', CustomRefundTemplate::class);
 
 Register it from a service provider's `boot()` so it's available everywhere, not just where you happen to reference the class.
 
+### Using your own account presets
+
+Templates aren't limited to the built-in `AccountPreset` cases. Any **string-backed enum implementing
+`AccountPresetContract`** is accepted by `debit()`, `credit()`, `resolveAccount()`, `ResolvesAccountPresets` and the
+constructor parameters of every shipped template (which are typed `AccountPresetContract`):
+
+```php
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
+
+enum MyPreset: string implements AccountPresetContract
+{
+    case CONSULTING_REVENUE = 'CONSULTING_REVENUE';
+    case SECONDARY_BANK = 'SECONDARY_BANK';
+}
+
+class ConsultingInvoiceTemplate extends AccountingTemplate
+{
+    public function __construct(
+        protected AccountPresetContract $bankAccount = MyPreset::SECONDARY_BANK,
+        protected AccountPresetContract $revenueAccount = MyPreset::CONSULTING_REVENUE,
+    ) {}
+
+    public function configure(): void
+    {
+        $this->debit($this->bankAccount)->credit($this->revenueAccount);
+    }
+}
+
+// Or mix them into a shipped template:
+new CashSaleTemplate(cashAccount: MyPreset::SECONDARY_BANK);
+```
+
+Tag an account with the preset (`'preset' => MyPreset::SECONDARY_BANK->value`) before posting; resolution (children,
+ambiguity, overrides) works exactly as for built-in presets. Accounts are matched on the case's value alone, so keep
+values unique across all preset enums, built-in ones included.
+
 ### Rejecting a bad model or parameter
 
 Override `validate(PostableModel $model): void` to reject an invalid combination before any account lookup happens — it's called automatically by `make()` right after `configure()`. It's a no-op by default; throw `InvalidVoucherException` (or any exception) to reject:
@@ -376,13 +412,14 @@ Then confirm every preset you referenced actually resolves to a seeded account: 
   If the choice of account depends on the model itself (e.g. its department, branch, or category) rather than being a one-off, implement `ResolvesAccountPresets` on the model instead of calling `->resolveAccount()` every time you post. `AccountingTemplate` checks this automatically for every entry, including when the model is posted via its `#[DefaultAccountingTemplate]` attribute (`$model->post()`), not just through `postWithTemplate()`:
 
   ```php
+  use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
   use RingleSoft\LaravelAccounting\Contracts\ResolvesAccountPresets;
 
   class Purchase extends Model implements PostableModel, ResolvesAccountPresets
   {
       use Postable;
 
-      public function resolveAccountForPreset(AccountPreset $preset): Account|int|string|null
+      public function resolveAccountForPreset(AccountPresetContract $preset): Account|int|string|null
       {
           return match ($preset) {
               AccountPreset::COST_OF_GOODS_SOLD => $this->department->cogsAccount,
@@ -397,7 +434,7 @@ Then confirm every preset you referenced actually resolves to a seeded account: 
 
 ## Best Practices
 
-1. **Use AccountPreset Enums**: Always use `AccountPreset` enums instead of hardcoding account IDs
+1. **Use Account Presets**: Always use `AccountPreset` enums (or your own `AccountPresetContract` enums) instead of hardcoding account IDs
 2. **Parameterize Templates**: Make templates flexible by accepting account parameters in the constructor — and give every one a default value (see **Gotchas**)
 3. **Support Tax Calculations**: Include optional tax parameters for jurisdictions that require them
 4. **Document Entry Logic**: Add comments showing the debit/credit pattern (e.g., `// Dr: `CASH`, Cr: Revenue`)

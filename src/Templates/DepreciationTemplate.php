@@ -2,13 +2,14 @@
 
 namespace RingleSoft\LaravelAccounting\Templates;
 
+use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 class DepreciationTemplate extends AccountingTemplate
 {
     public function __construct(
-        protected AccountPreset $depreciationExpenseAccount = AccountPreset::DEPRECIATION_EXPENSE,
-        protected AccountPreset $accumulatedDepreciationAccount = AccountPreset::ACCUMULATED_DEPRECIATION
+        protected AccountPresetContract $depreciationExpenseAccount = AccountPreset::DEPRECIATION_EXPENSE,
+        protected AccountPresetContract $accumulatedDepreciationAccount = AccountPreset::ACCUMULATED_DEPRECIATION
     ) {}
 
     public function configure(): void

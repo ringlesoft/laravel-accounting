@@ -4,6 +4,7 @@ use Database\Seeders\AccountTypeSeeder;
 use Database\Seeders\ChartOfAccountsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use RingleSoft\LaravelAccounting\Contracts\TenantResolver;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Enums\NormalBalance;
@@ -169,7 +170,7 @@ it('refuses another tenant\'s account as parent', function () {
     ]);
 })->throws(ChartStructureException::class, 'was not found');
 
-class FakeChartTenant implements RingleSoft\LaravelAccounting\Contracts\TenantResolver
+class FakeChartTenant implements TenantResolver
 {
     public static string|int|null $tenant = null;
 

@@ -1,5 +1,7 @@
 <?php
 
+use RingleSoft\LaravelAccounting\Support\AuthUserTenantResolver;
+
 // config for RingleSoft/LaravelAccounting
 return [
     /*
@@ -20,7 +22,7 @@ return [
      * (queued jobs, scheduled commands, seeders, tenant provisioning) is still
      * scoped to and attributed to the right tenant.
      */
-    'tenant_resolver' => \RingleSoft\LaravelAccounting\Support\AuthUserTenantResolver::class,
+    'tenant_resolver' => AuthUserTenantResolver::class,
 
     /*
      * When `true`, every multi-tenant model must belong to exactly

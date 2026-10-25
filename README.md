@@ -128,11 +128,11 @@ The mental model is a straight line, and each link below is explained in its own
 
 #### Accounts & Account Presets
 
-This package ships with a complete Chart of Accounts (COA) that you can modify and extend for your own needs. Accounts
-can be nested (a parent category with child accounts), but **accounts are never posted to directly if they have
-children** — posting always targets a specific leaf account.
+This package ships with a complete Chart of Accounts (COA) that you can extend for your own needs. Accounts are nested
+(a parent category with child accounts), but **accounts are never posted to directly if they have children** — posting
+always targets a specific leaf account.
 
-To avoid hardcoding database IDs or names, every account can carry an **Account Preset**: an enum of ~250 predefined
+To avoid hardcoding database IDs or names, every account can carry an **Account Preset**: an enum of ~260 predefined
 roles (`CASH`, `ACCOUNTS_RECEIVABLE`, `SALES_REVENUE`, ...) that templates and your own code refer to instead of a
 concrete account. This is what lets an `AccountingTemplate` be defined once and still resolve to the correct account in
 any application's chart of accounts.
@@ -143,12 +143,47 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 
 $cash = LaravelAccounting::accounts()->findByPreset(AccountPreset::CASH);
 
-$child = LaravelAccounting::accounts()->create([
-    'code' => '1010', 'name' => 'Petty Cash', 'parent_id' => $parent->id,
+$bank = LaravelAccounting::accounts()->create([
+    'name' => 'Bank B', 'parent_id' => LaravelAccounting::accounts()->findByPreset(AccountPreset::CASH_AND_CASH_EQUIVALENT)->id,
     'account_type_id' => $assetType->id, 'currency_code' => 'USD',
 ]);
-echo $child->getFullCode(); // hierarchical code, e.g. "1000.1010"
+echo $bank->code;          // "10105", generated under its parent
+echo $bank->getFullCode(); // hierarchical code, e.g. "10000.10100.10105"
 ```
+
+##### The chart's structure
+
+The chart is defined by `#[PresetAccount]` attributes on the `AccountPreset` cases, and seeded by
+`ChartOfAccountsSeeder` (or `LaravelAccounting::chart()->seed()`). Its **11 root (first-level) accounts** form a fixed
+frame: Current Assets, Non-Current Assets, Current Liabilities, Long-term Liabilities, Equity, Revenue, Cost of Goods
+Sold, Operating Expenses, Financial Expenses, Income Tax Expense and Other Expenses. With `enforce_chart_structure`
+on (the default):
+
+- **every account needs a parent** — new root accounts can't be created, and an account can't be moved to the root;
+- **the root accounts can't be changed or deleted** (renamed, re-coded, re-parented, deactivated, re-typed);
+- **codes are generated** under the parent when you omit them, following the chart's numbering: a root's children step
+  by 100 (`10800`, `10900`; by 1 when there's no room, e.g. `70007` under Financial Expenses), deeper children step
+  by 1 (`10105`), and when a parent's range is full a 2-digit suffix is used (`10101` → `1010101`);
+- **an explicit code must fit under its parent**: between the parent's code and its next sibling's (not inside the
+  subtree of the sibling it follows), or the parent's code plus a 2-digit suffix.
+
+Everything below the roots is yours to rename, re-code (within the rules) or extend. Set `enforce_chart_structure` to
+`false` to manage a free-form chart yourself (codes are still generated when omitted).
+
+Seeding creates only the accounts that are missing (matched by preset within the tenant) and never modifies existing
+ones, so it's safe to re-run — pass `sync: true` to refresh the descriptive fields (name, description, category,
+sub-category, report section) of the package's accounts. Charts seeded by earlier versions upgrade in place: an
+account whose code matches a chart account but carries no preset (the old structural accounts) is adopted. When
+seeding you can also:
+
+```php
+// config/laravel_accounting.php
+'excluded_presets' => [AccountPreset::DIGITAL_ASSETS->value],              // leaves out its whole branch
+'preset_overrides' => [AccountPreset::CASH->value => ['name' => 'Cash on Hand']], // name, code, description
+```
+
+Root accounts can be neither excluded nor overridden. `LaravelAccounting::chart()->seed($industry, $tenantId)` seeds a
+given tenant when no tenant is resolved (e.g. when provisioning one from a job).
 
 ##### Custom account presets
 
@@ -171,11 +206,10 @@ $sale->postWithTemplate(new CashSaleTemplate(cashAccount: MyPreset::SECONDARY_BA
 ```
 
 Accounts are matched on the case's **value** only, so keep values unique across all your preset enums and the built-in
-`AccountPreset` (don't reuse e.g. `CASH`). Custom presets don't carry the built-in enum's metadata (`type()`,
-`normalBalance()`, `byCategory()`, ...).
+`AccountPreset` (don't reuse e.g. `CASH`).
 
-To have the package **seed** the account for a custom preset, describe it with `#[PresetAccount]` and register the enum
-in `laravel_accounting.custom_presets`:
+To have the package **seed** the account for a custom preset, describe it with `#[PresetAccount]` — the same attribute
+the package's own chart uses — and register the enum in `laravel_accounting.custom_presets`:
 
 ```php
 use RingleSoft\LaravelAccounting\Attributes\PresetAccount;
@@ -183,10 +217,10 @@ use RingleSoft\LaravelAccounting\Attributes\PresetAccount;
 enum MyPreset: string implements AccountPresetContract
 {
     #[PresetAccount(
-        code: '10105',
         name: 'Secondary Bank',
         type: AccountTypeEnum::ASSET,
-        parent: AccountPreset::CASH_AND_CASH_EQUIVALENT, // a built-in or custom preset
+        parent: AccountPreset::CASH_AND_CASH_EQUIVALENT, // required: a built-in or custom preset
+        // code: '10105',                                // optional: generated under the parent
     )]
     case SECONDARY_BANK = 'SECONDARY_BANK';
 
@@ -197,17 +231,18 @@ enum MyPreset: string implements AccountPresetContract
 'custom_presets' => [MyPreset::class],
 ```
 
-Then run `php artisan db:seed --class=CustomPresetSeeder` after the chart of accounts (the installer does this for you
-when `custom_presets` is set), or `LaravelAccounting::presets()->seed($tenantId)` when provisioning a tenant.
-`category` and `reportSection` default to the parent account's, `normalBalance` to the account type's; `allowsManualEntries`
-and `description` are optional too. Seeding:
+Registered presets are then seeded **together with the package's chart** by `ChartOfAccountsSeeder` (and the installer).
+To add them to a chart that's already seeded, run `php artisan db:seed --class=CustomPresetSeeder` or
+`LaravelAccounting::presets()->seed($tenantId)`. `category` and `reportSection` default to the parent account's,
+`normalBalance` to the account type's; `subCategory`, `allowsManualEntries` and `description` are optional too.
+Seeding:
 
-- creates only the accounts that don't exist yet (matched by preset, within the tenant) and never modifies existing
-  ones, so it's safe to re-run;
-- orders custom parents before their children, and runs in one transaction;
+- creates only the accounts that don't exist yet and never modifies existing ones, so it's safe to re-run;
+- orders parents before their children, and runs in one transaction;
 - refuses, with a clear `InvalidPresetDefinitionException`, enums that aren't string-backed `AccountPresetContract`s,
-  preset values that collide with another preset, duplicate codes, parent cycles, a parent with no account, or a code
-  another account already uses.
+  preset values that collide with another preset, a custom account without a parent, `isSystemAccount` (reserved for
+  the package's chart), duplicate codes (including the chart's own), codes that don't fit under their parent, parent
+  cycles, a parent with no account (or one excluded from the chart), or a code another account already uses.
 
 #### Journal Entries, Journal Entry Items & Voucher Data
 
@@ -484,7 +519,10 @@ return [
     'multi_tenancy_field' => 'tenant_id',
     'tenant_resolver' => AuthUserTenantResolver::class, // how the current tenant is found (TenantResolver contract)
     'strict_multi_tenancy_check' => true,   // false allows null-tenant rows as shared/global data
-    'custom_presets' => [],                 // your AccountPresetContract enums, for CustomPresetSeeder
+    'custom_presets' => [],                 // your AccountPresetContract enums, seeded with the chart
+    'enforce_chart_structure' => true,      // fixed root accounts, parents required, generated/validated codes
+    'excluded_presets' => [],               // chart accounts (and branches) to leave out when seeding
+    'preset_overrides' => [],               // name/code/description of chart accounts, when seeding
     'default_currency_code' => 'USD',
     'transaction_number_prefix' => 'JE',    // e.g. JE-20260101-000001
     'use_uuid' => false,                    // UUID vs auto-increment primary keys
@@ -517,7 +555,6 @@ php artisan vendor:publish --tag="accounting-migrations"
 php artisan migrate
 php artisan db:seed --class=AccountTypeSeeder
 php artisan db:seed --class=ChartOfAccountsSeeder
-php artisan db:seed --class=CustomPresetSeeder   # only if you've registered custom_presets
 php artisan db:seed --class=FiscalPeriodSeeder
 ```
 

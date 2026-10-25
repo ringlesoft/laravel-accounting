@@ -63,6 +63,9 @@ class ConsultingTemplate extends AccountingTemplate
 }
 
 beforeEach(function () {
+    // These tests build small standalone charts; the chart structure rules
+    // are covered by ChartOfAccountsTest.
+    config()->set('laravel_accounting.enforce_chart_structure', false);
     require_once __DIR__.'/../database/seeders/AccountTypeSeeder.php';
     (new AccountTypeSeeder)->run();
 });

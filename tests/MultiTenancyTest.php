@@ -26,6 +26,9 @@ class FakeTenantResolver implements TenantResolver
 beforeEach(function () {
     config()->set('laravel_accounting.tenant_resolver', FakeTenantResolver::class);
     config()->set('laravel_accounting.strict_multi_tenancy_check', true);
+    // These tests create standalone (root) accounts; the chart structure
+    // rules are covered by ChartOfAccountsTest.
+    config()->set('laravel_accounting.enforce_chart_structure', false);
     FakeTenantResolver::$tenant = null;
 
     require_once __DIR__.'/../database/seeders/AccountTypeSeeder.php';

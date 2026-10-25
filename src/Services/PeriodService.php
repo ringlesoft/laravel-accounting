@@ -306,7 +306,11 @@ class PeriodService
                         'tenant_id' => $tenantId,
                         'start_date' => $yearStartDate->toDateString(),
                         'end_date' => $yearEndDate->toDateString(),
-                        'name' => $yearStartDate->year.'-'.$yearEndDate->year,
+                        // A calendar-aligned year is just "2026"; one spanning two
+                        // calendar years is "2025-2026".
+                        'name' => $yearStartDate->year === $yearEndDate->year
+                            ? (string) $yearStartDate->year
+                            : $yearStartDate->year.'-'.$yearEndDate->year,
                         'is_closed' => false,
                     ]);
 

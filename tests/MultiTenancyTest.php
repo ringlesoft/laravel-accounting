@@ -122,3 +122,16 @@ it('keeps fiscal years of different tenants separate', function () {
 
     expect(FiscalYear::count())->toBe(2);
 });
+
+it('names a calendar fiscal year by its single year', function () {
+    $service = app(PeriodService::class);
+
+    $service->ensurePeriodsExist(yearsAhead: 0, startMonth: 1, tenantId: 1);
+    $service->ensurePeriodsExist(yearsAhead: 0, startMonth: 7, tenantId: 2);
+
+    $calendar = FiscalYear::where('tenant_id', 1)->first();
+    $split = FiscalYear::where('tenant_id', 2)->first();
+
+    expect($calendar->name)->toBe((string) $calendar->start_date->year)
+        ->and($split->name)->toBe($split->start_date->year.'-'.$split->end_date->year);
+});

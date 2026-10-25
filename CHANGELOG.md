@@ -11,6 +11,7 @@ All notable changes to `laravel-accounting` will be documented in this file.
 - Chart structure rules (`enforce_chart_structure`, on by default): the 11 root accounts are locked, every other account needs a parent, and codes are generated under the parent when omitted (explicit codes must fit).
 - `ChartOfAccountsService` (`LaravelAccounting::chart()`), with `excluded_presets`, `preset_overrides` and an opt-in `sync` mode.
 - The chart seeds `INCOME_SUMMARY`, `OUTPUT_VAT` and `BOND_ISSUANCE_COSTS`, which `ClosingService`, `VatPaymentTemplate` and `BondIssuanceTemplate` need.
+- Per-call chart adjustments: `ChartOfAccountsService::seed()` and `definitions()` accept `excluded`, `included`, `overrides` and `customPresets`, falling back to config.
 - Optional chart accounts for the other catalogued presets (`CASH_ON_HAND`, `ALLOWANCE_FOR_BAD_DEBTS`, `WITHHOLDING_TAX_*`, ...), seeded when listed in `included_presets`.
 
 ### Changed

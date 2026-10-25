@@ -24,13 +24,14 @@ class CustomPresetService
      * string-backed enum implementing AccountPresetContract, and no case
      * value may repeat a built-in or another registered preset's value.
      *
+     * @param  array<class-string<AccountPresetContract>>|null  $enums  Instead of the `custom_presets` config
      * @return array<class-string<AccountPresetContract>>
      *
      * @throws InvalidPresetDefinitionException
      */
-    public function enums(): array
+    public function enums(?array $enums = null): array
     {
-        $enums = array_values(array_unique(config('laravel_accounting.custom_presets', [])));
+        $enums = array_values(array_unique($enums ?? config('laravel_accounting.custom_presets', [])));
 
         foreach ($enums as $enum) {
             if (! is_string($enum) || ! enum_exists($enum)) {
@@ -58,13 +59,14 @@ class CustomPresetService
     /**
      * Every case of the registered custom preset enums.
      *
+     * @param  array<class-string<AccountPresetContract>>|null  $enums  Instead of the `custom_presets` config
      * @return AccountPresetContract[]
      *
      * @throws InvalidPresetDefinitionException
      */
-    public function presets(): array
+    public function presets(?array $enums = null): array
     {
-        return array_merge([], ...array_map(static fn (string $enum) => $enum::cases(), $this->enums()));
+        return array_merge([], ...array_map(static fn (string $enum) => $enum::cases(), $this->enums($enums)));
     }
 
     /**
@@ -75,15 +77,16 @@ class CustomPresetService
      * accounts, so each must name a parent. Codes are optional: they're
      * generated under the parent when omitted.
      *
+     * @param  array<class-string<AccountPresetContract>>|null  $enums  Instead of the `custom_presets` config
      * @return array<string, array{preset: AccountPresetContract, account: PresetAccount}>
      *
      * @throws InvalidPresetDefinitionException
      */
-    public function definitions(): array
+    public function definitions(?array $enums = null): array
     {
         $definitions = [];
 
-        foreach ($this->enums() as $enum) {
+        foreach ($this->enums($enums) as $enum) {
             foreach (PresetDefinitions::forEnum($enum) as $value => $definition) {
                 $label = PresetDefinitions::label($definition['preset']);
 
@@ -111,13 +114,14 @@ class CustomPresetService
      * yet, under parents that must already exist (e.g. the seeded chart).
      * ChartOfAccountsService::seed() seeds the whole chart, these included.
      *
+     * @param  array<class-string<AccountPresetContract>>|null  $enums  Instead of the `custom_presets` config
      * @return array<string, Account> The accounts created, keyed by preset value
      *
      * @throws InvalidPresetDefinitionException|Throwable
      */
-    public function seed(int|string|null $tenantId = null): array
+    public function seed(int|string|null $tenantId = null, ?array $enums = null): array
     {
-        return app(ChartOfAccountsService::class)->seed(tenantId: $tenantId, includeBuiltIn: false)['created'];
+        return app(ChartOfAccountsService::class)->seed(tenantId: $tenantId, includeBuiltIn: false, customPresets: $enums)['created'];
     }
 
     /**

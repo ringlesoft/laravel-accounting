@@ -43,18 +43,34 @@ class ChartOfAccountsService
      * custom and overridden ones (the built-in chart's own codes fit by
      * construction).
      *
+     * $excluded, $included, $overrides and $customPresets replace the
+     * `excluded_presets`, `included_presets`, `preset_overrides` and
+     * `custom_presets` config for this call (null: use the config), e.g. to
+     * give each tenant its own chart without touching global config.
+     *
+     * @param  array<AccountPresetContract|string>|null  $excluded
+     * @param  array<AccountPresetContract|string>|null  $included
+     * @param  array<string, array{name?: string, code?: string, description?: string}>|null  $overrides
+     * @param  array<class-string<AccountPresetContract>>|null  $customPresets
      * @return array<string, array{preset: AccountPresetContract, account: PresetAccount, builtIn: bool, checkCode: bool}>
      *
      * @throws InvalidPresetDefinitionException|InvalidArgumentException
      */
-    public function definitions(string $industry = 'full', bool $includeBuiltIn = true, bool $includeCustom = true): array
-    {
-        $definitions = $includeBuiltIn ? $this->builtInDefinitions($industry) : [];
+    public function definitions(
+        string $industry = 'full',
+        bool $includeBuiltIn = true,
+        bool $includeCustom = true,
+        ?array $excluded = null,
+        ?array $included = null,
+        ?array $overrides = null,
+        ?array $customPresets = null,
+    ): array {
+        $definitions = $includeBuiltIn ? $this->builtInDefinitions($industry, $excluded, $included, $overrides) : [];
 
         if ($includeCustom) {
             $builtIn = PresetDefinitions::forEnum(AccountPreset::class);
 
-            foreach (app(CustomPresetService::class)->definitions() as $value => $definition) {
+            foreach (app(CustomPresetService::class)->definitions($customPresets) as $value => $definition) {
                 $parent = $definition['account']->parent;
                 if ($includeBuiltIn && $parent !== null && isset($builtIn[$parent->value]) && ! isset($definitions[$parent->value])) {
                     throw new InvalidPresetDefinitionException(
@@ -115,14 +131,28 @@ class ChartOfAccountsService
      *
      * $tenantId is used when no tenant is resolved (e.g. when provisioning a
      * tenant from a job or command); a resolved tenant always takes priority.
+     * $excluded, $included, $overrides and $customPresets replace their
+     * config for this call - see definitions().
      *
+     * @param  array<AccountPresetContract|string>|null  $excluded
+     * @param  array<AccountPresetContract|string>|null  $included
+     * @param  array<string, array{name?: string, code?: string, description?: string}>|null  $overrides
+     * @param  array<class-string<AccountPresetContract>>|null  $customPresets
      * @return array{created: array<string, Account>, adopted: array<string, Account>, synced: array<string, Account>}
      *
      * @throws InvalidPresetDefinitionException|InvalidArgumentException|Throwable
      */
-    public function seed(string $industry = 'full', int|string|null $tenantId = null, bool $sync = false, bool $includeBuiltIn = true): array
-    {
-        $definitions = $this->definitions($industry, $includeBuiltIn);
+    public function seed(
+        string $industry = 'full',
+        int|string|null $tenantId = null,
+        bool $sync = false,
+        bool $includeBuiltIn = true,
+        ?array $excluded = null,
+        ?array $included = null,
+        ?array $overrides = null,
+        ?array $customPresets = null,
+    ): array {
+        $definitions = $this->definitions($industry, $includeBuiltIn, true, $excluded, $included, $overrides, $customPresets);
         $tenantId = app(TenantResolver::class)->resolve() ?? $tenantId;
 
         return DB::transaction(fn () => ChartStructure::bypass(function () use ($definitions, $tenantId, $sync) {
@@ -221,14 +251,17 @@ class ChartOfAccountsService
     }
 
     /**
-     * The built-in definitions for an industry, with exclusions and
-     * overrides from config applied.
+     * The built-in definitions for an industry, with exclusions, inclusions
+     * and overrides applied (null: from config).
      *
+     * @param  array<AccountPresetContract|string>|null  $excludedPresets
+     * @param  array<AccountPresetContract|string>|null  $includedPresets
+     * @param  array<string, mixed>|null  $overrides
      * @return array<string, array{preset: AccountPresetContract, account: PresetAccount, builtIn: bool, checkCode: bool}>
      *
      * @throws InvalidPresetDefinitionException|InvalidArgumentException
      */
-    protected function builtInDefinitions(string $industry): array
+    protected function builtInDefinitions(string $industry, ?array $excludedPresets = null, ?array $includedPresets = null, ?array $overrides = null): array
     {
         $industries = AccountPreset::byIndustry();
         if (! array_key_exists($industry, $industries)) {
@@ -241,7 +274,7 @@ class ChartOfAccountsService
         $inIndustry = array_flip(array_map(static fn (AccountPreset $preset) => $preset->value, $industries[$industry]));
 
         $excluded = [];
-        foreach (config('laravel_accounting.excluded_presets', []) as $preset) {
+        foreach ($excludedPresets ?? config('laravel_accounting.excluded_presets', []) as $preset) {
             $value = $preset instanceof AccountPresetContract ? $preset->value : $preset;
             if (! isset($all[$value])) {
                 throw new InvalidPresetDefinitionException("excluded_presets: '{$value}' isn't a preset of the package's chart.");
@@ -260,7 +293,7 @@ class ChartOfAccountsService
         }
 
         $included = [];
-        foreach (config('laravel_accounting.included_presets', []) as $preset) {
+        foreach ($includedPresets ?? config('laravel_accounting.included_presets', []) as $preset) {
             $value = $preset instanceof AccountPresetContract ? $preset->value : $preset;
             if (! isset($all[$value])) {
                 throw new InvalidPresetDefinitionException("included_presets: '{$value}' isn't a preset of the package's chart.");
@@ -268,7 +301,7 @@ class ChartOfAccountsService
             $included[$value] = true;
         }
 
-        $overrides = config('laravel_accounting.preset_overrides', []);
+        $overrides ??= config('laravel_accounting.preset_overrides', []);
         foreach ($overrides as $value => $fields) {
             if (! isset($all[$value])) {
                 throw new InvalidPresetDefinitionException("preset_overrides: '{$value}' isn't a preset of the package's chart.");

@@ -186,7 +186,20 @@ seeding you can also:
 The chart seeds every account the package's templates, closing and reports rely on. The other catalogued presets
 (e.g. `CASH_ON_HAND`, `ALLOWANCE_FOR_BAD_DEBTS`, `WITHHOLDING_TAX_*`, `PENSION_LIABILITIES`) are defined as
 **optional**, since many overlap with seeded accounts: list the ones you use in `included_presets` and they're
-seeded under their usual parent with a generated code. Root accounts can be neither excluded nor overridden. `LaravelAccounting::chart()->seed($industry, $tenantId)` seeds a
+seeded under their usual parent with a generated code. Root accounts can be neither excluded nor overridden.
+
+The same adjustments can be passed per call instead, e.g. to give each tenant its own chart without touching global
+config (`null` falls back to the config, `[]` means none):
+
+```php
+LaravelAccounting::chart()->seed(
+    tenantId: $tenant->id,
+    excluded: [AccountPreset::DIGITAL_ASSETS],
+    included: [AccountPreset::WITHHOLDING_TAX_PAYABLE],
+    overrides: [AccountPreset::CASH->value => ['name' => 'Cash on Hand']],
+    customPresets: [TenantPreset::class],
+);
+``` `LaravelAccounting::chart()->seed($industry, $tenantId)` seeds a
 given tenant when no tenant is resolved (e.g. when provisioning one from a job).
 
 ##### Custom account presets

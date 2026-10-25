@@ -399,3 +399,39 @@ it('refreshes descriptive fields only when syncing', function () {
     expect(account(AccountPreset::CASH)->name)->toBe('Cash')
         ->and(array_keys($result['synced']))->toBe(['CASH']);
 });
+
+// ---- Per-call settings
+
+it('takes chart adjustments per call without touching config', function () {
+    LaravelAccounting::chart()->seed(
+        tenantId: 1,
+        excluded: [AccountPreset::DIGITAL_ASSETS],
+        included: [AccountPreset::WITHHOLDING_TAX_PAYABLE],
+        overrides: [AccountPreset::CASH->value => ['name' => 'Cash on Hand']],
+    );
+    LaravelAccounting::chart()->seed(tenantId: 2);
+
+    $tenant = fn (int $id) => Account::where('tenant_id', $id);
+
+    expect($tenant(1)->where('preset', 'DIGITAL_ASSETS')->exists())->toBeFalse()
+        ->and($tenant(1)->where('preset', 'WITHHOLDING_TAX_PAYABLE')->exists())->toBeTrue()
+        ->and($tenant(1)->where('preset', 'CASH')->value('name'))->toBe('Cash on Hand')
+        ->and($tenant(2)->where('preset', 'DIGITAL_ASSETS')->exists())->toBeTrue()
+        ->and($tenant(2)->where('preset', 'WITHHOLDING_TAX_PAYABLE')->exists())->toBeFalse()
+        ->and($tenant(2)->where('preset', 'CASH')->value('name'))->toBe('Cash')
+        ->and(config('laravel_accounting.excluded_presets'))->toBe([])
+        ->and(config('laravel_accounting.included_presets'))->toBe([])
+        ->and(config('laravel_accounting.preset_overrides'))->toBe([]);
+});
+
+it('lets an empty per-call list replace a non-empty config', function () {
+    config()->set('laravel_accounting.excluded_presets', [AccountPreset::DIGITAL_ASSETS]);
+
+    LaravelAccounting::chart()->seed(excluded: []);
+
+    expect(Account::where('preset', 'DIGITAL_ASSETS')->exists())->toBeTrue();
+});
+
+it('validates per-call adjustments like config', function () {
+    LaravelAccounting::chart()->seed(excluded: [AccountPreset::EQUITY]);
+})->throws(InvalidPresetDefinitionException::class, "root account EQUITY can't be excluded");

@@ -247,6 +247,17 @@ it('allows custom root accounts when the structure is not enforced', function ()
     expect(array_keys(LaravelAccounting::presets()->seed()))->toBe(['MY_ROOT']);
 });
 
+it('takes custom presets per call without touching config', function () {
+    LaravelAccounting::chart()->seed(tenantId: 1, customPresets: [StandalonePreset::class]);
+    LaravelAccounting::chart()->seed(tenantId: 2);
+    LaravelAccounting::presets()->seed(tenantId: 2, enums: [ExplicitCodePreset::class]);
+
+    expect(Account::where('preset', 'LICENCES')->pluck('tenant_id')->all())->toBe([1])
+        ->and(Account::where('preset', 'SUBSCRIPTIONS')->pluck('tenant_id')->all())->toBe([2])
+        ->and(config('laravel_accounting.custom_presets'))->toBe([])
+        ->and(LaravelAccounting::presets()->presets([StandalonePreset::class]))->toBe(StandalonePreset::cases());
+});
+
 it('lists every case of the registered enums as presets', function () {
     config()->set('laravel_accounting.custom_presets', [SeededPreset::class, StandalonePreset::class]);
 

@@ -174,8 +174,8 @@ class Account extends Model
 
     // Validation Rules
 
-    public static function validationRules(?int $ignoreId = null): array
+    public static function validationRules(int|string|null $ignoreId = null, int|string|null $tenantId = null): array
     {
-        return AccountValidator::rules($ignoreId);
+        return AccountValidator::rules($ignoreId, $tenantId);
     }
 }

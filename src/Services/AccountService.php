@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Contracts\TenantResolver;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Exceptions\AccountNotFoundException;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\AccountType;
+use RingleSoft\LaravelAccounting\Scopes\MultiTenantScope;
 use Throwable;
 
 class AccountService
@@ -272,7 +274,17 @@ class AccountService
             throw new InvalidArgumentException('Invalid account type');
         }
 
-        $existingAccount = Account::where('code', $data['code'])->first();
+        // Codes are unique per tenant. The resolved tenant takes priority, as
+        // MultiTenant overrides a caller-supplied tenant_id with it on create.
+        // The global scope is bypassed so that, with no resolved tenant, other
+        // tenants' accounts aren't matched, and in non-strict mode shared
+        // (null tenant) accounts don't block a tenant's own code.
+        $tenantId = app(TenantResolver::class)->resolve() ?? ($data['tenant_id'] ?? null);
+
+        $existingAccount = Account::withoutGlobalScope(MultiTenantScope::class)
+            ->where('code', $data['code'])
+            ->where('tenant_id', $tenantId)
+            ->exists();
         if ($existingAccount) {
             throw new InvalidArgumentException("Account with code '{$data['code']}' already exists");
         }

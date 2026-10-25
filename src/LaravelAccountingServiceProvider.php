@@ -7,6 +7,7 @@ use Illuminate\Support\ServiceProvider;
 use RingleSoft\LaravelAccounting\Commands\ClosePeriodCommand;
 use RingleSoft\LaravelAccounting\Commands\InstallCommand;
 use RingleSoft\LaravelAccounting\Commands\UpdateBalancesCommand;
+use RingleSoft\LaravelAccounting\Contracts\TenantResolver;
 use RingleSoft\LaravelAccounting\Events\JournalEntryPosted;
 use RingleSoft\LaravelAccounting\Events\JournalEntryReversed;
 use RingleSoft\LaravelAccounting\Events\JournalEntryVoided;
@@ -17,12 +18,17 @@ use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Observers\AccountObserver;
 use RingleSoft\LaravelAccounting\Observers\FiscalPeriodObserver;
 use RingleSoft\LaravelAccounting\Observers\JournalEntryObserver;
+use RingleSoft\LaravelAccounting\Support\AuthUserTenantResolver;
 
 class LaravelAccountingServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->app->alias(Facades\LaravelAccounting::class, 'LaravelAccounting');
+
+        $this->app->bind(TenantResolver::class, function ($app) {
+            return $app->make(config('laravel_accounting.tenant_resolver', AuthUserTenantResolver::class));
+        });
     }
 
     public function boot(): void

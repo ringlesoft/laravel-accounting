@@ -13,6 +13,16 @@ return [
     'multi_tenancy_field' => 'tenant_id',
 
     /*
+     * Class used to resolve the current tenant. Must implement
+     * RingleSoft\LaravelAccounting\Contracts\TenantResolver. The default reads
+     * `multi_tenancy_field` from the authenticated user; swap it for one that
+     * reads your app's tenant context so code running with no logged-in user
+     * (queued jobs, scheduled commands, seeders, tenant provisioning) is still
+     * scoped to and attributed to the right tenant.
+     */
+    'tenant_resolver' => \RingleSoft\LaravelAccounting\Support\AuthUserTenantResolver::class,
+
+    /*
      * When `true`, every multi-tenant model must belong to exactly
      * one resolvable tenant: querying as an authenticated tenant never
      * returns a row with a null tenant_id, and creating a record with no

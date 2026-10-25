@@ -2,8 +2,11 @@
 
 namespace RingleSoft\LaravelAccounting\Services;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Contracts\TenantResolver;
 use RingleSoft\LaravelAccounting\Events\PeriodClosed;
 use RingleSoft\LaravelAccounting\Events\PeriodLocked;
 use RingleSoft\LaravelAccounting\Events\PeriodOpened;
@@ -165,15 +168,18 @@ class PeriodService
                     $periodEndDate = $endDate->copy();
                 }
 
-                $period = FiscalPeriod::firstOrCreate([
-                    'fiscal_year_id' => $year->id,
-                    'start_date' => $startDate->toDateString(),
-                    'end_date' => $periodEndDate->toDateString(),
-                ], [
-                    'name' => $this->generatePeriodName($year, $periodNumber, $frequency, $startDate, $periodEndDate),
-                    'is_closed' => false,
-                    'is_locked' => false,
-                ]);
+                $period = $this->whereDates(FiscalPeriod::query(), $startDate, $periodEndDate)
+                    ->where('fiscal_year_id', $year->id)
+                    ->first()
+                    ?? FiscalPeriod::create([
+                        'fiscal_year_id' => $year->id,
+                        'tenant_id' => $year->getTenantId(),
+                        'start_date' => $startDate->toDateString(),
+                        'end_date' => $periodEndDate->toDateString(),
+                        'name' => $this->generatePeriodName($year, $periodNumber, $frequency, $startDate, $periodEndDate),
+                        'is_closed' => false,
+                        'is_locked' => false,
+                    ]);
 
                 $periods[] = $period;
 
@@ -257,11 +263,20 @@ class PeriodService
      * Ensure periods exist for current and upcoming fiscal years
      * This method can be called from a cron job to automatically create periods
      *
+     * $startMonth/$startDay override the app-wide default_fiscal_year_start
+     * (e.g. for a tenant with its own fiscal year). $tenantId attributes and
+     * scopes the fiscal years when no tenant is resolved (e.g. from a job or
+     * command); a resolved tenant always takes priority, as in MultiTenant.
+     *
      * @throws Throwable
      */
-    public function ensurePeriodsExist(int $yearsAhead = 1): array
-    {
-        return DB::transaction(function () use ($yearsAhead) {
+    public function ensurePeriodsExist(
+        int $yearsAhead = 1,
+        ?int $startMonth = null,
+        ?int $startDay = null,
+        int|string|null $tenantId = null,
+    ): array {
+        return DB::transaction(function () use ($yearsAhead, $startMonth, $startDay, $tenantId) {
             $created = [];
             $fiscalYearStart = config('laravel_accounting.default_fiscal_year_start', [
                 'month' => 1,
@@ -270,15 +285,12 @@ class PeriodService
             $fiscalPeriodsCount = config('laravel_accounting.fiscal_periods_count', 1);
 
             $currentYear = now()->year;
-            $startMonth = $fiscalYearStart['month'];
-            $startDay = $fiscalYearStart['day'];
+            $startMonth ??= $fiscalYearStart['month'];
+            $startDay ??= $fiscalYearStart['day'];
+            $tenantId = app(TenantResolver::class)->resolve() ?? $tenantId;
 
             for ($i = 0; $i <= $yearsAhead; $i++) {
-                $yearStartDate = now()
-                    ->setYear($currentYear + $i)
-                    ->setMonth($startMonth)
-                    ->setDay($startDay)
-                    ->startOfDay();
+                $yearStartDate = Carbon::create($currentYear + $i, $startMonth, $startDay)->startOfDay();
 
                 if ($yearStartDate->isFuture() && $i === 0) {
                     $yearStartDate->subYear();
@@ -286,13 +298,17 @@ class PeriodService
 
                 $yearEndDate = $yearStartDate->copy()->addYear()->subDay();
 
-                $fiscalYear = FiscalYear::firstOrCreate([
-                    'start_date' => $yearStartDate->toDateString(),
-                    'end_date' => $yearEndDate->toDateString(),
-                ], [
-                    'name' => $yearStartDate->year.'-'.$yearEndDate->year,
-                    'is_closed' => false,
-                ]);
+                /** @var FiscalYear $fiscalYear */
+                $fiscalYear = $this->whereDates(FiscalYear::query(), $yearStartDate, $yearEndDate)
+                    ->where('tenant_id', $tenantId)
+                    ->first()
+                    ?? FiscalYear::create([
+                        'tenant_id' => $tenantId,
+                        'start_date' => $yearStartDate->toDateString(),
+                        'end_date' => $yearEndDate->toDateString(),
+                        'name' => $yearStartDate->year.'-'.$yearEndDate->year,
+                        'is_closed' => false,
+                    ]);
 
                 $existingPeriodsCount = $fiscalYear->fiscalPeriods()->count();
                 $expectedPeriodsCount = $fiscalPeriodsCount;
@@ -305,6 +321,18 @@ class PeriodService
 
             return $created;
         });
+    }
+
+    /**
+     * Match start_date/end_date by date only. The `date` cast stores a time
+     * part on drivers without a native date type (e.g. SQLite), so a plain
+     * where()/firstOrCreate() on a Y-m-d string would miss existing rows.
+     */
+    protected function whereDates(Builder $query, Carbon $startDate, Carbon $endDate): Builder
+    {
+        return $query
+            ->whereDate('start_date', $startDate->toDateString())
+            ->whereDate('end_date', $endDate->toDateString());
     }
 
     /**

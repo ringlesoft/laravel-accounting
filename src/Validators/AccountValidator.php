@@ -5,23 +5,31 @@ namespace RingleSoft\LaravelAccounting\Validators;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Contracts\TenantResolver;
 use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 
 class AccountValidator
 {
     /**
      * Get validation rules for account
+     *
+     * Code uniqueness is checked within a single tenant, matching the
+     * unique(['code', 'tenant_id']) index: $tenantId is the tenant of the
+     * account being validated, falling back to the resolved current tenant.
      */
-    public static function rules(?int $ignoreId = null): array
+    public static function rules(int|string|null $ignoreId = null, int|string|null $tenantId = null): array
     {
         $tablePrefix = config('laravel_accounting.table_prefix', 'la');
+        $tenantId ??= app(TenantResolver::class)->resolve();
 
         return [
             'code' => [
                 'required',
                 'string',
                 'max:50',
-                Rule::unique("{$tablePrefix}_accounts", 'code')->ignore($ignoreId),
+                Rule::unique("{$tablePrefix}_accounts", 'code')
+                    ->where('tenant_id', $tenantId)
+                    ->ignore($ignoreId),
             ],
             'name' => 'required|string|max:255',
             'account_type_id' => [
@@ -59,9 +67,9 @@ class AccountValidator
      *
      * @throws InvalidArgumentException
      */
-    public static function validate(array $data, ?int $ignoreId = null): void
+    public static function validate(array $data, int|string|null $ignoreId = null): void
     {
-        $validator = Validator::make($data, self::rules($ignoreId));
+        $validator = self::make($data, $ignoreId);
 
         if ($validator->fails()) {
             throw new InvalidArgumentException($validator->errors()->first());
@@ -70,9 +78,14 @@ class AccountValidator
 
     /**
      * Get a validator instance
+     *
+     * The resolved tenant takes priority over a tenant_id in $data, as
+     * MultiTenant overrides a caller-supplied tenant_id with it on create.
      */
-    public static function make(array $data, ?int $ignoreId = null): \Illuminate\Validation\Validator
+    public static function make(array $data, int|string|null $ignoreId = null): \Illuminate\Validation\Validator
     {
-        return Validator::make($data, self::rules($ignoreId));
+        $tenantId = app(TenantResolver::class)->resolve() ?? ($data['tenant_id'] ?? null);
+
+        return Validator::make($data, self::rules($ignoreId, $tenantId));
     }
 }

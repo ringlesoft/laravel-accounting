@@ -5,17 +5,16 @@ namespace RingleSoft\LaravelAccounting\Scopes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
-use Illuminate\Support\Facades\Auth;
+use RingleSoft\LaravelAccounting\Contracts\TenantResolver;
 
 class MultiTenantScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        $tenantField = config('laravel_accounting.multi_tenancy_field', 'tenant_id');
-        $tenantId = Auth::user()?->{$tenantField};
+        $tenantId = app(TenantResolver::class)->resolve();
 
-        // Outside an authenticated context (CLI, queued jobs, seeders) there is
-        // no tenant to scope to - the caller is responsible for filtering
+        // With no resolvable tenant (e.g. CLI, queued jobs or seeders under the
+        // default auth-based resolver) there is no tenant to scope to - the caller is responsible for filtering
         // itself, mirroring MultiTenant::bootMultiTenant()'s write-side design.
         if (! $tenantId) {
             return;

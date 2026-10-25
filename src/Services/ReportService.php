@@ -2,11 +2,11 @@
 
 namespace RingleSoft\LaravelAccounting\Services;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonException;
+use RingleSoft\LaravelAccounting\Contracts\TenantResolver;
 use RingleSoft\LaravelAccounting\Models\Report;
 use RingleSoft\LaravelAccounting\Reports\AccountLedger;
 use RingleSoft\LaravelAccounting\Reports\BalanceSheet;
@@ -137,8 +137,7 @@ class ReportService
      */
     protected function tenantCacheSegment(): string
     {
-        $tenantField = config('laravel_accounting.multi_tenancy_field', 'tenant_id');
-        $tenantId = Auth::user()?->{$tenantField};
+        $tenantId = app(TenantResolver::class)->resolve();
 
         return $tenantId !== null ? (string) $tenantId : 'global';
     }

@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Account;
-use RingleSoft\LaravelAccounting\Models\AccountType as AccountTypeModel;
 
 class ChartOfAccountsSeeder extends Seeder
 {
@@ -46,11 +46,11 @@ class ChartOfAccountsSeeder extends Seeder
     protected function getAccountTypes(): array
     {
         return [
-            'Asset' => AccountTypeModel::where('name', 'ASSET')->first(),
-            'Liability' => AccountTypeModel::where('name', 'LIABILITY')->first(),
-            'Equity' => AccountTypeModel::where('name', 'EQUITY')->first(),
-            'Income' => AccountTypeModel::where('name', 'INCOME')->first(),
-            'Expense' => AccountTypeModel::where('name', 'EXPENSE')->first(),
+            'Asset' => AccountTypeEnum::ASSET->accountType(),
+            'Liability' => AccountTypeEnum::LIABILITY->accountType(),
+            'Equity' => AccountTypeEnum::EQUITY->accountType(),
+            'Income' => AccountTypeEnum::INCOME->accountType(),
+            'Expense' => AccountTypeEnum::EXPENSE->accountType(),
         ];
     }
 

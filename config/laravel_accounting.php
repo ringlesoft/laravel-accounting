@@ -50,6 +50,32 @@ return [
     'custom_presets' => [],
 
     /*
+     * The chart of accounts structure. When `true` (default):
+     * - every account must have a parent - the root (first-level) accounts
+     *   come from the package's chart only;
+     * - those root accounts can't be changed or deleted;
+     * - an account's code is generated under its parent when omitted, and an
+     *   explicit code must fit under the parent (see AccountCodeGenerator).
+     * Codes are still generated when omitted if this is `false`.
+     */
+    'enforce_chart_structure' => true,
+
+    /*
+     * Accounts of the package's chart to leave out when seeding, with their
+     * whole branch, e.g. [AccountPreset::DIGITAL_ASSETS->value]. Root accounts
+     * can't be excluded.
+     */
+    'excluded_presets' => [],
+
+    /*
+     * Replace the name, code or description of accounts of the package's
+     * chart when seeding, e.g.
+     * [AccountPreset::CASH->value => ['name' => 'Cash on Hand']].
+     * Root accounts can't be overridden.
+     */
+    'preset_overrides' => [],
+
+    /*
      *
      */
     'default_currency_code' => 'USD',

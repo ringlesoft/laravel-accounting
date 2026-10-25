@@ -2,11 +2,10 @@
 
 namespace RingleSoft\LaravelAccounting\Commands;
 
-use Database\Seeders\ChartOfAccountsSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
-use RingleSoft\LaravelAccounting\Services\CustomPresetService;
+use RingleSoft\LaravelAccounting\Services\ChartOfAccountsService;
 
 class InstallCommand extends Command
 {
@@ -52,11 +51,10 @@ class InstallCommand extends Command
             $this->call('db:seed', [
                 '--class' => 'AccountTypeSeeder',
             ]);
-            (new ChartOfAccountsSeeder)->run();
-            if (config('laravel_accounting.custom_presets', [])) {
-                $created = app(CustomPresetService::class)->seed();
-                $this->line('  - Custom preset accounts created: '.count($created));
-            }
+            // Seeded through the service rather than the published
+            // ChartOfAccountsSeeder, which may be a stale copy.
+            $result = app(ChartOfAccountsService::class)->seed();
+            $this->line('  - Accounts created: '.count($result['created']).', adopted: '.count($result['adopted']));
             $this->call('db:seed', [
                 '--class' => 'FiscalPeriodSeeder',
             ]);

@@ -7,6 +7,7 @@ use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\Contracts\TenantResolver;
 use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
+use RingleSoft\LaravelAccounting\Support\ChartStructure;
 
 class AccountValidator
 {
@@ -16,6 +17,10 @@ class AccountValidator
      * Code uniqueness is checked within a single tenant, matching the
      * unique(['code', 'tenant_id']) index: $tenantId is the tenant of the
      * account being validated, falling back to the resolved current tenant.
+     *
+     * The code may be omitted under a parent (one is generated). While the
+     * chart structure is enforced, a parent is required: root accounts come
+     * from the package's chart only.
      */
     public static function rules(int|string|null $ignoreId = null, int|string|null $tenantId = null): array
     {
@@ -24,7 +29,8 @@ class AccountValidator
 
         return [
             'code' => [
-                'required',
+                'required_without:parent_id',
+                'nullable',
                 'string',
                 'max:50',
                 Rule::unique("{$tablePrefix}_accounts", 'code')
@@ -40,7 +46,7 @@ class AccountValidator
             'sub_category' => 'nullable|string|max:100',
             'report_section' => 'nullable|string|max:100',
             'parent_id' => [
-                'nullable',
+                ChartStructure::enforced() ? 'required' : 'nullable',
                 'exists:'.$tablePrefix.'_accounts,id',
                 function ($attribute, $value, $fail) use ($ignoreId) {
                     if ($value && $ignoreId && $value == $ignoreId) {

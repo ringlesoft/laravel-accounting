@@ -257,7 +257,8 @@ class AccountService
      */
     protected function validateAccountData(array $data): void
     {
-        if (empty($data['code'])) {
+        // Under a parent the code is optional: AccountObserver generates one.
+        if (empty($data['code']) && empty($data['parent_id'])) {
             throw new InvalidArgumentException('Account code is required');
         }
 
@@ -280,6 +281,10 @@ class AccountService
         // tenants' accounts aren't matched, and in non-strict mode shared
         // (null tenant) accounts don't block a tenant's own code.
         $tenantId = app(TenantResolver::class)->resolve() ?? ($data['tenant_id'] ?? null);
+
+        if (empty($data['code'])) {
+            return;
+        }
 
         $existingAccount = Account::withoutGlobalScope(MultiTenantScope::class)
             ->where('code', $data['code'])

@@ -10,6 +10,7 @@ use RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Services\AccountService;
 use RingleSoft\LaravelAccounting\Services\BalanceService;
+use RingleSoft\LaravelAccounting\Services\ChartOfAccountsService;
 use RingleSoft\LaravelAccounting\Services\ClosingService;
 use RingleSoft\LaravelAccounting\Services\CustomPresetService;
 use RingleSoft\LaravelAccounting\Services\JournalService;
@@ -67,6 +68,11 @@ class LaravelAccounting
     public function presets(): CustomPresetService
     {
         return app(CustomPresetService::class);
+    }
+
+    public function chart(): ChartOfAccountsService
+    {
+        return app(ChartOfAccountsService::class);
     }
 
     public function chartsOfAccounts(): Collection

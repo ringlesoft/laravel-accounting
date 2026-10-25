@@ -17,8 +17,11 @@ enum AccountTypeEnum: string
         return AccountType::findByName($this->value);
     }
 
-    public function getId(): ?int
+    /**
+     * The account type's key: an int, or a UUID string when `use_uuid` is on.
+     */
+    public function getId(): int|string|null
     {
-        return $this->accountType()?->id;
+        return $this->accountType()?->getKey();
     }
 }

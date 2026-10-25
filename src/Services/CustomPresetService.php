@@ -93,9 +93,9 @@ class CustomPresetService
                     );
                 }
 
-                if ($definition['account']->isSystemAccount) {
+                if ($definition['account']->isSystemAccount || $definition['account']->optional) {
                     throw new InvalidPresetDefinitionException(
-                        "{$label} can't set isSystemAccount: that flag is reserved for the package's own chart."
+                        "{$label} can't set isSystemAccount or optional: those flags are reserved for the package's own chart."
                     );
                 }
 

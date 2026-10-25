@@ -24,8 +24,9 @@ use RingleSoft\LaravelAccounting\Enums\NormalBalance;
  * presets: only the package's chart defines root (first-level) accounts.
  * $code is generated under the parent when omitted (see
  * Support\AccountCodeGenerator). $category and $reportSection default to the
- * parent's, and $normalBalance to the account type's. $isSystemAccount is
- * reserved for the package's own chart.
+ * parent's, and $normalBalance to the account type's. $isSystemAccount and
+ * $optional are reserved for the package's own chart: an optional account
+ * is seeded only when listed in `laravel_accounting.included_presets`.
  */
 #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
 class PresetAccount
@@ -42,6 +43,7 @@ class PresetAccount
         public readonly bool $allowsManualEntries = true,
         public readonly bool $isSystemAccount = false,
         public readonly ?string $description = null,
+        public readonly bool $optional = false,
     ) {}
 
     /**
@@ -63,6 +65,7 @@ class PresetAccount
             allowsManualEntries: $this->allowsManualEntries,
             isSystemAccount: $this->isSystemAccount,
             description: $overrides['description'] ?? $this->description,
+            optional: $this->optional,
         );
     }
 }

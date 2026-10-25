@@ -63,6 +63,7 @@ enum AccountPreset: string implements AccountPresetContract
     case CASH = 'CASH';
     #[PresetAccount(name: 'Petty Cash', type: AccountTypeEnum::ASSET, parent: self::CASH_AND_CASH_EQUIVALENT, code: '10102')]
     case PETTY_CASH = 'PETTY_CASH';
+    #[PresetAccount(name: 'Cash on Hand', type: AccountTypeEnum::ASSET, parent: self::CASH_AND_CASH_EQUIVALENT, optional: true)]
     case CASH_ON_HAND = 'CASH_ON_HAND';
     #[PresetAccount(name: 'Cash in Bank', type: AccountTypeEnum::ASSET, parent: self::CASH_AND_CASH_EQUIVALENT, code: '10103')]
     case CASH_IN_BANK = 'CASH_IN_BANK';
@@ -80,6 +81,7 @@ enum AccountPreset: string implements AccountPresetContract
     case NOTES_RECEIVABLE = 'NOTES_RECEIVABLE';
     #[PresetAccount(name: 'Other Receivables', type: AccountTypeEnum::ASSET, parent: self::ACCOUNTS_RECEIVABLE, code: '10203')]
     case OTHER_RECEIVABLES = 'OTHER_RECEIVABLES';
+    #[PresetAccount(name: 'Unbilled Revenue', type: AccountTypeEnum::ASSET, parent: self::ACCOUNTS_RECEIVABLE, optional: true)]
     case UNBILLED_REVENUE = 'UNBILLED_REVENUE';
     #[PresetAccount(name: 'Accrued Revenue', type: AccountTypeEnum::ASSET, parent: self::ACCOUNTS_RECEIVABLE, code: '10204')]
     case ACCRUED_REVENUE = 'ACCRUED_REVENUE';
@@ -87,6 +89,7 @@ enum AccountPreset: string implements AccountPresetContract
     #[PresetAccount(name: 'Allowance for Doubtful Accounts', type: AccountTypeEnum::ASSET, parent: self::ACCOUNTS_RECEIVABLE, code: '10210', normalBalance: NormalBalance::CREDIT, subCategory: 'Contra Asset')]
 
     case ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS = 'ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS';
+    #[PresetAccount(name: 'Allowance for Bad Debts', type: AccountTypeEnum::ASSET, parent: self::ACCOUNTS_RECEIVABLE, normalBalance: NormalBalance::CREDIT, subCategory: 'Contra Asset', optional: true)]
     case ALLOWANCE_FOR_BAD_DEBTS = 'ALLOWANCE_FOR_BAD_DEBTS';
 
     #[PresetAccount(name: 'Inventory', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, code: '10300', allowsManualEntries: false)]
@@ -111,9 +114,14 @@ enum AccountPreset: string implements AccountPresetContract
     #[PresetAccount(name: 'Prepaid Subscriptions', type: AccountTypeEnum::ASSET, parent: self::PREPAID_EXPENSES, code: '10403')]
     case PREPAID_SUBSCRIPTIONS = 'PREPAID_SUBSCRIPTIONS';
 
+    #[PresetAccount(name: 'Supplies', type: AccountTypeEnum::ASSET, parent: self::INVENTORY, optional: true)]
+
     case SUPPLIES = 'SUPPLIES';
 
+    #[PresetAccount(name: 'Prepaid Taxes', type: AccountTypeEnum::ASSET, parent: self::PREPAID_EXPENSES, optional: true)]
+
     case PREPAID_TAXES = 'PREPAID_TAXES';
+    #[PresetAccount(name: 'Prepaid Income Tax', type: AccountTypeEnum::ASSET, parent: self::PREPAID_EXPENSES, optional: true)]
     case PREPAID_INCOME_TAX = 'PREPAID_INCOME_TAX';
     #[PresetAccount(name: 'Advance to Suppliers', type: AccountTypeEnum::ASSET, parent: self::PREPAID_EXPENSES, code: '10405')]
     case ADVANCE_TO_SUPPLIERS = 'ADVANCE_TO_SUPPLIERS';
@@ -121,10 +129,13 @@ enum AccountPreset: string implements AccountPresetContract
     case ADVANCE_TO_EMPLOYEES = 'ADVANCE_TO_EMPLOYEES';
 
     // Short-term Investments (1500-1599)
+    #[PresetAccount(name: 'Marketable Securities', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
     case MARKETABLE_SECURITIES = 'MARKETABLE_SECURITIES';
     #[PresetAccount(name: 'Short-term Investments', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, code: '10600')]
     case SHORT_TERM_INVESTMENTS = 'SHORT_TERM_INVESTMENTS';
+    #[PresetAccount(name: 'Trading Securities', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
     case TRADING_SECURITIES = 'TRADING_SECURITIES';
+    #[PresetAccount(name: 'Fair Value Adjustment', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
     case FAIR_VALUE_ADJUSTMENT = 'FAIR_VALUE_ADJUSTMENT';
     #[PresetAccount(name: 'Digital Assets', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, code: '10700')]
     case DIGITAL_ASSETS = 'DIGITAL_ASSETS';
@@ -132,7 +143,9 @@ enum AccountPreset: string implements AccountPresetContract
     // Non-Current Assets (1600-1999)
     #[PresetAccount(name: 'Long-term Investments', type: AccountTypeEnum::ASSET, parent: self::NON_CURRENT_ASSETS, code: '15400')]
     case LONG_TERM_INVESTMENTS = 'LONG_TERM_INVESTMENTS';
+    #[PresetAccount(name: 'Held-to-Maturity Securities', type: AccountTypeEnum::ASSET, parent: self::NON_CURRENT_ASSETS, optional: true)]
     case HELD_TO_MATURITY_SECURITIES = 'HELD_TO_MATURITY_SECURITIES';
+    #[PresetAccount(name: 'Available-for-Sale Securities', type: AccountTypeEnum::ASSET, parent: self::NON_CURRENT_ASSETS, optional: true)]
     case AVAILABLE_FOR_SALE_SECURITIES = 'AVAILABLE_FOR_SALE_SECURITIES';
 
     // Property, Plant & Equipment (2000-2499)
@@ -140,6 +153,7 @@ enum AccountPreset: string implements AccountPresetContract
     case LAND = 'LAND';
     #[PresetAccount(name: 'Buildings', type: AccountTypeEnum::ASSET, parent: self::FIXED_ASSETS, code: '15102')]
     case BUILDINGS = 'BUILDINGS';
+    #[PresetAccount(name: 'Building Improvements', type: AccountTypeEnum::ASSET, parent: self::FIXED_ASSETS, optional: true)]
     case BUILDING_IMPROVEMENTS = 'BUILDING_IMPROVEMENTS';
     #[PresetAccount(name: 'Leasehold Improvements', type: AccountTypeEnum::ASSET, parent: self::FIXED_ASSETS, code: '15108')]
     case LEASEHOLD_IMPROVEMENTS = 'LEASEHOLD_IMPROVEMENTS';
@@ -157,6 +171,7 @@ enum AccountPreset: string implements AccountPresetContract
     case FURNITURE_AND_FIXTURES = 'FURNITURE_AND_FIXTURES';
     #[PresetAccount(name: 'Vehicles', type: AccountTypeEnum::ASSET, parent: self::FIXED_ASSETS, code: '15106')]
     case VEHICLES = 'VEHICLES';
+    #[PresetAccount(name: 'Leased Assets', type: AccountTypeEnum::ASSET, parent: self::NON_CURRENT_ASSETS, optional: true)]
     case LEASED_ASSET = 'LEASED_ASSET';
 
     // Accumulated Depreciation (Contra-Asset) (2500-2799)
@@ -176,6 +191,7 @@ enum AccountPreset: string implements AccountPresetContract
     case ACCUM_DEPR_IT_EQUIPMENT = 'ACCUM_DEPR_IT_EQUIPMENT';
     #[PresetAccount(name: 'Accumulated Depreciation - Leasehold Improvements', type: AccountTypeEnum::ASSET, parent: self::ACCUMULATED_DEPRECIATION, code: '15207', normalBalance: NormalBalance::CREDIT, subCategory: 'Contra Asset')]
     case ACCUM_DEPR_LEASEHOLD = 'ACCUM_DEPR_LEASEHOLD';
+    #[PresetAccount(name: 'Accumulated Impairment', type: AccountTypeEnum::ASSET, parent: self::NON_CURRENT_ASSETS, normalBalance: NormalBalance::CREDIT, subCategory: 'Contra Asset', optional: true)]
     case ACCUMULATED_IMPAIRMENT = 'ACCUMULATED_IMPAIRMENT';
 
     // Intangible Assets (2800-2899)
@@ -189,6 +205,7 @@ enum AccountPreset: string implements AccountPresetContract
     case COPYRIGHTS = 'COPYRIGHTS';
     #[PresetAccount(name: 'Trademarks', type: AccountTypeEnum::ASSET, parent: self::INTANGIBLE_ASSETS, code: '15304')]
     case TRADEMARKS = 'TRADEMARKS';
+    #[PresetAccount(name: 'Franchise Rights', type: AccountTypeEnum::ASSET, parent: self::INTANGIBLE_ASSETS, optional: true)]
     case FRANCHISE_RIGHTS = 'FRANCHISE_RIGHTS';
     #[PresetAccount(name: 'Software', type: AccountTypeEnum::ASSET, parent: self::INTANGIBLE_ASSETS, code: '15303')]
     case SOFTWARE = 'SOFTWARE';
@@ -210,7 +227,9 @@ enum AccountPreset: string implements AccountPresetContract
     case DEFERRED_TAX_ASSETS = 'DEFERRED_TAX_ASSETS';
     #[PresetAccount(name: 'Right-of-Use Assets', type: AccountTypeEnum::ASSET, parent: self::NON_CURRENT_ASSETS, code: '15500')]
     case RIGHT_OF_USE_ASSETS = 'RIGHT_OF_USE_ASSETS';
+    #[PresetAccount(name: 'Bond Issuance Costs', type: AccountTypeEnum::LIABILITY, parent: self::LONG_TERM_LIABILITIES, normalBalance: NormalBalance::DEBIT, subCategory: 'Contra Liability')]
     case BOND_ISSUANCE_COSTS = 'BOND_ISSUANCE_COSTS';
+    #[PresetAccount(name: 'Deposits', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
     case DEPOSITS = 'DEPOSITS';
     #[PresetAccount(name: 'Security Deposits', type: AccountTypeEnum::ASSET, parent: self::NON_CURRENT_ASSETS, code: '15450')]
     case SECURITY_DEPOSITS = 'SECURITY_DEPOSITS';
@@ -226,6 +245,7 @@ enum AccountPreset: string implements AccountPresetContract
     case TRADE_PAYABLES = 'TRADE_PAYABLES';
     #[PresetAccount(name: 'Notes Payable', type: AccountTypeEnum::LIABILITY, parent: self::ACCOUNTS_PAYABLE, code: '20102')]
     case NOTES_PAYABLE = 'NOTES_PAYABLE';
+    #[PresetAccount(name: 'Other Payables', type: AccountTypeEnum::LIABILITY, parent: self::ACCOUNTS_PAYABLE, optional: true)]
     case OTHER_PAYABLES = 'OTHER_PAYABLES';
 
     #[PresetAccount(name: 'Accrued Expenses', type: AccountTypeEnum::LIABILITY, parent: self::CURRENT_LIABILITIES, code: '20200')]
@@ -237,6 +257,7 @@ enum AccountPreset: string implements AccountPresetContract
     case ACCRUED_INTEREST = 'ACCRUED_INTEREST';
     #[PresetAccount(name: 'Accrued Utilities', type: AccountTypeEnum::LIABILITY, parent: self::ACCRUED_EXPENSES, code: '20204')]
     case ACCRUED_UTILITIES = 'ACCRUED_UTILITIES';
+    #[PresetAccount(name: 'Accrued Taxes', type: AccountTypeEnum::LIABILITY, parent: self::ACCRUED_EXPENSES, optional: true)]
     case ACCRUED_TAXES = 'ACCRUED_TAXES';
     #[PresetAccount(name: 'Dividends Payable', type: AccountTypeEnum::LIABILITY, parent: self::CURRENT_LIABILITIES, code: '20105')]
     case DIVIDENDS_PAYABLE = 'DIVIDENDS_PAYABLE';
@@ -250,6 +271,7 @@ enum AccountPreset: string implements AccountPresetContract
     case CURRENT_PORTION_OF_LONG_TERM_DEBT = 'CURRENT_PORTION_OF_LONG_TERM_DEBT';
     #[PresetAccount(name: 'Line of Credit', type: AccountTypeEnum::LIABILITY, parent: self::CURRENT_LIABILITIES, code: '20302')]
     case LINE_OF_CREDIT = 'LINE_OF_CREDIT';
+    #[PresetAccount(name: 'Bank Overdraft', type: AccountTypeEnum::LIABILITY, parent: self::CURRENT_LIABILITIES, optional: true)]
     case BANK_OVERDRAFT = 'BANK_OVERDRAFT';
 
     #[PresetAccount(name: 'Unearned Revenue', type: AccountTypeEnum::LIABILITY, parent: self::CURRENT_LIABILITIES, code: '20400')]
@@ -281,11 +303,13 @@ enum AccountPreset: string implements AccountPresetContract
     case SALARIES_PAYABLE = 'SALARIES_PAYABLE';
     #[PresetAccount(name: 'Bonuses Payable', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, code: '20603')]
     case BONUSES_PAYABLE = 'BONUSES_PAYABLE';
+    #[PresetAccount(name: 'Commissions Payable', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, optional: true)]
     case COMMISSIONS_PAYABLE = 'COMMISSIONS_PAYABLE';
     #[PresetAccount(name: 'Payroll Clearing', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, code: '20610')]
     case PAYROLL_CLEARING = 'PAYROLL_CLEARING';
     #[PresetAccount(name: 'Federal Withholding Payable', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, code: '20611')]
     case FEDERAL_WITHHOLDING_PAYABLE = 'FEDERAL_WITHHOLDING_PAYABLE';
+    #[PresetAccount(name: 'State Withholding Payable', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, optional: true)]
     case STATE_WITHHOLDING_PAYABLE = 'STATE_WITHHOLDING_PAYABLE';
     #[PresetAccount(name: 'Social Security Payable', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, code: '20612')]
     case SOCIAL_SECURITY_PAYABLE = 'SOCIAL_SECURITY_PAYABLE';
@@ -294,9 +318,14 @@ enum AccountPreset: string implements AccountPresetContract
     #[PresetAccount(name: 'Vacation Payable', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, code: '20606')]
     case VACATION_PAYABLE = 'VACATION_PAYABLE';
 
+    #[PresetAccount(name: 'Employee Benefits Payable', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, optional: true)]
+
     case EMPLOYEE_BENEFITS_PAYABLE = 'EMPLOYEE_BENEFITS_PAYABLE';
+    #[PresetAccount(name: 'Employee Insurance Payable', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, optional: true)]
     case EMPLOYEE_INSURANCE_PAYABLE = 'EMPLOYEE_INSURANCE_PAYABLE';
+    #[PresetAccount(name: 'Pension Liabilities', type: AccountTypeEnum::LIABILITY, parent: self::LONG_TERM_LIABILITIES, optional: true)]
     case PENSION_LIABILITIES = 'PENSION_LIABILITIES';
+    #[PresetAccount(name: 'Employee Provident Fund', type: AccountTypeEnum::LIABILITY, parent: self::PAYROLL_LIABILITIES, optional: true)]
     case EMPLOYEE_PROVIDENT_FUND = 'EMPLOYEE_PROVIDENT_FUND';
 
     // Long-term Liabilities (3700-3999)
@@ -304,7 +333,9 @@ enum AccountPreset: string implements AccountPresetContract
     case LONG_TERM_DEBT = 'LONG_TERM_DEBT';
     #[PresetAccount(name: 'Bonds Payable', type: AccountTypeEnum::LIABILITY, parent: self::LONG_TERM_LIABILITIES, code: '25002')]
     case BONDS_PAYABLE = 'BONDS_PAYABLE';
+    #[PresetAccount(name: 'Discount on Bonds Payable', type: AccountTypeEnum::LIABILITY, parent: self::LONG_TERM_LIABILITIES, normalBalance: NormalBalance::DEBIT, subCategory: 'Contra Liability', optional: true)]
     case DISCOUNT_ON_BONDS = 'DISCOUNT_ON_BONDS';
+    #[PresetAccount(name: 'Premium on Bonds Payable', type: AccountTypeEnum::LIABILITY, parent: self::LONG_TERM_LIABILITIES, optional: true)]
     case PREMIUM_ON_BONDS = 'PREMIUM_ON_BONDS';
     #[PresetAccount(name: 'Mortgage Payable', type: AccountTypeEnum::LIABILITY, parent: self::LONG_TERM_LIABILITIES, code: '25003')]
     case MORTGAGE_PAYABLE = 'MORTGAGE_PAYABLE';
@@ -314,6 +345,7 @@ enum AccountPreset: string implements AccountPresetContract
     #[PresetAccount(name: 'Deferred Tax Liability', type: AccountTypeEnum::LIABILITY, parent: self::LONG_TERM_LIABILITIES, code: '25004')]
 
     case DEFERRED_TAX_LIABILITIES = 'DEFERRED_TAX_LIABILITIES';
+    #[PresetAccount(name: 'Warranty Liabilities', type: AccountTypeEnum::LIABILITY, parent: self::CURRENT_LIABILITIES, optional: true)]
     case WARRANTY_LIABILITIES = 'WARRANTY_LIABILITIES';
 
     // ====================================
@@ -335,13 +367,18 @@ enum AccountPreset: string implements AccountPresetContract
     case RETAINED_EARNINGS = 'RETAINED_EARNINGS';
     #[PresetAccount(name: 'Current Year Earnings', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, code: '30410', isSystemAccount: true)]
     case CURRENT_YEAR_EARNINGS = 'CURRENT_YEAR_EARNINGS';
+    #[PresetAccount(name: 'Prior Year Retained Earnings', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, optional: true)]
     case PRIOR_YEAR_RETAINED_EARNINGS = 'PRIOR_YEAR_RETAINED_EARNINGS';
 
     #[PresetAccount(name: 'Owner\'s Equity', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, code: '30500')]
 
     case OWNERS_EQUITY = 'OWNERS_EQUITY';
+    #[PresetAccount(name: 'Partners\' Equity', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, optional: true)]
     case PARTNERS_EQUITY = 'PARTNERS_EQUITY';
+    #[PresetAccount(name: 'Members\' Equity', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, optional: true)]
     case MEMBERS_EQUITY = 'MEMBERS_EQUITY';
+
+    #[PresetAccount(name: 'Drawings', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, normalBalance: NormalBalance::DEBIT, subCategory: 'Contra Equity', optional: true)]
 
     case DRAWINGS = 'DRAWINGS';
     #[PresetAccount(name: 'Owner\'s Draw', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, code: '30510', normalBalance: NormalBalance::DEBIT, subCategory: 'Contra Equity')]
@@ -349,7 +386,10 @@ enum AccountPreset: string implements AccountPresetContract
     #[PresetAccount(name: 'Dividends Declared', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, code: '30600', normalBalance: NormalBalance::DEBIT, subCategory: 'Contra Equity')]
     case DIVIDENDS_DECLARED = 'DIVIDENDS_DECLARED';
 
+    #[PresetAccount(name: 'Income Summary', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, isSystemAccount: true)]
+
     case INCOME_SUMMARY = 'INCOME_SUMMARY';
+    #[PresetAccount(name: 'Donated Capital', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, optional: true)]
     case DONATED_CAPITAL = 'DONATED_CAPITAL';
     #[PresetAccount(name: 'Opening Balance Equity', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, code: '30050', isSystemAccount: true)]
     case OPENING_BALANCE_EQUITY = 'OPENING_BALANCE_EQUITY';
@@ -357,7 +397,9 @@ enum AccountPreset: string implements AccountPresetContract
     #[PresetAccount(name: 'Accumulated Other Comprehensive Income', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, code: '30800')]
 
     case OTHER_COMPREHENSIVE_INCOME = 'OTHER_COMPREHENSIVE_INCOME';
+    #[PresetAccount(name: 'Revaluation Reserve', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, optional: true)]
     case REVALUATION_RESERVE = 'REVALUATION_RESERVE';
+    #[PresetAccount(name: 'Foreign Currency Translation Reserve', type: AccountTypeEnum::EQUITY, parent: self::EQUITY, optional: true)]
     case FOREIGN_CURRENCY_TRANSLATION = 'FOREIGN_CURRENCY_TRANSLATION';
 
     // ====================================
@@ -371,19 +413,27 @@ enum AccountPreset: string implements AccountPresetContract
     case SERVICE_REVENUE = 'SERVICE_REVENUE';
     #[PresetAccount(name: 'Consulting Revenue', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, code: '40103')]
     case CONSULTING_REVENUE = 'CONSULTING_REVENUE';
+    #[PresetAccount(name: 'Maintenance Revenue', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, optional: true)]
     case MAINTENANCE_REVENUE = 'MAINTENANCE_REVENUE';
     #[PresetAccount(name: 'Shipping Revenue', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, code: '40106')]
     case SHIPPING_REVENUE = 'SHIPPING_REVENUE';
 
+    #[PresetAccount(name: 'Product Sales', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, optional: true)]
+
     case PRODUCT_SALES = 'PRODUCT_SALES';
+    #[PresetAccount(name: 'Software Sales', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, optional: true)]
     case SOFTWARE_SALES = 'SOFTWARE_SALES';
+    #[PresetAccount(name: 'Merchandise Sales', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, optional: true)]
     case MERCHANDISE_SALES = 'MERCHANDISE_SALES';
 
     #[PresetAccount(name: 'Rental Revenue', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, code: '40104')]
 
     case RENTAL_REVENUE = 'RENTAL_REVENUE';
+    #[PresetAccount(name: 'Royalty Revenue', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, optional: true)]
     case ROYALTY_REVENUE = 'ROYALTY_REVENUE';
+    #[PresetAccount(name: 'Franchise Fee Revenue', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, optional: true)]
     case FRANCHISE_FEES = 'FRANCHISE_FEES';
+    #[PresetAccount(name: 'License Revenue', type: AccountTypeEnum::INCOME, parent: self::OPERATING_REVENUE, optional: true)]
     case LICENSE_REVENUE = 'LICENSE_REVENUE';
 
     // Other Revenue (6500-6799)
@@ -391,11 +441,13 @@ enum AccountPreset: string implements AccountPresetContract
     case INTEREST_REVENUE = 'INTEREST_REVENUE';
     #[PresetAccount(name: 'Dividend Revenue', type: AccountTypeEnum::INCOME, parent: self::OTHER_REVENUE, code: '40202')]
     case DIVIDEND_REVENUE = 'DIVIDEND_REVENUE';
+    #[PresetAccount(name: 'Investment Income', type: AccountTypeEnum::INCOME, parent: self::OTHER_REVENUE, optional: true)]
     case INVESTMENT_INCOME = 'INVESTMENT_INCOME';
 
     #[PresetAccount(name: 'Gain on Sale of Assets', type: AccountTypeEnum::INCOME, parent: self::OTHER_REVENUE, code: '40203')]
 
     case GAIN_ON_SALE_OF_ASSETS = 'GAIN_ON_SALE_OF_ASSETS';
+    #[PresetAccount(name: 'Unrealized Gain', type: AccountTypeEnum::INCOME, parent: self::OTHER_REVENUE, optional: true)]
     case UNREALIZED_GAIN = 'UNREALIZED_GAIN';
     #[PresetAccount(name: 'Foreign Exchange Gain', type: AccountTypeEnum::INCOME, parent: self::OTHER_REVENUE, code: '40204')]
     case FOREIGN_EXCHANGE_GAIN = 'FOREIGN_EXCHANGE_GAIN';
@@ -403,7 +455,9 @@ enum AccountPreset: string implements AccountPresetContract
     #[PresetAccount(name: 'Other Income', type: AccountTypeEnum::INCOME, parent: self::OTHER_REVENUE, code: '40205')]
 
     case OTHER_INCOME = 'OTHER_INCOME';
+    #[PresetAccount(name: 'Subsidy Income', type: AccountTypeEnum::INCOME, parent: self::OTHER_REVENUE, optional: true)]
     case SUBSIDY_INCOME = 'SUBSIDY_INCOME';
+    #[PresetAccount(name: 'Grant Income', type: AccountTypeEnum::INCOME, parent: self::OTHER_REVENUE, optional: true)]
     case GRANT_INCOME = 'GRANT_INCOME';
 
     // Contra-Revenue (6800-6899)
@@ -413,7 +467,9 @@ enum AccountPreset: string implements AccountPresetContract
     case SALES_ALLOWANCES = 'SALES_ALLOWANCES';
     #[PresetAccount(name: 'Sales Discounts', type: AccountTypeEnum::INCOME, parent: self::SALES_RETURNS_AND_ALLOWANCES, code: '40902', normalBalance: NormalBalance::DEBIT, subCategory: 'Contra Revenue')]
     case SALES_DISCOUNTS = 'SALES_DISCOUNTS';
+    #[PresetAccount(name: 'Purchase Returns', type: AccountTypeEnum::EXPENSE, parent: self::COST_OF_GOODS_SOLD, normalBalance: NormalBalance::CREDIT, subCategory: 'Contra Expense', optional: true)]
     case PURCHASE_RETURNS = 'PURCHASE_RETURNS';
+    #[PresetAccount(name: 'Purchase Discounts', type: AccountTypeEnum::EXPENSE, parent: self::COST_OF_GOODS_SOLD, normalBalance: NormalBalance::CREDIT, subCategory: 'Contra Expense', optional: true)]
     case PURCHASE_DISCOUNTS = 'PURCHASE_DISCOUNTS';
 
     // ====================================
@@ -427,7 +483,10 @@ enum AccountPreset: string implements AccountPresetContract
     case COST_OF_SALES = 'COST_OF_SALES';
     #[PresetAccount(name: 'Cost of Services', type: AccountTypeEnum::EXPENSE, parent: self::COST_OF_GOODS_SOLD, code: '50002')]
     case COST_OF_SERVICES = 'COST_OF_SERVICES';
+    #[PresetAccount(name: 'Purchases', type: AccountTypeEnum::EXPENSE, parent: self::COST_OF_GOODS_SOLD, optional: true)]
     case PURCHASES = 'PURCHASES';
+
+    #[PresetAccount(name: 'Materials Used', type: AccountTypeEnum::EXPENSE, parent: self::COST_OF_GOODS_SOLD, optional: true)]
 
     case MATERIALS_USED = 'MATERIALS_USED';
     #[PresetAccount(name: 'Direct Materials', type: AccountTypeEnum::EXPENSE, parent: self::COST_OF_GOODS_SOLD, code: '50004')]
@@ -462,6 +521,7 @@ enum AccountPreset: string implements AccountPresetContract
     case OFFICE_EXPENSES = 'OFFICE_EXPENSES';
     #[PresetAccount(name: 'Rent Expense', type: AccountTypeEnum::EXPENSE, parent: self::OCCUPANCY_EXPENSES, code: '60201')]
     case RENT_EXPENSE = 'RENT_EXPENSE';
+    #[PresetAccount(name: 'Lease Expense', type: AccountTypeEnum::EXPENSE, parent: self::OCCUPANCY_EXPENSES, optional: true)]
     case LEASE_EXPENSE = 'LEASE_EXPENSE';
     #[PresetAccount(name: 'Utilities Expense', type: AccountTypeEnum::EXPENSE, parent: self::OCCUPANCY_EXPENSES, code: '60202')]
     case UTILITIES_EXPENSE = 'UTILITIES_EXPENSE';
@@ -481,11 +541,15 @@ enum AccountPreset: string implements AccountPresetContract
     case INTERNET_EXPENSE = 'INTERNET_EXPENSE';
     #[PresetAccount(name: 'Shipping Expense', type: AccountTypeEnum::EXPENSE, parent: self::TRAVEL_EXPENSE, code: '60603')]
     case SHIPPING_EXPENSE = 'SHIPPING_EXPENSE';
+    #[PresetAccount(name: 'Technology Expense', type: AccountTypeEnum::EXPENSE, parent: self::OFFICE_EXPENSES, optional: true)]
     case TECHNOLOGY_EXPENSE = 'TECHNOLOGY_EXPENSE';
+    #[PresetAccount(name: 'Licenses and Permits', type: AccountTypeEnum::EXPENSE, parent: self::OPERATING_EXPENSES, optional: true)]
     case LICENSES_AND_PERMITS = 'LICENSES_AND_PERMITS';
+    #[PresetAccount(name: 'Property Tax Expense', type: AccountTypeEnum::EXPENSE, parent: self::OCCUPANCY_EXPENSES, optional: true)]
     case PROPERTY_TAX_EXPENSE = 'PROPERTY_TAX_EXPENSE';
     #[PresetAccount(name: 'Merchant Services Fees', type: AccountTypeEnum::EXPENSE, parent: self::FINANCIAL_EXPENSES, code: '70006')]
     case MERCHANT_SERVICES_FEES = 'MERCHANT_SERVICES_FEES';
+    #[PresetAccount(name: 'Payroll Processing Fees', type: AccountTypeEnum::EXPENSE, parent: self::PAYROLL_EXPENSES, optional: true)]
     case PAYROLL_PROCESSING_FEES = 'PAYROLL_PROCESSING_FEES';
 
     #[PresetAccount(name: 'Travel Expense', type: AccountTypeEnum::EXPENSE, parent: self::OPERATING_EXPENSES, code: '60600', allowsManualEntries: false)]
@@ -503,6 +567,7 @@ enum AccountPreset: string implements AccountPresetContract
     case MARKETING_EXPENSE = 'MARKETING_EXPENSE';
     #[PresetAccount(name: 'Marketing & Sales Expenses', type: AccountTypeEnum::EXPENSE, parent: self::OPERATING_EXPENSES, code: '60400', allowsManualEntries: false)]
     case MARKETING_SALES_EXPENSES = 'MARKETING_SALES_EXPENSES';
+    #[PresetAccount(name: 'Promotion Expense', type: AccountTypeEnum::EXPENSE, parent: self::MARKETING_SALES_EXPENSES, optional: true)]
     case PROMOTION_EXPENSE = 'PROMOTION_EXPENSE';
 
     #[PresetAccount(name: 'Professional Fees', type: AccountTypeEnum::EXPENSE, parent: self::OPERATING_EXPENSES, code: '60500')]
@@ -526,6 +591,7 @@ enum AccountPreset: string implements AccountPresetContract
     case DEPRECIATION_EXPENSE = 'DEPRECIATION_EXPENSE';
     #[PresetAccount(name: 'Amortization Expense', type: AccountTypeEnum::EXPENSE, parent: self::OPERATING_EXPENSES, code: '60810')]
     case AMORTIZATION_EXPENSE = 'AMORTIZATION_EXPENSE';
+    #[PresetAccount(name: 'Depletion Expense', type: AccountTypeEnum::EXPENSE, parent: self::OPERATING_EXPENSES, optional: true)]
     case DEPLETION_EXPENSE = 'DEPLETION_EXPENSE';
 
     // Financial Expenses (8000-8199)
@@ -537,6 +603,7 @@ enum AccountPreset: string implements AccountPresetContract
     case BANK_CHARGES = 'BANK_CHARGES';
     #[PresetAccount(name: 'Credit Card Fees', type: AccountTypeEnum::EXPENSE, parent: self::FINANCIAL_EXPENSES, code: '70005')]
     case CREDIT_CARD_FEES = 'CREDIT_CARD_FEES';
+    #[PresetAccount(name: 'Loan Fees', type: AccountTypeEnum::EXPENSE, parent: self::FINANCIAL_EXPENSES, optional: true)]
     case LOAN_FEES = 'LOAN_FEES';
 
     #[PresetAccount(name: 'Foreign Exchange Loss', type: AccountTypeEnum::EXPENSE, parent: self::FINANCIAL_EXPENSES, code: '70003')]
@@ -544,12 +611,15 @@ enum AccountPreset: string implements AccountPresetContract
     case FOREIGN_EXCHANGE_LOSS = 'FOREIGN_EXCHANGE_LOSS';
     #[PresetAccount(name: 'Loss on Sale of Assets', type: AccountTypeEnum::EXPENSE, parent: self::FINANCIAL_EXPENSES, code: '70004')]
     case LOSS_ON_SALE_OF_ASSETS = 'LOSS_ON_SALE_OF_ASSETS';
+    #[PresetAccount(name: 'Unrealized Loss', type: AccountTypeEnum::EXPENSE, parent: self::FINANCIAL_EXPENSES, optional: true)]
     case UNREALIZED_LOSS = 'UNREALIZED_LOSS';
+    #[PresetAccount(name: 'Impairment Loss', type: AccountTypeEnum::EXPENSE, parent: self::OTHER_EXPENSES, optional: true)]
     case IMPAIRMENT_LOSS = 'IMPAIRMENT_LOSS';
 
     // Tax Expenses (8200-8299)
     #[PresetAccount(name: 'Income Tax Expense', type: AccountTypeEnum::EXPENSE, code: '70100', category: 'Tax Expenses', reportSection: 'Expenses')]
     case INCOME_TAX_EXPENSE = 'INCOME_TAX_EXPENSE';
+    #[PresetAccount(name: 'Deferred Tax Expense', type: AccountTypeEnum::EXPENSE, parent: self::OTHER_EXPENSES, optional: true)]
     case DEFERRED_TAX_EXPENSE = 'DEFERRED_TAX_EXPENSE';
 
     // Other Expenses (8300-8999)
@@ -579,21 +649,33 @@ enum AccountPreset: string implements AccountPresetContract
     // ====================================
     #[PresetAccount(name: 'Input VAT', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, code: '10500')]
     case INPUT_VAT = 'INPUT_VAT';
+    #[PresetAccount(name: 'Output VAT', type: AccountTypeEnum::LIABILITY, parent: self::TAX_LIABILITIES)]
     case OUTPUT_VAT = 'OUTPUT_VAT';
+    #[PresetAccount(name: 'VAT Recoverable', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
     case VAT_RECOVERABLE = 'VAT_RECOVERABLE';
 
+    #[PresetAccount(name: 'Input GST', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
+
     case INPUT_GST = 'INPUT_GST';
+    #[PresetAccount(name: 'Output GST', type: AccountTypeEnum::LIABILITY, parent: self::TAX_LIABILITIES, optional: true)]
     case OUTPUT_GST = 'OUTPUT_GST';
+    #[PresetAccount(name: 'GST Recoverable', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
     case GST_RECOVERABLE = 'GST_RECOVERABLE';
 
+    #[PresetAccount(name: 'Withholding Tax Receivable', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
+
     case WITHHOLDING_TAX_RECEIVABLE = 'WITHHOLDING_TAX_RECEIVABLE';
+    #[PresetAccount(name: 'Withholding Tax Payable', type: AccountTypeEnum::LIABILITY, parent: self::TAX_LIABILITIES, optional: true)]
     case WITHHOLDING_TAX_PAYABLE = 'WITHHOLDING_TAX_PAYABLE';
 
     // ====================================
     // CLEARING & SUSPENSE ACCOUNTS
     // ====================================
+    #[PresetAccount(name: 'Suspense Account', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
     case SUSPENSE_ACCOUNT = 'SUSPENSE_ACCOUNT';
+    #[PresetAccount(name: 'Clearing Account', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
     case CLEARING_ACCOUNT = 'CLEARING_ACCOUNT';
+    #[PresetAccount(name: 'Intercompany Receivable', type: AccountTypeEnum::ASSET, parent: self::CURRENT_ASSETS, optional: true)]
     case INTERCOMPANY = 'INTERCOMPANY';
     #[PresetAccount(name: 'Property, Plant & Equipment', type: AccountTypeEnum::ASSET, parent: self::NON_CURRENT_ASSETS, code: '15100', allowsManualEntries: false)]
     case FIXED_ASSETS = 'FIXED_ASSETS';

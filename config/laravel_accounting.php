@@ -68,6 +68,17 @@ return [
     'excluded_presets' => [],
 
     /*
+     * Optional accounts of the package's chart to seed too. The chart seeds
+     * the presets its templates and services need; other catalogued presets
+     * (e.g. CASH_ON_HAND, ALLOWANCE_FOR_BAD_DEBTS, WITHHOLDING_TAX_PAYABLE,
+     * PENSION_LIABILITIES) are defined as optional, since many overlap with
+     * seeded ones. List the ones you use, e.g.
+     * [AccountPreset::WITHHOLDING_TAX_PAYABLE->value]. Their codes are
+     * generated under their parent.
+     */
+    'included_presets' => [],
+
+    /*
      * Replace the name, code or description of accounts of the package's
      * chart when seeding, e.g.
      * [AccountPreset::CASH->value => ['name' => 'Cash on Hand']].

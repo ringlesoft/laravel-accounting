@@ -12,12 +12,11 @@ trait HasUuid
      */
     protected static function bootHasUuid(): void
     {
-        if (! config('laravel_accounting.use_uuid', false)) {
-            return;
-        }
-
+        // use_uuid is read on each create rather than at boot: a model can
+        // boot before config is final (e.g. Account, which the service
+        // provider observes while booting).
         static::creating(function (Model $model) {
-            if (empty($model->{$model->getKeyName()})) {
+            if (config('laravel_accounting.use_uuid', false) && empty($model->{$model->getKeyName()})) {
                 $model->{$model->getKeyName()} = (string) Str::uuid();
             }
         });

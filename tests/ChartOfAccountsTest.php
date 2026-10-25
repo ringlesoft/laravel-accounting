@@ -83,15 +83,15 @@ it('is safe to re-run', function () {
 
     expect($result['created'])->toBe([])
         ->and($result['adopted'])->toBe([])
-        ->and(Account::count())->toBe(186);
+        ->and(Account::count())->toBe(189);
 });
 
 it('seeds each tenant its own chart', function () {
     LaravelAccounting::chart()->seed(tenantId: 1);
     LaravelAccounting::chart()->seed(tenantId: 2);
 
-    expect(Account::where('tenant_id', 1)->count())->toBe(186)
-        ->and(Account::where('tenant_id', 2)->count())->toBe(186);
+    expect(Account::where('tenant_id', 1)->count())->toBe(189)
+        ->and(Account::where('tenant_id', 2)->count())->toBe(189);
 });
 
 it('takes preset types and normal balances from the chart definitions', function () {
@@ -104,6 +104,76 @@ it('takes preset types and normal balances from the chart definitions', function
 it('rejects an unknown industry', function () {
     LaravelAccounting::chart()->seed('aerospace');
 })->throws(InvalidArgumentException::class, "Unknown industry 'aerospace'");
+
+it('seeds an account for every preset the package\'s own code refers to', function () {
+    seedChart();
+
+    // Template defaults, ClosingService's accounts, report groups, ...
+    $referenced = [];
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(__DIR__.'/../src')) as $file) {
+        if ($file->getExtension() !== 'php' || str_contains($file->getPathname(), 'Enums')) {
+            continue;
+        }
+        preg_match_all('/AccountPreset::([A-Z][A-Z_]+)\b/', file_get_contents($file->getPathname()), $matches);
+        $referenced = [...$referenced, ...$matches[1]];
+    }
+    $referenced = array_values(array_unique($referenced));
+
+    expect($referenced)->toContain('INCOME_SUMMARY', 'OUTPUT_VAT', 'BOND_ISSUANCE_COSTS')
+        ->and(array_values(array_diff($referenced, Account::pluck('preset')->all())))->toBe([]);
+});
+
+it('seeds the closing, VAT and bond issuance accounts', function () {
+    seedChart();
+
+    expect(account(AccountPreset::INCOME_SUMMARY)->only(['code', 'is_system_account']))->toBe(['code' => '30900', 'is_system_account' => true])
+        ->and(account(AccountPreset::INCOME_SUMMARY)->parent_id)->toBe(account(AccountPreset::EQUITY)->id)
+        ->and(account(AccountPreset::OUTPUT_VAT)->parent_id)->toBe(account(AccountPreset::TAX_LIABILITIES)->id)
+        ->and(account(AccountPreset::BOND_ISSUANCE_COSTS)->only(['code', 'normal_balance']))->toBe(['code' => '25100', 'normal_balance' => 'DEBIT']);
+});
+
+// ---- Optional accounts
+
+it('seeds optional accounts only when included', function () {
+    seedChart();
+    expect(Account::where('preset', 'CASH_ON_HAND')->exists())->toBeFalse();
+
+    config()->set('laravel_accounting.included_presets', [
+        AccountPreset::CASH_ON_HAND, AccountPreset::ALLOWANCE_FOR_BAD_DEBTS->value,
+        AccountPreset::WITHHOLDING_TAX_PAYABLE, AccountPreset::PENSION_LIABILITIES,
+    ]);
+    $created = LaravelAccounting::chart()->seed()['created'];
+
+    expect(array_keys($created))->toEqualCanonicalizing(['CASH_ON_HAND', 'ALLOWANCE_FOR_BAD_DEBTS', 'WITHHOLDING_TAX_PAYABLE', 'PENSION_LIABILITIES'])
+        ->and(account(AccountPreset::CASH_ON_HAND)->only(['code', 'parent_id']))->toBe(['code' => '10105', 'parent_id' => account(AccountPreset::CASH_AND_CASH_EQUIVALENT)->id])
+        ->and(account(AccountPreset::ALLOWANCE_FOR_BAD_DEBTS)->normal_balance)->toBe('CREDIT')
+        ->and(account(AccountPreset::WITHHOLDING_TAX_PAYABLE)->parent_id)->toBe(account(AccountPreset::TAX_LIABILITIES)->id)
+        ->and(account(AccountPreset::PENSION_LIABILITIES)->parent_id)->toBe(account(AccountPreset::LONG_TERM_LIABILITIES)->id);
+});
+
+it('never lets a generated code take an explicitly coded sibling\'s code', function () {
+    // CASH_ON_HAND (generated) is declared among CASH_AND_CASH_EQUIVALENT's
+    // explicitly coded children; seeding in one pass must still succeed.
+    config()->set('laravel_accounting.included_presets', [AccountPreset::CASH_ON_HAND]);
+    seedChart();
+
+    expect(account(AccountPreset::CASH_IN_BANK)->code)->toBe('10103')
+        ->and(account(AccountPreset::CASH_ON_HAND)->code)->toBe('10105');
+});
+
+it('lets an exclusion win over an inclusion', function () {
+    config()->set('laravel_accounting.excluded_presets', [AccountPreset::CASH_AND_CASH_EQUIVALENT]);
+    config()->set('laravel_accounting.included_presets', [AccountPreset::CASH_ON_HAND]);
+    seedChart();
+
+    expect(Account::where('preset', 'CASH_ON_HAND')->exists())->toBeFalse();
+});
+
+it('rejects an unknown included preset', function () {
+    config()->set('laravel_accounting.included_presets', ['NOPE']);
+
+    LaravelAccounting::chart()->definitions();
+})->throws(InvalidPresetDefinitionException::class, "included_presets: 'NOPE' isn't a preset");
 
 // ---- Locked roots and no new roots
 
@@ -201,7 +271,8 @@ it('generates codes following the chart\'s scheme', function (AccountPreset $par
     expect($codes)->toBe($expected);
 })->with([
     'root: steps by 100' => [AccountPreset::CURRENT_ASSETS, ['10800', '10900']],
-    'root whose children step by 1: next hundred' => [AccountPreset::LONG_TERM_LIABILITIES, ['25100', '25200']],
+    // 25100 is taken by BOND_ISSUANCE_COSTS, generated after 25001-25006.
+    'root whose children step by 1: next hundred' => [AccountPreset::LONG_TERM_LIABILITIES, ['25200', '25300']],
     'root with no room for 100: steps by 1' => [AccountPreset::FINANCIAL_EXPENSES, ['70007', '70008']],
     'root leaf' => [AccountPreset::INCOME_TAX_EXPENSE, ['70101', '70102']],
     'second level: steps by 1' => [AccountPreset::CASH_AND_CASH_EQUIVALENT, ['10105', '10106']],
@@ -285,7 +356,7 @@ it('leaves out an excluded account with its whole branch', function () {
 
     expect(Account::whereIn('preset', ['CASH_AND_CASH_EQUIVALENT', 'CASH', 'PETTY_CASH', 'CASH_IN_BANK', 'UNDEPOSITED_FUNDS'])->count())->toBe(0)
         ->and(Account::where('preset', 'ACCOUNTS_RECEIVABLE')->exists())->toBeTrue()
-        ->and(Account::count())->toBe(181);
+        ->and(Account::count())->toBe(184);
 });
 
 it('applies preset overrides', function () {

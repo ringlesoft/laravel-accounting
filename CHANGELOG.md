@@ -10,6 +10,8 @@ All notable changes to `laravel-accounting` will be documented in this file.
 - `#[PresetAccount]` attribute and `custom_presets` config: custom preset accounts are seeded together with the package's chart.
 - Chart structure rules (`enforce_chart_structure`, on by default): the 11 root accounts are locked, every other account needs a parent, and codes are generated under the parent when omitted (explicit codes must fit).
 - `ChartOfAccountsService` (`LaravelAccounting::chart()`), with `excluded_presets`, `preset_overrides` and an opt-in `sync` mode.
+- The chart seeds `INCOME_SUMMARY`, `OUTPUT_VAT` and `BOND_ISSUANCE_COSTS`, which `ClosingService`, `VatPaymentTemplate` and `BondIssuanceTemplate` need.
+- Optional chart accounts for the other catalogued presets (`CASH_ON_HAND`, `ALLOWANCE_FOR_BAD_DEBTS`, `WITHHOLDING_TAX_*`, ...), seeded when listed in `included_presets`.
 
 ### Changed
 - The chart of accounts is defined by `#[PresetAccount]` attributes on `AccountPreset`, and `ChartOfAccountsSeeder` is now a thin wrapper. The 11 accounts that had no preset now carry one (`CURRENT_ASSETS`, `EQUITY`, `REVENUE`, ...); charts seeded by earlier versions are adopted on re-seed.
@@ -21,6 +23,8 @@ All notable changes to `laravel-accounting` will be documented in this file.
 - Primary key definitions on Postgres (accounts and journal entries tables).
 - `PeriodService` copies the tenant onto created periods and matches dates correctly on SQLite.
 - The installer no longer overwrites an existing config, and applies the chosen UUID setting to the migrations it runs.
+- `AccountTypeEnum::getId()` returns UUID keys instead of failing when `use_uuid` is on.
+- `HasUuid` reads `use_uuid` when a record is created, so models booted earlier (e.g. `Account`) still get UUIDs.
 
 ### Breaking
 - Creating an account without a parent fails unless `enforce_chart_structure` is `false`.

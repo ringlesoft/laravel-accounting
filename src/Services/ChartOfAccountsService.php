@@ -35,6 +35,7 @@ class ChartOfAccountsService
      *
      * Built-in accounts are limited to the industry's presets and stripped of
      * `excluded_presets`; an excluded account's whole branch is left out.
+     * Optional accounts are added only when listed in `included_presets`.
      * `preset_overrides` are applied. Root accounts can be neither excluded
      * nor overridden.
      *
@@ -57,7 +58,8 @@ class ChartOfAccountsService
                 $parent = $definition['account']->parent;
                 if ($includeBuiltIn && $parent !== null && isset($builtIn[$parent->value]) && ! isset($definitions[$parent->value])) {
                     throw new InvalidPresetDefinitionException(
-                        PresetDefinitions::label($definition['preset']).'\'s parent '.PresetDefinitions::label($parent).' is excluded from this chart.'
+                        PresetDefinitions::label($definition['preset']).'\'s parent '.PresetDefinitions::label($parent).
+                        ' isn\'t part of this chart: it\'s excluded, or optional and not listed in included_presets.'
                     );
                 }
 
@@ -67,7 +69,37 @@ class ChartOfAccountsService
 
         $this->assertUniqueCodes($definitions);
 
-        return PresetDefinitions::orderParentsFirst($definitions);
+        return $this->explicitCodesFirst(PresetDefinitions::orderParentsFirst($definitions));
+    }
+
+    /**
+     * Move the definitions with an explicit code (and only explicit codes in
+     * their ancestry) ahead of those whose code is generated, so a generated
+     * code can never take one an explicitly-coded sibling still needs. The
+     * parents-first order is kept within each group.
+     *
+     * @template T of array{preset: AccountPresetContract, account: PresetAccount, builtIn: bool, checkCode: bool}
+     *
+     * @param  array<string, T>  $definitions  Ordered parents first
+     * @return array<string, T>
+     */
+    protected function explicitCodesFirst(array $definitions): array
+    {
+        $explicit = [];
+        $generated = [];
+
+        foreach ($definitions as $value => $definition) {
+            $parent = $definition['account']->parent?->value;
+            $parentGenerated = $parent !== null && isset($generated[$parent]);
+
+            if ($definition['account']->code === null || $parentGenerated) {
+                $generated[$value] = $definition;
+            } else {
+                $explicit[$value] = $definition;
+            }
+        }
+
+        return $explicit + $generated;
     }
 
     /**
@@ -227,6 +259,15 @@ class ChartOfAccountsService
             }
         }
 
+        $included = [];
+        foreach (config('laravel_accounting.included_presets', []) as $preset) {
+            $value = $preset instanceof AccountPresetContract ? $preset->value : $preset;
+            if (! isset($all[$value])) {
+                throw new InvalidPresetDefinitionException("included_presets: '{$value}' isn't a preset of the package's chart.");
+            }
+            $included[$value] = true;
+        }
+
         $overrides = config('laravel_accounting.preset_overrides', []);
         foreach ($overrides as $value => $fields) {
             if (! isset($all[$value])) {
@@ -246,8 +287,10 @@ class ChartOfAccountsService
         foreach (PresetDefinitions::orderParentsFirst($all) as $value => $definition) {
             $parent = $definition['account']->parent?->value;
 
-            // Leave out excluded accounts and, with them, their branch.
-            if (isset($excluded[$value]) || ($parent !== null && ! isset($definitions[$parent]))) {
+            // Leave out excluded accounts and, with them, their branch; and
+            // optional accounts that weren't asked for.
+            if (isset($excluded[$value]) || ($parent !== null && ! isset($definitions[$parent]))
+                || ($definition['account']->optional && ! isset($included[$value]))) {
                 continue;
             }
 

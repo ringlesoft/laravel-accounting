@@ -78,6 +78,12 @@ enum SystemFlagPreset: string implements AccountPresetContract
     case SNEAKY = 'SNEAKY';
 }
 
+enum OptionalFlagPreset: string implements AccountPresetContract
+{
+    #[PresetAccount(name: 'Maybe', type: AccountTypeEnum::ASSET, parent: AccountPreset::CURRENT_ASSETS, optional: true)]
+    case MAYBE = 'MAYBE';
+}
+
 enum DuplicateCodePreset: string implements AccountPresetContract
 {
     #[PresetAccount(name: 'A', type: AccountTypeEnum::EXPENSE, parent: AccountPreset::OPERATING_EXPENSES, code: '63000')]
@@ -127,8 +133,8 @@ it('seeds custom preset accounts together with the chart', function () {
 
     $created = LaravelAccounting::chart()->seed()['created'];
 
-    expect($created)->toHaveCount(186 + 4)
-        ->and(array_slice(array_keys($created), -4))->toBe(['IT_COSTS', 'CLOUD_HOSTING', 'SECONDARY_BANK', 'OVERDRAFT_RESERVE']);
+    expect($created)->toHaveCount(189 + 4)
+        ->and(array_keys($created))->toContain('IT_COSTS', 'CLOUD_HOSTING', 'SECONDARY_BANK', 'OVERDRAFT_RESERVE');
 
     $bank = byPreset(SeededPreset::SECONDARY_BANK);
     $cashGroup = byPreset(AccountPreset::CASH_AND_CASH_EQUIVALENT);
@@ -169,7 +175,7 @@ it('is safe to re-run and never modifies existing custom accounts', function () 
 
     expect(LaravelAccounting::chart()->seed(sync: true)['created'])->toBe([])
         ->and(byPreset(StandalonePreset::LICENCES)->name)->toBe('Renamed by user')
-        ->and(Account::count())->toBe(187);
+        ->and(Account::count())->toBe(190);
 });
 
 it('seeds each tenant separately', function () {
@@ -213,7 +219,7 @@ it('refuses a custom preset under an excluded parent', function () {
     config()->set('laravel_accounting.excluded_presets', [AccountPreset::CASH_AND_CASH_EQUIVALENT]);
 
     LaravelAccounting::chart()->definitions();
-})->throws(InvalidPresetDefinitionException::class, "SeededPreset::SECONDARY_BANK's parent AccountPreset::CASH_AND_CASH_EQUIVALENT is excluded");
+})->throws(InvalidPresetDefinitionException::class, "SeededPreset::SECONDARY_BANK's parent AccountPreset::CASH_AND_CASH_EQUIVALENT isn't part of this chart");
 
 it('validates registered custom preset enums', function (array $enums, string $message) {
     config()->set('laravel_accounting.custom_presets', $enums);
@@ -228,6 +234,7 @@ it('validates registered custom preset enums', function (array $enums, string $m
     'the built-in enum' => [[AccountPreset::class], "is the package's own chart"],
     'a root account' => [[RootPreset::class], 'RootPreset::MY_ROOT must name a parent'],
     'the system flag' => [[SystemFlagPreset::class], "can't set isSystemAccount"],
+    'the optional flag' => [[OptionalFlagPreset::class], "can't set isSystemAccount or optional"],
     'duplicate codes' => [[DuplicateCodePreset::class], "both define account code '63000'"],
     'a built-in code' => [[BuiltInCodePreset::class], "both define account code '10700'"],
     'parent cycle' => [[CyclicPreset::class], 'Preset parents form a cycle: CYCLE_A -> CYCLE_B -> CYCLE_A'],

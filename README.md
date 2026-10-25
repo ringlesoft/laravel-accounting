@@ -179,10 +179,14 @@ seeding you can also:
 ```php
 // config/laravel_accounting.php
 'excluded_presets' => [AccountPreset::DIGITAL_ASSETS->value],              // leaves out its whole branch
+'included_presets' => [AccountPreset::WITHHOLDING_TAX_PAYABLE->value],     // adds optional accounts
 'preset_overrides' => [AccountPreset::CASH->value => ['name' => 'Cash on Hand']], // name, code, description
 ```
 
-Root accounts can be neither excluded nor overridden. `LaravelAccounting::chart()->seed($industry, $tenantId)` seeds a
+The chart seeds every account the package's templates, closing and reports rely on. The other catalogued presets
+(e.g. `CASH_ON_HAND`, `ALLOWANCE_FOR_BAD_DEBTS`, `WITHHOLDING_TAX_*`, `PENSION_LIABILITIES`) are defined as
+**optional**, since many overlap with seeded accounts: list the ones you use in `included_presets` and they're
+seeded under their usual parent with a generated code. Root accounts can be neither excluded nor overridden. `LaravelAccounting::chart()->seed($industry, $tenantId)` seeds a
 given tenant when no tenant is resolved (e.g. when provisioning one from a job).
 
 ##### Custom account presets
@@ -522,6 +526,7 @@ return [
     'custom_presets' => [],                 // your AccountPresetContract enums, seeded with the chart
     'enforce_chart_structure' => true,      // fixed root accounts, parents required, generated/validated codes
     'excluded_presets' => [],               // chart accounts (and branches) to leave out when seeding
+    'included_presets' => [],               // optional chart accounts to seed too
     'preset_overrides' => [],               // name/code/description of chart accounts, when seeding
     'default_currency_code' => 'USD',
     'transaction_number_prefix' => 'JE',    // e.g. JE-20260101-000001

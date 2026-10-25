@@ -13,6 +13,23 @@ use RingleSoft\LaravelAccounting\Validators\AccountValidator;
 
 /**
  * @mixin  Builder
+ *
+ * @property int|string $id
+ * @property string $code
+ * @property string $name
+ * @property int|string $account_type_id
+ * @property ?string $category
+ * @property ?string $sub_category
+ * @property ?string $report_section
+ * @property int|string|null $parent_id
+ * @property int|string|null $tenant_id
+ * @property string $currency_code
+ * @property ?string $preset
+ * @property ?string $normal_balance 'DEBIT' or 'CREDIT'
+ * @property ?string $description
+ * @property bool $is_active
+ * @property bool $is_system_account
+ * @property bool $allows_manual_entries
  */
 class Account extends Model
 {

@@ -39,7 +39,24 @@ return [
      */
     'strict_multi_tenancy_check' => false,
 
+    /*
+     * Your own account preset enums (string-backed, implementing
+     * RingleSoft\LaravelAccounting\Contracts\AccountPresetContract).
+     * Presets work in templates without being listed here; listing them lets
+     * CustomPresetSeeder seed the accounts their #[PresetAccount] cases
+     * describe, and checks their values don't collide with other presets.
+     * e.g. [App\Accounting\MyPreset::class]
+     */
+    'custom_presets' => [],
+
+    /*
+     *
+     */
     'default_currency_code' => 'USD',
+
+    /*
+     *
+     */
     'date_format' => 'Y-m-d',
 
     /*

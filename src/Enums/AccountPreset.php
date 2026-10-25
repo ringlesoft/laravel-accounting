@@ -527,19 +527,29 @@ enum AccountPreset: string implements AccountPresetContract
         ]);
     }
 
-    public static function byIndustry()
+    /**
+     * The presets each industry's chart of accounts is seeded with: every
+     * preset, minus the ones listed for that industry below ('full' keeps
+     * them all).
+     *
+     * @return array<string, AccountPreset[]>
+     */
+    public static function byIndustry(): array
     {
-        return [
-            'full' => self::cases(),
-            'retail' => collect(self::cases())->except([
-
-            ]),
-            'saas' => collect(self::cases())->except([
-
-            ]),
-            'manufacturing' => collect(self::cases())->except([
-
-            ]),
+        /** @var array<string, AccountPreset[]> $excluded */
+        $excluded = [
+            'full' => [],
+            'retail' => [],
+            'saas' => [],
+            'manufacturing' => [],
         ];
+
+        return array_map(
+            static fn (array $exclude) => array_values(array_filter(
+                self::cases(),
+                static fn (self $preset) => ! in_array($preset, $exclude, true)
+            )),
+            $excluded
+        );
     }
 }

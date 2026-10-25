@@ -172,7 +172,42 @@ $sale->postWithTemplate(new CashSaleTemplate(cashAccount: MyPreset::SECONDARY_BA
 
 Accounts are matched on the case's **value** only, so keep values unique across all your preset enums and the built-in
 `AccountPreset` (don't reuse e.g. `CASH`). Custom presets don't carry the built-in enum's metadata (`type()`,
-`normalBalance()`, `byCategory()`, ...), and the seeders don't create accounts for them.
+`normalBalance()`, `byCategory()`, ...).
+
+To have the package **seed** the account for a custom preset, describe it with `#[PresetAccount]` and register the enum
+in `laravel_accounting.custom_presets`:
+
+```php
+use RingleSoft\LaravelAccounting\Attributes\PresetAccount;
+
+enum MyPreset: string implements AccountPresetContract
+{
+    #[PresetAccount(
+        code: '10105',
+        name: 'Secondary Bank',
+        type: AccountTypeEnum::ASSET,
+        parent: AccountPreset::CASH_AND_CASH_EQUIVALENT, // a built-in or custom preset
+    )]
+    case SECONDARY_BANK = 'SECONDARY_BANK';
+
+    case RUNTIME_ONLY = 'RUNTIME_ONLY'; // no attribute: usable in templates, never seeded
+}
+
+// config/laravel_accounting.php
+'custom_presets' => [MyPreset::class],
+```
+
+Then run `php artisan db:seed --class=CustomPresetSeeder` after the chart of accounts (the installer does this for you
+when `custom_presets` is set), or `LaravelAccounting::presets()->seed($tenantId)` when provisioning a tenant.
+`category` and `reportSection` default to the parent account's, `normalBalance` to the account type's; `allowsManualEntries`
+and `description` are optional too. Seeding:
+
+- creates only the accounts that don't exist yet (matched by preset, within the tenant) and never modifies existing
+  ones, so it's safe to re-run;
+- orders custom parents before their children, and runs in one transaction;
+- refuses, with a clear `InvalidPresetDefinitionException`, enums that aren't string-backed `AccountPresetContract`s,
+  preset values that collide with another preset, duplicate codes, parent cycles, a parent with no account, or a code
+  another account already uses.
 
 #### Journal Entries, Journal Entry Items & Voucher Data
 
@@ -447,7 +482,9 @@ application:
 return [
     'table_prefix' => 'la',                 // DB table prefix for this package's tables
     'multi_tenancy_field' => 'tenant_id',
+    'tenant_resolver' => AuthUserTenantResolver::class, // how the current tenant is found (TenantResolver contract)
     'strict_multi_tenancy_check' => true,   // false allows null-tenant rows as shared/global data
+    'custom_presets' => [],                 // your AccountPresetContract enums, for CustomPresetSeeder
     'default_currency_code' => 'USD',
     'transaction_number_prefix' => 'JE',    // e.g. JE-20260101-000001
     'use_uuid' => false,                    // UUID vs auto-increment primary keys
@@ -480,6 +517,7 @@ php artisan vendor:publish --tag="accounting-migrations"
 php artisan migrate
 php artisan db:seed --class=AccountTypeSeeder
 php artisan db:seed --class=ChartOfAccountsSeeder
+php artisan db:seed --class=CustomPresetSeeder   # only if you've registered custom_presets
 php artisan db:seed --class=FiscalPeriodSeeder
 ```
 

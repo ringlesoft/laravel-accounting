@@ -347,7 +347,8 @@ class ConsultingInvoiceTemplate extends AccountingTemplate
 new CashSaleTemplate(cashAccount: MyPreset::SECONDARY_BANK);
 ```
 
-Tag an account with the preset (`'preset' => MyPreset::SECONDARY_BANK->value`) before posting; resolution (children,
+Tag an account with the preset (`'preset' => MyPreset::SECONDARY_BANK->value`) before posting, or have it seeded from a
+`#[PresetAccount]` attribute on the case (see [Custom account presets](../README.md#custom-account-presets)); resolution (children,
 ambiguity, overrides) works exactly as for built-in presets. Accounts are matched on the case's value alone, so keep
 values unique across all preset enums, built-in ones included.
 

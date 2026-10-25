@@ -14,6 +14,7 @@ use RingleSoft\LaravelAccounting\Traits\HasUuid;
  * @mixin Builder
  *
  * @property string $normal_balance
+ * @property ?string $report_section
  */
 class AccountType extends Model
 {

@@ -12,10 +12,12 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\NormalBalance;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidPresetDefinitionException;
 use RingleSoft\LaravelAccounting\Models\Account;
+use RingleSoft\LaravelAccounting\Models\AccountType;
 use RingleSoft\LaravelAccounting\Scopes\MultiTenantScope;
 use RingleSoft\LaravelAccounting\Support\AccountCodeGenerator;
 use RingleSoft\LaravelAccounting\Support\ChartStructure;
 use RingleSoft\LaravelAccounting\Support\PresetDefinitions;
+use RingleSoft\LaravelAccounting\Validators\AccountValidator;
 use Throwable;
 
 /**
@@ -155,99 +157,135 @@ class ChartOfAccountsService
         $definitions = $this->definitions($industry, $includeBuiltIn, true, $excluded, $included, $overrides, $customPresets);
         $tenantId = app(TenantResolver::class)->resolve() ?? $tenantId;
 
-        return DB::transaction(fn () => ChartStructure::bypass(function () use ($definitions, $tenantId, $sync) {
-            $result = ['created' => [], 'adopted' => [], 'synced' => []];
+        return DB::transaction(fn () => ChartStructure::bypass(fn () => AccountValidator::withoutDatabaseRules(
+            fn () => $this->seedDefinitions($definitions, $tenantId, $sync)
+        )));
+    }
 
-            // Preset values are read from the preset, not the array keys:
-            // PHP turns numeric-string keys into ints, which Postgres won't
-            // compare with the string `preset` column.
-            foreach ($definitions as ['preset' => $preset, 'account' => $definition, 'builtIn' => $builtIn, 'checkCode' => $checkCode]) {
-                $value = $preset->value;
-                $label = PresetDefinitions::label($preset);
+    /**
+     * The body of seed(), run in its transaction. The tenant's accounts are
+     * loaded once and kept up to date as accounts are created, so lookups by
+     * preset and code don't query; this is also what lets the database
+     * validation rules be skipped (see AccountValidator::withoutDatabaseRules).
+     *
+     * @param  array<string, array{preset: AccountPresetContract, account: PresetAccount, builtIn: bool, checkCode: bool}>  $definitions
+     * @return array{created: array<string, Account>, adopted: array<string, Account>, synced: array<string, Account>}
+     *
+     * @throws InvalidPresetDefinitionException|Throwable
+     */
+    protected function seedDefinitions(array $definitions, int|string|null $tenantId, bool $sync): array
+    {
+        $result = ['created' => [], 'adopted' => [], 'synced' => []];
 
-                /** @var Account|null $existing */
-                $existing = $this->accountsOf($tenantId)->where('preset', $value)->first();
-                if ($existing) {
-                    if ($sync && $builtIn && $this->sync($existing, $definition)) {
-                        $result['synced'][$value] = $existing;
-                    }
+        /** @var array<string, Account> $byPreset */
+        $byPreset = [];
+        /** @var array<string, Account> $byCode */
+        $byCode = [];
+        /** @var array<int|string, Account> $byId */
+        $byId = [];
+        /** @var Account $account */
+        foreach ($this->accountsOf($tenantId)->get() as $account) {
+            if ($account->preset !== null) {
+                $byPreset[$account->preset] ??= $account;
+            }
+            $byCode[(string) $account->code] ??= $account;
+            $byId[$account->getKey()] = $account;
+        }
 
-                    continue;
+        /** @var array<string, AccountType|null> $accountTypes */
+        $accountTypes = [];
+
+        // Preset values are read from the preset, not the array keys: PHP
+        // turns numeric-string keys into ints, which Postgres won't compare
+        // with the string `preset` column.
+        foreach ($definitions as ['preset' => $preset, 'account' => $definition, 'builtIn' => $builtIn, 'checkCode' => $checkCode]) {
+            $value = $preset->value;
+            $label = PresetDefinitions::label($preset);
+
+            if ($existing = $byPreset[$value] ?? null) {
+                if ($sync && $builtIn && $this->sync($existing, $definition, $byId[$existing->parent_id ?? ''] ?? $existing->parent)) {
+                    $result['synced'][$value] = $existing;
                 }
 
-                $accountType = $definition->type->accountType();
-                if (! $accountType) {
+                continue;
+            }
+
+            $accountType = $accountTypes[$definition->type->value] ??= $definition->type->accountType();
+            if (! $accountType) {
+                throw new InvalidPresetDefinitionException(
+                    "Cannot seed {$label}: account type '{$definition->type->value}' doesn't exist. Run AccountTypeSeeder first."
+                );
+            }
+
+            $parent = null;
+            if ($definition->parent) {
+                $parent = $byPreset[$definition->parent->value] ?? null;
+                if (! $parent) {
                     throw new InvalidPresetDefinitionException(
-                        "Cannot seed {$label}: account type '{$definition->type->value}' doesn't exist. Run AccountTypeSeeder first."
+                        "Cannot seed {$label}: its parent preset ".PresetDefinitions::label($definition->parent).' has no account. Seed or tag that account first.'
+                    );
+                }
+            }
+
+            $code = $definition->code;
+            if ($code !== null) {
+                if ($codeTakenBy = $byCode[$code] ?? null) {
+                    if ($builtIn && $codeTakenBy->preset === null && $codeTakenBy->account_type_id == $accountType->getKey()) {
+                        $codeTakenBy->update(['preset' => $value]);
+                        $byPreset[$value] = $codeTakenBy;
+                        $result['adopted'][$value] = $codeTakenBy;
+
+                        continue;
+                    }
+
+                    throw new InvalidPresetDefinitionException(
+                        "Cannot seed {$label}: account code '{$code}' is already used by '{$codeTakenBy->name}'."
                     );
                 }
 
-                $parent = null;
-                if ($definition->parent) {
-                    /** @var Account|null $parent */
-                    $parent = $this->accountsOf($tenantId)->where('preset', $definition->parent->value)->first();
-                    if (! $parent) {
-                        throw new InvalidPresetDefinitionException(
-                            "Cannot seed {$label}: its parent preset ".PresetDefinitions::label($definition->parent).' has no account. Seed or tag that account first.'
-                        );
-                    }
+                if ($checkCode && $parent && ChartStructure::enabled() && ! app(AccountCodeGenerator::class)->fits($code, $parent, $tenantId)) {
+                    throw new InvalidPresetDefinitionException(
+                        "Cannot seed {$label}: code '{$code}' doesn't fit under '{$parent->name}' ({$parent->code})."
+                    );
                 }
-
-                $code = $definition->code;
-                if ($code !== null) {
-                    /** @var Account|null $codeTakenBy */
-                    $codeTakenBy = $this->accountsOf($tenantId)->where('code', $code)->first();
-                    if ($codeTakenBy) {
-                        if ($builtIn && $codeTakenBy->preset === null && $codeTakenBy->account_type_id == $accountType->getKey()) {
-                            $codeTakenBy->update(['preset' => $value]);
-                            $result['adopted'][$value] = $codeTakenBy;
-
-                            continue;
-                        }
-
-                        throw new InvalidPresetDefinitionException(
-                            "Cannot seed {$label}: account code '{$code}' is already used by '{$codeTakenBy->name}'."
-                        );
-                    }
-
-                    if ($checkCode && $parent && ChartStructure::enabled() && ! app(AccountCodeGenerator::class)->fits($code, $parent, $tenantId)) {
-                        throw new InvalidPresetDefinitionException(
-                            "Cannot seed {$label}: code '{$code}' doesn't fit under '{$parent->name}' ({$parent->code})."
-                        );
-                    }
-                } elseif ($parent) {
-                    $code = app(AccountCodeGenerator::class)->next($parent, $tenantId);
-                } else {
-                    throw new InvalidPresetDefinitionException("Cannot seed {$label}: a root account needs an explicit code.");
-                }
-
-                $normalBalance = $definition->normalBalance ?? NormalBalance::from(strtolower($accountType->normal_balance));
-
-                $result['created'][$value] = Account::create([
-                    'tenant_id' => $tenantId,
-                    'code' => $code,
-                    'name' => $definition->name,
-                    'account_type_id' => $accountType->getKey(),
-                    'parent_id' => $parent?->getKey(),
-                    'preset' => $value,
-                    // Inherited from the parent unless given, since reports
-                    // group by them (e.g. CashFlowStatement by category).
-                    'category' => $definition->category ?? $parent?->category,
-                    'sub_category' => $definition->subCategory,
-                    'report_section' => $definition->reportSection ?? $parent?->report_section ?? $accountType->report_section,
-                    // The accounts table stores normal_balance upper-case
-                    // ('DEBIT'/'CREDIT'), unlike the NormalBalance enum.
-                    'normal_balance' => strtoupper($normalBalance->value),
-                    'description' => $definition->description,
-                    'allows_manual_entries' => $definition->allowsManualEntries,
-                    'currency_code' => config('laravel_accounting.default_currency_code', 'USD'),
-                    'is_active' => true,
-                    'is_system_account' => $builtIn && $definition->isSystemAccount,
-                ]);
+            } elseif ($parent) {
+                $code = app(AccountCodeGenerator::class)->next($parent, $tenantId);
+            } else {
+                throw new InvalidPresetDefinitionException("Cannot seed {$label}: a root account needs an explicit code.");
             }
 
-            return $result;
-        }));
+            $normalBalance = $definition->normalBalance ?? NormalBalance::from(strtolower($accountType->normal_balance));
+
+            $account = new Account([
+                'tenant_id' => $tenantId,
+                'code' => $code,
+                'name' => $definition->name,
+                'account_type_id' => $accountType->getKey(),
+                'parent_id' => $parent?->getKey(),
+                'preset' => $value,
+                // Inherited from the parent unless given, since reports group
+                // by them (e.g. CashFlowStatement by category).
+                'category' => $definition->category ?? $parent?->category,
+                'sub_category' => $definition->subCategory,
+                'report_section' => $definition->reportSection ?? $parent?->report_section ?? $accountType->report_section,
+                // The accounts table stores normal_balance upper-case
+                // ('DEBIT'/'CREDIT'), unlike the NormalBalance enum.
+                'normal_balance' => strtoupper($normalBalance->value),
+                'description' => $definition->description,
+                'allows_manual_entries' => $definition->allowsManualEntries,
+                'currency_code' => config('laravel_accounting.default_currency_code', 'USD'),
+                'is_active' => true,
+                'is_system_account' => $builtIn && $definition->isSystemAccount,
+            ]);
+            // Saves AccountObserver looking the parent up again.
+            $account->setRelation('parent', $parent);
+            $account->setRelation('accountType', $accountType);
+            $account->save();
+
+            $byPreset[$value] = $byCode[$code] = $byId[$account->getKey()] = $result['created'][$value] = $account;
+        }
+
+        return $result;
     }
 
     /**
@@ -341,12 +379,11 @@ class ChartOfAccountsService
 
     /**
      * Refresh an existing built-in account's descriptive fields from its
-     * definition. Fields the definition leaves empty are kept.
+     * definition (inheriting from $parent). Fields the definition leaves
+     * empty are kept.
      */
-    protected function sync(Account $account, PresetAccount $definition): bool
+    protected function sync(Account $account, PresetAccount $definition, ?Account $parent): bool
     {
-        $parent = $account->parent;
-
         $account->fill(array_filter([
             'name' => $definition->name,
             'description' => $definition->description,

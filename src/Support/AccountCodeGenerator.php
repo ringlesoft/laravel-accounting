@@ -126,6 +126,9 @@ class AccountCodeGenerator
     /**
      * Snapshot of the accounts that matter: the parent's tenant (structure)
      * and the new account's tenant (uniqueness), less $ignoreId.
+     *
+     * Read as plain rows: hydrating (and eager-loading) every account of
+     * the tenant on each call would make bulk creation quadratic.
      */
     protected function load(Account $parent, int|string|null $tenantId, int|string|null $ignoreId = null): void
     {
@@ -133,8 +136,9 @@ class AccountCodeGenerator
             ->where(static function ($query) use ($parent, $tenantId) {
                 $query->where('tenant_id', $tenantId)->orWhere('tenant_id', $parent->tenant_id);
             })
+            ->toBase()
             ->get(['id', 'code', 'parent_id'])
-            ->mapWithKeys(static fn (Account $account) => [$account->getKey() => [
+            ->mapWithKeys(static fn (object $account) => [$account->id => [
                 'code' => (string) $account->code,
                 'parent_id' => $account->parent_id,
             ]])

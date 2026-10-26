@@ -22,7 +22,7 @@ class AccountObserver
      */
     public function creating(Account $account): bool
     {
-        $parent = $account->parent_id ? Account::find($account->parent_id) : null;
+        $parent = $this->parentOf($account);
 
         // Found through the tenant scope, so another tenant's account (or a
         // missing one) can't be used as the parent.
@@ -125,6 +125,26 @@ class AccountObserver
         }
 
         return true;
+    }
+
+    /**
+     * The new account's parent: the one already set as its `parent`
+     * relation (as the chart seeder does) when it's that same account of the
+     * same tenant, else looked up through the tenant scope.
+     */
+    protected function parentOf(Account $account): ?Account
+    {
+        if (! $account->parent_id) {
+            return null;
+        }
+
+        $loaded = $account->relationLoaded('parent') ? $account->getRelation('parent') : null;
+        if ($loaded instanceof Account && $loaded->exists && $loaded->getKey() == $account->parent_id
+            && (string) $loaded->tenant_id === (string) $account->tenant_id) {
+            return $loaded;
+        }
+
+        return Account::find($account->parent_id);
     }
 
     /**

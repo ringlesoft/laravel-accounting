@@ -19,6 +19,7 @@ All notable changes to `laravel-accounting` will be documented in this file.
 - Account-code uniqueness is checked per tenant.
 - A calendar-aligned fiscal year is named `2026` instead of `2026-2026`.
 - `HasUuid` is applied to all models.
+- Faster chart seeding: about 200 queries for the full chart instead of about 2,000, and cheaper code generation when creating accounts without a code.
 
 ### Fixed
 - Primary key definitions on Postgres (accounts and journal entries tables).

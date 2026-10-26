@@ -2,6 +2,7 @@
 
 namespace RingleSoft\LaravelAccounting\Validators;
 
+use Closure;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
@@ -11,6 +12,8 @@ use RingleSoft\LaravelAccounting\Support\ChartStructure;
 
 class AccountValidator
 {
+    protected static int $skipDatabaseRulesDepth = 0;
+
     /**
      * Get validation rules for account
      *
@@ -21,11 +24,15 @@ class AccountValidator
      * The code may be omitted under a parent (one is generated). While the
      * chart structure is enforced, a parent is required: root accounts come
      * from the package's chart only.
+     *
+     * Inside withoutDatabaseRules(), the rules that query the database
+     * (unique code, existing type and parent) are left out.
      */
     public static function rules(int|string|null $ignoreId = null, int|string|null $tenantId = null): array
     {
         $tablePrefix = config('laravel_accounting.table_prefix', 'la');
         $tenantId ??= app(TenantResolver::class)->resolve();
+        $withDatabase = static::$skipDatabaseRulesDepth === 0;
 
         return [
             'code' => [
@@ -33,21 +40,23 @@ class AccountValidator
                 'nullable',
                 'string',
                 'max:50',
-                Rule::unique("{$tablePrefix}_accounts", 'code')
-                    ->where('tenant_id', $tenantId)
-                    ->ignore($ignoreId),
+                ...$withDatabase ? [
+                    Rule::unique("{$tablePrefix}_accounts", 'code')
+                        ->where('tenant_id', $tenantId)
+                        ->ignore($ignoreId),
+                ] : [],
             ],
             'name' => 'required|string|max:255',
             'account_type_id' => [
                 'required',
-                'exists:'.$tablePrefix.'_account_types,id',
+                ...$withDatabase ? ['exists:'.$tablePrefix.'_account_types,id'] : [],
             ],
             'category' => 'nullable|string|max:100',
             'sub_category' => 'nullable|string|max:100',
             'report_section' => 'nullable|string|max:100',
             'parent_id' => [
                 ChartStructure::enforced() ? 'required' : 'nullable',
-                'exists:'.$tablePrefix.'_accounts,id',
+                ...$withDatabase ? ['exists:'.$tablePrefix.'_accounts,id'] : [],
                 function ($attribute, $value, $fail) use ($ignoreId) {
                     if ($value && $ignoreId && $value == $ignoreId) {
                         $fail('An account cannot be its own parent.');
@@ -66,6 +75,29 @@ class AccountValidator
             'allows_manual_entries' => 'boolean',
             'preset' => 'nullable|string|max:100',
         ];
+    }
+
+    /**
+     * Run $callback with the database-backed rules left out. Reserved for
+     * the package's chart seeding, which checks codes, types and parents
+     * itself against what it has loaded, in the same transaction.
+     *
+     * @internal
+     *
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
+    public static function withoutDatabaseRules(Closure $callback): mixed
+    {
+        static::$skipDatabaseRulesDepth++;
+
+        try {
+            return $callback();
+        } finally {
+            static::$skipDatabaseRulesDepth--;
+        }
     }
 
     /**

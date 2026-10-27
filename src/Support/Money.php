@@ -16,6 +16,10 @@ use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
  * Inputs accept string|int|float for convenience; floats are converted via
  * their shortest string representation before any arithmetic happens.
  * Results are rounded half away from zero to SCALE places.
+ *
+ * SCALE is the storage ceiling. Amounts are posted and displayed at the
+ * configured `decimals` (decimals()), by default each currency's own
+ * decimal places: 2 for USD, 0 for JPY, 3 for KWD.
  */
 final class Money
 {
@@ -27,9 +31,9 @@ final class Money
     public const ZERO = '0.0000';
 
     /**
-     * Display decimal places when nothing else is configured.
+     * Decimal places used when neither the config nor the currency gives any.
      */
-    public const DEFAULT_DISPLAY_DECIMALS = 2;
+    public const DEFAULT_DECIMALS = 2;
 
     /**
      * Precision used for intermediate multiplication/division results,
@@ -42,7 +46,24 @@ final class Money
      */
     public static function of(string|int|float|null $value): string
     {
-        return self::round(self::number($value));
+        return self::roundNumber(self::number($value));
+    }
+
+    /**
+     * Round to $decimals places (at most SCALE), returned as a SCALE-place
+     * string: round('12.3456', 2) is '12.3500'.
+     */
+    public static function round(string|int|float|null $value, int $decimals): string
+    {
+        return self::of(self::roundNumber(self::number($value), min(max(0, $decimals), self::SCALE)));
+    }
+
+    /**
+     * Round to the decimals amounts are posted at for $currency (see decimals()).
+     */
+    public static function forCurrency(string|int|float|null $value, CurrencyCode|string|null $currency = null): string
+    {
+        return self::round($value, self::decimals($currency));
     }
 
     /**
@@ -55,7 +76,7 @@ final class Money
             $total = bcadd($total, self::number($value), self::WORK_SCALE);
         }
 
-        return self::round($total);
+        return self::roundNumber($total);
     }
 
     public static function add(string|int|float|null ...$values): string
@@ -65,7 +86,7 @@ final class Money
 
     public static function sub(string|int|float|null $minuend, string|int|float|null $subtrahend): string
     {
-        return self::round(bcsub(self::number($minuend), self::number($subtrahend), self::WORK_SCALE));
+        return self::roundNumber(bcsub(self::number($minuend), self::number($subtrahend), self::WORK_SCALE));
     }
 
     /**
@@ -74,7 +95,7 @@ final class Money
      */
     public static function mul(string|int|float|null $amount, string|int|float $factor): string
     {
-        return self::round(bcmul(self::number($amount), self::number($factor), self::WORK_SCALE));
+        return self::roundNumber(bcmul(self::number($amount), self::number($factor), self::WORK_SCALE));
     }
 
     /**
@@ -87,7 +108,7 @@ final class Money
             throw new InvalidArgumentException('Division by zero');
         }
 
-        return self::round(bcdiv(self::number($amount), $divisor, self::WORK_SCALE));
+        return self::roundNumber(bcdiv(self::number($amount), $divisor, self::WORK_SCALE));
     }
 
     public static function abs(string|int|float|null $value): string
@@ -143,14 +164,9 @@ final class Money
 
     /**
      * Format for display without going through a float: thousands separated
-     * and rounded half away from zero. Display only - never feed the result
-     * back into calculations.
-     *
-     * Decimal places, in order of precedence:
-     * 1. $decimals, when given;
-     * 2. the `display_decimals` config value, when it is an int;
-     * 3. when `display_decimals` is null, the currency's own decimal places
-     *    ($currency, or `default_currency_code`), e.g. 0 for JPY, 3 for KWD.
+     * and rounded half away from zero, to $decimals places when given, or to
+     * decimals($currency) - the same places amounts are posted at. Display
+     * only - never feed the result back into calculations.
      */
     public static function format(
         string|int|float|null $value,
@@ -159,9 +175,9 @@ final class Money
         string $decimalSeparator = '.',
         string $thousandsSeparator = ',',
     ): string {
-        $decimals = max(0, $decimals ?? self::displayDecimals($currency));
+        $decimals = max(0, $decimals ?? self::decimals($currency));
 
-        $rounded = self::round(self::number($value), $decimals);
+        $rounded = self::roundNumber(self::number($value), $decimals);
         $negative = str_starts_with($rounded, '-');
         [$integer, $fraction] = array_pad(explode('.', ltrim($rounded, '-')), 2, '');
 
@@ -171,15 +187,17 @@ final class Money
     }
 
     /**
-     * The decimal places to display when format() is not given any.
+     * The decimal places amounts are posted and displayed at: the `decimals`
+     * config value when it is an int, otherwise the currency's own decimal
+     * places ($currency, or `default_currency_code`). Never more than SCALE.
      */
-    public static function displayDecimals(CurrencyCode|string|null $currency = null): int
+    public static function decimals(CurrencyCode|string|null $currency = null): int
     {
         $config = self::config();
-        $decimals = $config['display_decimals'] ?? null;
+        $decimals = $config['decimals'] ?? null;
 
         if (is_numeric($decimals)) {
-            return (int) $decimals;
+            return min(max(0, (int) $decimals), self::SCALE);
         }
 
         $currency ??= $config['default_currency_code'] ?? null;
@@ -187,7 +205,7 @@ final class Money
             $currency = CurrencyCode::tryFrom(strtoupper($currency));
         }
 
-        return $currency?->decimalDigits() ?? self::DEFAULT_DISPLAY_DECIMALS;
+        return min($currency?->decimalDigits() ?? self::DEFAULT_DECIMALS, self::SCALE);
     }
 
     /**
@@ -206,7 +224,7 @@ final class Money
      * Round a plain decimal string half away from zero. bcmath truncates
      * towards zero, so half a unit in the last place is added first.
      */
-    private static function round(string $number, int $scale = self::SCALE): string
+    private static function roundNumber(string $number, int $scale = self::SCALE): string
     {
         $half = $scale > 0 ? '0.'.str_repeat('0', $scale).'5' : '0.5';
 

@@ -27,8 +27,8 @@ class InvestmentSaleGainTemplate extends AccountingTemplate
     {
         // Cash (proceeds) → Investment (at cost) + Gain on Sale
         $this->debit($this->cashAccount);
-        $this->credit($this->investmentAccount, fn () => $this->costBasis);
-        $this->credit($this->gainAccount, fn ($amount) => Money::sub($amount, $this->costBasis));
+        $this->credit($this->investmentAccount, fn () => $this->roundAmount($this->costBasis));
+        $this->credit($this->gainAccount, fn ($amount) => Money::sub($amount, $this->roundAmount($this->costBasis)));
     }
 
     public function validate(PostableModel $model): void

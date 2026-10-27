@@ -32,7 +32,7 @@ class CashPurchaseTemplate extends AccountingTemplate
 
     protected function netOfTax(string $amount): string
     {
-        return Money::div($amount, 1 + $this->taxRate);
+        return $this->roundAmount(Money::div($amount, 1 + $this->taxRate));
     }
 
     public function validate(PostableModel $model): void

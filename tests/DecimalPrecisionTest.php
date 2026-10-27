@@ -10,6 +10,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
 use RingleSoft\LaravelAccounting\Models\Account;
+use RingleSoft\LaravelAccounting\Models\ExchangeRate;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Reports\AccountLedger;
@@ -46,6 +47,9 @@ beforeEach(function () {
     // These tests build a small standalone chart; the chart structure rules
     // are covered by ChartOfAccountsTest.
     config()->set('laravel_accounting.enforce_chart_structure', false);
+    // Most tests here cover the full 4-decimal (sub-cent) mode; the
+    // currency-decimals tests at the bottom switch back to the default
+    config()->set('laravel_accounting.decimals', 4);
     require_once __DIR__.'/../database/seeders/AccountTypeSeeder.php';
     (new AccountTypeSeeder)->run();
     app(PeriodService::class)->ensurePeriodsExist(0);
@@ -65,10 +69,10 @@ function precisionAccount(string $code, AccountTypeEnum $type, ?AccountPresetCon
     ]));
 }
 
-function postVoucher(Account $debit, Account $credit, string $amount): JournalEntry
+function postVoucher(Account $debit, Account $credit, string $amount, string $currency = 'USD'): JournalEntry
 {
     $journals = app(JournalService::class);
-    $entry = $journals->createDraft(VoucherData::make()->describe('Test')->debit($debit->id, $amount)->credit($credit->id, $amount));
+    $entry = $journals->createDraft(VoucherData::make()->describe('Test')->currency($currency)->debit($debit->id, $amount)->credit($credit->id, $amount));
     $journals->post($entry);
 
     return $entry;
@@ -170,4 +174,69 @@ it('reports 4-decimal amounts as strings', function () {
         ->and(collect($ledger['transactions'])->last()['balance'])->toBe('66.6716')
         ->and($general['total_entries'])->toBe(4)
         ->and($chart)->toBeArray();
+});
+
+// ---- Default: amounts are posted at the currency's own decimals
+
+it('posts amounts at the currency decimals by default', function () {
+    config()->set('laravel_accounting.decimals', null);
+
+    $usd = postVoucher($this->cash, $this->revenue, '1234.5678');
+    $jpy = postVoucher($this->cash, $this->revenue, '1000.5', 'JPY');
+
+    expect($usd->fresh()->getTotalDebits())->toBe('1234.5700')
+        ->and($jpy->fresh()->currency_code)->toBe('JPY')
+        ->and($jpy->fresh()->getTotalDebits())->toBe('1001.0000')
+        ->and(Money::format($jpy->getTotalDebits(), currency: 'JPY'))->toBe('1,001');
+});
+
+it('applies an int decimals config to every currency', function () {
+    config()->set('laravel_accounting.decimals', 2);
+
+    expect(postVoucher($this->cash, $this->revenue, '1000.456', 'JPY')->fresh()->getTotalDebits())->toBe('1000.4600');
+});
+
+it('drops lines that round to zero', function () {
+    config()->set('laravel_accounting.decimals', null);
+
+    $voucher = VoucherData::make()
+        ->debit($this->cash->id, '10.004')
+        ->credit($this->revenue->id, '10')
+        ->credit($this->expense->id, '0.004');
+    $voucher->validate();
+
+    expect(collect($voucher->entries)->pluck('amount')->all())->toBe(['10.0000', '10.0000']);
+});
+
+it('rejects a voucher that rounding leaves unbalanced', function () {
+    config()->set('laravel_accounting.decimals', null);
+
+    // 100.005 -> 100.01, but 3 x 33.335 -> 3 x 33.34 = 100.02
+    VoucherData::make()
+        ->debit($this->cash->id, '100.005')
+        ->credit($this->revenue->id, '33.335')
+        ->credit($this->revenue->id, '33.335')
+        ->credit($this->revenue->id, '33.335')
+        ->validate();
+})->throws(JournalNotBalancedException::class);
+
+it('balances a tax split that hits a rounding tie', function () {
+    config()->set('laravel_accounting.decimals', null);
+    precisionAccount('2100', AccountTypeEnum::LIABILITY, AccountPreset::SALES_TAX_PAYABLE);
+    // 100.05 / 1.2 = 83.375: rounding both lines up would give 83.38 + 16.68 = 100.06
+    PrecisionSaleModel::$amount = '100.05';
+
+    $voucher = (new CashSaleTemplate(taxRate: 0.2))->make(new PrecisionSaleModel);
+    $credits = collect($voucher->entries)->filter->isCredit()->pluck('amount')->all();
+
+    expect($credits)->toBe(['83.3800', '16.6700'])
+        ->and(Money::sum($credits))->toBe('100.0500');
+});
+
+it('rounds exchange rate conversions to the target currency decimals', function () {
+    config()->set('laravel_accounting.decimals', null);
+    ExchangeRate::create(['from_currency_code' => 'USD', 'to_currency_code' => 'JPY', 'rate' => '151.2345', 'effective_date' => now()->subDay()]);
+
+    expect(ExchangeRate::convert('10.00', 'USD', 'JPY'))->toBe('1512.0000')
+        ->and(ExchangeRate::convert('1000', 'JPY', 'USD'))->toBe('6.6100'); // 6.6122...
 });

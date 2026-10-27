@@ -20,10 +20,10 @@ class LoanPaymentTemplate extends AccountingTemplate
     public function configure(): void
     {
         // Loan Payable + Interest Expense → Cash
-        $this->debit($this->loanPayableAccount, fn ($amount) => Money::sub($amount, $this->interestAmount));
+        $this->debit($this->loanPayableAccount, fn ($amount) => Money::sub($amount, $this->roundAmount($this->interestAmount)));
 
         if (Money::isPositive($this->interestAmount)) {
-            $this->debit($this->interestExpenseAccount, fn () => $this->interestAmount);
+            $this->debit($this->interestExpenseAccount, fn () => $this->roundAmount($this->interestAmount));
         }
 
         $this->credit($this->cashAccount);

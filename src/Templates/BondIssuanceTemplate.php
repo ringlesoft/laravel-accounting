@@ -25,10 +25,10 @@ class BondIssuanceTemplate extends AccountingTemplate
     public function configure(): void
     {
         // Cash (net of issuance costs) + Bond Issuance Costs → Bonds Payable (face value)
-        $this->debit($this->cashAccount, fn ($amount) => Money::sub($amount, $this->issuanceCosts));
+        $this->debit($this->cashAccount, fn ($amount) => Money::sub($amount, $this->roundAmount($this->issuanceCosts)));
 
         if (Money::isPositive($this->issuanceCosts)) {
-            $this->debit($this->bondIssuanceCostsAccount, fn () => $this->issuanceCosts);
+            $this->debit($this->bondIssuanceCostsAccount, fn () => $this->roundAmount($this->issuanceCosts));
         }
 
         $this->credit($this->bondsPayableAccount);

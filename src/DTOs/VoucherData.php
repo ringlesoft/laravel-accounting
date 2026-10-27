@@ -11,6 +11,7 @@ use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
 use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Services\JournalService;
+use RingleSoft\LaravelAccounting\Support\Money;
 use Throwable;
 
 class VoucherData
@@ -111,7 +112,26 @@ class VoucherData
     }
 
     /**
-     * Validate the voucher data
+     * Round every entry to the decimals amounts are posted at for the
+     * voucher's currency (Money::decimals()). Entries that round to zero have
+     * no effect on the ledger and are dropped.
+     */
+    public function roundAmounts(): self
+    {
+        foreach ($this->entries as $entry) {
+            $entry->amount = Money::forCurrency($entry->amount, $this->currency);
+        }
+
+        $this->entries = array_values(array_filter(
+            $this->entries,
+            static fn (VoucherDataItem $entry) => ! Money::isZero($entry->amount)
+        ));
+
+        return $this;
+    }
+
+    /**
+     * Validate the voucher data. Rounds the amounts first (see roundAmounts()).
      *
      * @throws InvalidVoucherException
      * @throws JournalNotBalancedException

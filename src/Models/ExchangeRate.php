@@ -89,7 +89,8 @@ class ExchangeRate extends Model
             return null;
         }
 
-        return Money::mul($amount, $rate);
+        // Rounded to the decimals the target currency is posted at
+        return Money::forCurrency(Money::mul($amount, $rate), $to);
     }
 
     // Helper Methods

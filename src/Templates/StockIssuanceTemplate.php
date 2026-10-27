@@ -21,7 +21,7 @@ class StockIssuanceTemplate extends AccountingTemplate
     public function configure(): void
     {
         // Cash → Common Stock (par value) + Additional Paid-in Capital (excess over par)
-        $parValue = Money::mul($this->parValuePerShare, $this->numberOfShares);
+        $parValue = $this->roundAmount(Money::mul($this->parValuePerShare, $this->numberOfShares));
         $hasParValue = Money::isPositive($this->parValuePerShare);
 
         $this->debit($this->cashAccount);

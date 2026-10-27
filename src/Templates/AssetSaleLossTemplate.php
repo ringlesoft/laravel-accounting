@@ -30,12 +30,12 @@ class AssetSaleLossTemplate extends AccountingTemplate
     {
         // Cash (proceeds) + Accumulated Depreciation + Loss on Sale → Fixed Assets (at cost)
         $this->debit($this->cashAccount);
-        $this->debit($this->accumulatedDepreciationAccount, fn () => $this->accumulatedDepreciation);
+        $this->debit($this->accumulatedDepreciationAccount, fn () => $this->roundAmount($this->accumulatedDepreciation));
         $this->debit(
             $this->lossAccount,
-            fn ($amount) => Money::sub(Money::sub($this->originalCost, $this->accumulatedDepreciation), $amount)
+            fn ($amount) => Money::sub(Money::sub($this->roundAmount($this->originalCost), $this->roundAmount($this->accumulatedDepreciation)), $amount)
         );
-        $this->credit($this->fixedAssetAccount, fn () => $this->originalCost);
+        $this->credit($this->fixedAssetAccount, fn () => $this->roundAmount($this->originalCost));
     }
 
     public function validate(PostableModel $model): void

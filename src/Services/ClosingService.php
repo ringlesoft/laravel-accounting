@@ -120,8 +120,9 @@ class ClosingService
         $total = Money::ZERO;
 
         foreach ($balances as $row) {
-            // Closed at full stored precision, so no sub-cent residue is left behind
-            $amount = Money::of($row['balance']);
+            // Rounded to the posting decimals up front, so the summary line
+            // below is the exact sum of the lines actually posted
+            $amount = Money::forCurrency($row['balance'], $this->closingCurrency());
             if (Money::isZero($amount)) {
                 continue;
             }
@@ -192,8 +193,9 @@ class ClosingService
         $total = Money::ZERO;
 
         foreach ($balances as $row) {
-            // Closed at full stored precision, so no sub-cent residue is left behind
-            $amount = Money::of($row['balance']);
+            // Rounded to the posting decimals up front, so the summary line
+            // below is the exact sum of the lines actually posted
+            $amount = Money::forCurrency($row['balance'], $this->closingCurrency());
             if (Money::isZero($amount)) {
                 continue;
             }
@@ -263,7 +265,7 @@ class ClosingService
         $incomeSummary = $this->resolveClosingAccount(AccountPreset::INCOME_SUMMARY);
         $movement = $this->balanceService->getPeriodMovement($incomeSummary, $period);
 
-        $netCredit = Money::sub($movement['total_credits'], $movement['total_debits']);
+        $netCredit = Money::forCurrency(Money::sub($movement['total_credits'], $movement['total_debits']), $this->closingCurrency());
         if (Money::isZero($netCredit)) {
             return null;
         }
@@ -332,7 +334,7 @@ class ClosingService
         }
 
         $movement = $this->balanceService->getPeriodMovement($dividendsAccount, $period);
-        $netDebit = Money::sub($movement['total_debits'], $movement['total_credits']);
+        $netDebit = Money::forCurrency(Money::sub($movement['total_debits'], $movement['total_credits']), $this->closingCurrency());
 
         if (! Money::isPositive($netDebit)) {
             return null;
@@ -374,7 +376,12 @@ class ClosingService
         return VoucherData::make()
             ->describe($description)
             ->on($period->end_date)
-            ->currency(config('laravel_accounting.default_currency_code', 'USD'));
+            ->currency($this->closingCurrency());
+    }
+
+    protected function closingCurrency(): string
+    {
+        return config('laravel_accounting.default_currency_code', 'USD');
     }
 
     /**

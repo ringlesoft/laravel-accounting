@@ -92,13 +92,13 @@ return [
     'default_currency_code' => 'USD',
 
     /*
-     * Decimal places used when formatting amounts for display (Money::format(),
-     * the close-period command, Charts of Accounts' balance_formatted). Amounts
-     * are always stored and calculated with 4 decimal places; this only affects
-     * how they are shown. Set to null to use each currency's own decimal places
-     * (e.g. 0 for JPY, 2 for USD, 3 for KWD).
+     * Decimal places amounts are posted and displayed at. null (the default)
+     * uses each currency's own decimal places: 2 for USD, 0 for JPY, 3 for KWD.
+     * An int applies to every currency, up to 4 (the column scale); use 4 to
+     * keep sub-cent amounts. Every journal line is rounded to this before the
+     * balance check, and Money::format() uses it unless given decimals.
      */
-    'display_decimals' => 2,
+    'decimals' => null,
 
     /*
      *

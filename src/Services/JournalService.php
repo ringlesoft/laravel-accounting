@@ -59,7 +59,7 @@ class JournalService
                 'transaction_date' => $voucher->date ?? now(),
                 'description' => $voucher->description,
                 'reference' => $voucher->reference,
-                'currency_code' => $voucher->currency_code ?? config('laravel_accounting.default_currency_code'),
+                'currency_code' => $voucher->currency?->value ?? config('laravel_accounting.default_currency_code'),
                 'fiscal_period_id' => $fiscalPeriod?->id,
                 'posted_at' => null,
                 'posted_by_user_id' => $userId ?? auth()->id(),
@@ -443,13 +443,18 @@ class JournalService
     }
 
     /**
-     * Validate voucher data
+     * Validate voucher data. Rounds every entry to the currency's decimals
+     * first (VoucherData::roundAmounts()), then requires an exact balance.
      *
      * @throws InvalidVoucherException
      * @throws JournalNotBalancedException
      */
     public function validateVoucher(VoucherData $voucher): void
     {
+        // Lines are posted at the currency's decimals, so the balance check
+        // below runs on the amounts that will actually be stored
+        $voucher->roundAmounts();
+
         if (empty($voucher->entries)) {
             throw new InvalidVoucherException('Voucher must have at least one entry');
         }

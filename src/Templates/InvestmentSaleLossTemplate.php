@@ -27,8 +27,8 @@ class InvestmentSaleLossTemplate extends AccountingTemplate
     {
         // Cash (proceeds) + Loss on Sale → Investment (at cost)
         $this->debit($this->cashAccount);
-        $this->debit($this->lossAccount, fn ($amount) => Money::sub($this->costBasis, $amount));
-        $this->credit($this->investmentAccount, fn () => $this->costBasis);
+        $this->debit($this->lossAccount, fn ($amount) => Money::sub($this->roundAmount($this->costBasis), $amount));
+        $this->credit($this->investmentAccount, fn () => $this->roundAmount($this->costBasis));
     }
 
     public function validate(PostableModel $model): void

@@ -28,10 +28,10 @@ class TreasuryStockReissuanceTemplate extends AccountingTemplate
     {
         // Cash (reissue price) → Treasury Stock (at cost) + Additional Paid-in Capital (gain over cost)
         $this->debit($this->cashAccount);
-        $this->credit($this->treasuryStockAccount, fn () => $this->costBasis);
+        $this->credit($this->treasuryStockAccount, fn () => $this->roundAmount($this->costBasis));
 
         if (Money::isPositive($this->costBasis)) {
-            $this->credit($this->additionalPaidInCapitalAccount, fn ($amount) => Money::sub($amount, $this->costBasis));
+            $this->credit($this->additionalPaidInCapitalAccount, fn ($amount) => Money::sub($amount, $this->roundAmount($this->costBasis)));
         }
     }
 

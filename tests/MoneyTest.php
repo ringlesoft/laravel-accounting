@@ -55,18 +55,17 @@ it('formats without going through a float', function () {
         ->and(Money::format('1234.5', 2, decimalSeparator: ',', thousandsSeparator: '.'))->toBe('1.234,50');
 });
 
-it('formats with the configured display decimals by default', function () {
+it('formats with the configured decimals by default', function () {
     expect(Money::format('1234.5678'))->toBe('1,234.57');
 
-    config()->set('laravel_accounting.display_decimals', 3);
+    config()->set('laravel_accounting.decimals', 3);
     expect(Money::format('1234.5678'))->toBe('1,234.568');
 
-    config()->set('laravel_accounting.display_decimals', 0);
+    config()->set('laravel_accounting.decimals', 0);
     expect(Money::format('1234.5678'))->toBe('1,235');
 });
 
-it('formats with the currency decimals when display decimals is null', function () {
-    config()->set('laravel_accounting.display_decimals', null);
+it('formats with the currency decimals when decimals is null', function () {
 
     expect(Money::format('1234.5678'))->toBe('1,234.57') // default_currency_code USD
         ->and(Money::format('1234.5678', currency: 'JPY'))->toBe('1,235')
@@ -84,6 +83,28 @@ it('only rounds the display, never the stored value', function () {
     expect(array_map(fn ($line) => Money::format($line), $lines))->toBe(['0.33', '0.33', '0.33'])
         ->and(Money::sum($lines))->toBe('0.9999')
         ->and(Money::format(Money::sum($lines)))->toBe('1.00');
+});
+
+it('rounds to a number of decimals, padded to the storage scale', function () {
+    expect(Money::round('12.3456', 2))->toBe('12.3500')
+        ->and(Money::round('12.5', 0))->toBe('13.0000')
+        ->and(Money::round('-12.345', 2))->toBe('-12.3500')
+        ->and(Money::round('12.34567', 9))->toBe('12.3457');
+});
+
+it('resolves posting decimals from the config or the currency', function () {
+    expect(Money::decimals())->toBe(2)
+        ->and(Money::decimals('JPY'))->toBe(0)
+        ->and(Money::decimals(CurrencyCode::KWD))->toBe(3)
+        ->and(Money::decimals('XYZ'))->toBe(2)
+        ->and(Money::forCurrency('1234.5678', 'JPY'))->toBe('1235.0000')
+        ->and(Money::forCurrency('1234.5678', 'KWD'))->toBe('1234.5680');
+
+    config()->set('laravel_accounting.decimals', 4);
+    expect(Money::decimals('JPY'))->toBe(4);
+
+    config()->set('laravel_accounting.decimals', 9);
+    expect(Money::decimals())->toBe(Money::SCALE);
 });
 
 it('rejects invalid amounts', function (mixed $value) {

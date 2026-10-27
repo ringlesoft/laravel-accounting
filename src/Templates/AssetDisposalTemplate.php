@@ -27,8 +27,8 @@ class AssetDisposalTemplate extends AccountingTemplate
     public function configure(): void
     {
         // Accumulated Depreciation + Loss on Disposal → Fixed Assets (at cost)
-        $this->debit($this->accumulatedDepreciationAccount, fn () => $this->accumulatedDepreciation);
-        $this->debit($this->lossAccount, fn ($amount) => Money::sub($amount, $this->accumulatedDepreciation));
+        $this->debit($this->accumulatedDepreciationAccount, fn () => $this->roundAmount($this->accumulatedDepreciation));
+        $this->debit($this->lossAccount, fn ($amount) => Money::sub($amount, $this->roundAmount($this->accumulatedDepreciation)));
         $this->credit($this->fixedAssetAccount);
     }
 

@@ -31,15 +31,15 @@ class PayrollPaymentDetailedTemplate extends AccountingTemplate
         $this->debit($this->wagesPayableAccount);
 
         if ($this->employerTaxRate > 0) {
-            $this->debit($this->payrollTaxExpenseAccount, fn ($amount) => Money::mul($amount, $this->employerTaxRate));
-            $this->credit($this->payrollTaxPayableAccount, fn ($amount) => Money::mul($amount, $this->employerTaxRate));
+            $this->debit($this->payrollTaxExpenseAccount, fn ($amount) => $this->roundAmount(Money::mul($amount, $this->employerTaxRate)));
+            $this->credit($this->payrollTaxPayableAccount, fn ($amount) => $this->roundAmount(Money::mul($amount, $this->employerTaxRate)));
         }
 
         // Net pay is the remainder, so the entry balances exactly after rounding
-        $this->credit($this->cashAccount, fn ($amount) => Money::sub($amount, Money::mul($amount, $this->withholdingRate)));
+        $this->credit($this->cashAccount, fn ($amount) => Money::sub($amount, $this->roundAmount(Money::mul($amount, $this->withholdingRate))));
 
         if ($this->withholdingRate > 0 && $this->federalWithholdingPayableAccount) {
-            $this->credit($this->federalWithholdingPayableAccount, fn ($amount) => Money::mul($amount, $this->withholdingRate));
+            $this->credit($this->federalWithholdingPayableAccount, fn ($amount) => $this->roundAmount(Money::mul($amount, $this->withholdingRate)));
         }
     }
 

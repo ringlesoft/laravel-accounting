@@ -30,10 +30,10 @@ class VatPaymentTemplate extends AccountingTemplate
         $this->debit($this->outputVatAccount);
 
         if (Money::isPositive($this->inputVatAmount)) {
-            $this->credit($this->inputVatAccount, fn () => $this->inputVatAmount);
+            $this->credit($this->inputVatAccount, fn () => $this->roundAmount($this->inputVatAmount));
         }
 
-        $this->credit($this->cashAccount, fn ($amount) => Money::sub($amount, $this->inputVatAmount));
+        $this->credit($this->cashAccount, fn ($amount) => Money::sub($amount, $this->roundAmount($this->inputVatAmount)));
     }
 
     public function validate(PostableModel $model): void

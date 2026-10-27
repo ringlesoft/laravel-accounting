@@ -22,10 +22,10 @@ class PayrollAccrualTemplate extends AccountingTemplate
         // Salary Expense → Wages Payable + Tax Payable
         $this->debit($this->salaryExpenseAccount);
         // Net wages are the remainder, so the entry balances exactly after rounding
-        $this->credit($this->wagesPayableAccount, fn ($amount) => Money::sub($amount, Money::mul($amount, $this->taxWithholdingRate)));
+        $this->credit($this->wagesPayableAccount, fn ($amount) => Money::sub($amount, $this->roundAmount(Money::mul($amount, $this->taxWithholdingRate))));
 
         if ($this->taxWithholdingRate > 0 && $this->taxPayableAccount) {
-            $this->credit($this->taxPayableAccount, fn ($amount) => Money::mul($amount, $this->taxWithholdingRate));
+            $this->credit($this->taxPayableAccount, fn ($amount) => $this->roundAmount(Money::mul($amount, $this->taxWithholdingRate)));
         }
     }
 

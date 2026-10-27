@@ -21,10 +21,10 @@ class SalesDiscountTemplate extends AccountingTemplate
     {
         // Cash (net of discount) + Sales Discount → Accounts Receivable (full)
         // Net cash is the remainder, so the entry balances exactly after rounding
-        $this->debit($this->cashAccount, fn ($amount) => Money::sub($amount, Money::mul($amount, $this->discountRate)));
+        $this->debit($this->cashAccount, fn ($amount) => Money::sub($amount, $this->roundAmount(Money::mul($amount, $this->discountRate))));
 
         if ($this->discountRate > 0) {
-            $this->debit($this->salesDiscountAccount, fn ($amount) => Money::mul($amount, $this->discountRate));
+            $this->debit($this->salesDiscountAccount, fn ($amount) => $this->roundAmount(Money::mul($amount, $this->discountRate)));
         }
 
         $this->credit($this->receivableAccount);

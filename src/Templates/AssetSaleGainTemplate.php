@@ -30,11 +30,11 @@ class AssetSaleGainTemplate extends AccountingTemplate
     {
         // Cash (proceeds) + Accumulated Depreciation → Fixed Assets (at cost) + Gain on Sale
         $this->debit($this->cashAccount);
-        $this->debit($this->accumulatedDepreciationAccount, fn () => $this->accumulatedDepreciation);
-        $this->credit($this->fixedAssetAccount, fn () => $this->originalCost);
+        $this->debit($this->accumulatedDepreciationAccount, fn () => $this->roundAmount($this->accumulatedDepreciation));
+        $this->credit($this->fixedAssetAccount, fn () => $this->roundAmount($this->originalCost));
         $this->credit(
             $this->gainAccount,
-            fn ($amount) => Money::sub(Money::add($amount, $this->accumulatedDepreciation), $this->originalCost)
+            fn ($amount) => Money::sub(Money::add($amount, $this->roundAmount($this->accumulatedDepreciation)), $this->roundAmount($this->originalCost))
         );
     }
 

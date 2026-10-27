@@ -62,6 +62,11 @@ abstract class AccountingTemplate implements PostableTemplate
      */
     protected array $accountOverrides = [];
 
+    /**
+     * The voucher currency, resolved by make() before any amount is computed
+     */
+    protected ?CurrencyCode $resolvedCurrency = null;
+
     protected function addEntry(AccountTemplateEntry $entry): void
     {
         // TODO: ensure no duplicate entries, or merge them
@@ -220,7 +225,8 @@ abstract class AccountingTemplate implements PostableTemplate
      */
     public function make(PostableModel $model): VoucherData
     {
-        $amount = $model->getPostableAmount();
+        $this->resolvedCurrency = $this->currency instanceof Closure ? ($this->currency)($model) : $this->currency;
+        $amount = $this->roundAmount($model->getPostableAmount());
         $this->configure(); // Configure the template first
         $this->validate($model); // Then let subclasses reject a bad model/parameter combo early
 
@@ -229,15 +235,17 @@ abstract class AccountingTemplate implements PostableTemplate
         $presetAccounts = AccountAlias::whereIn('preset', $journalPresets)->with('children')->get()->keyBy('preset');
         foreach ($this->entries as $entry) {
             $accountId = $this->resolveEntryAccountId($entry->account, $presetAccounts, $model);
-            $entryAmount = $entry->getAmount($amount);
+            $entryAmount = $this->roundAmount($entry->getAmount($amount));
+            if (Money::isZero($entryAmount)) {
+                continue; // e.g. a tax line that rounds to nothing in a 0-decimal currency
+            }
             $voucherEntries[] = new VoucherDataItem($entry->type, $accountId, $entryAmount, $entry->memo);
         }
         $date = $this->date instanceof Closure ? ($this->date)($model) : ($this->date ?? now());
         $description = $this->description instanceof Closure ? ($this->description)($model) : $this->description;
         $metadata = $this->metadata instanceof Closure ? ($this->metadata)($model) : $this->metadata;
-        $currency = $this->currency instanceof Closure ? ($this->currency)($model) : $this->currency;
         $reference = $this->reference instanceof Closure ? ($this->reference)($model) : $this->reference;
-        $voucher = new VoucherData($voucherEntries, $date, $description, $reference, $currency, $metadata);
+        $voucher = new VoucherData($voucherEntries, $date, $description, $reference, $this->resolvedCurrency, $metadata);
         $voucher->setSource($model);
         $voucher->validate();
 
@@ -291,6 +299,17 @@ abstract class AccountingTemplate implements PostableTemplate
             'the relevant constructor parameter with a more specific preset, or inspect '.
             static::class.'::getPostableAccounts() to see the available options.'
         );
+    }
+
+    /**
+     * Round an amount to the decimals the voucher's currency is posted at.
+     * Amount closures that split one amount into several lines round each
+     * computed line with this and take the last as the remainder, so the
+     * lines still add up after posting rounds them.
+     */
+    protected function roundAmount(string|int|float $amount): string
+    {
+        return Money::forCurrency($amount, $this->resolvedCurrency);
     }
 
     /**

@@ -87,6 +87,7 @@ class AccountBalance extends Model
         if ($accountType->normal_balance === 'debit') {
             return Money::sub(Money::add($this->opening_balance, $this->debit_total), $this->credit_total);
         }
+
         return Money::sub(Money::add($this->opening_balance, $this->credit_total), $this->debit_total);
     }
 

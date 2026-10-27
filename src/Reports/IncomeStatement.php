@@ -5,6 +5,7 @@ namespace RingleSoft\LaravelAccounting\Reports;
 use Carbon\Carbon;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Report;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class IncomeStatement extends Report
 {
@@ -31,9 +32,9 @@ class IncomeStatement extends Report
                     'start_date' => $startDate->toDateString(),
                     'end_date' => $endDate->toDateString(),
                 ],
-                'revenue' => ['accounts' => [], 'total' => 0],
-                'expenses' => ['accounts' => [], 'total' => 0],
-                'net_income' => 0,
+                'revenue' => ['accounts' => [], 'total' => Money::ZERO],
+                'expenses' => ['accounts' => [], 'total' => Money::ZERO],
+                'net_income' => Money::ZERO,
             ]);
 
             return $this;
@@ -56,12 +57,12 @@ class IncomeStatement extends Report
             'amount' => $item['balance'],
         ])->toArray();
 
-        $totalRevenue = $revenueBalances->sum('balance');
-        $totalExpenses = $expenseBalances->sum('balance');
+        $totalRevenue = Money::sum($revenueBalances->pluck('balance'));
+        $totalExpenses = Money::sum($expenseBalances->pluck('balance'));
         // No abs(): both totals are already correctly signed (positive for normal
         // activity, negative for a contra/credit-balance expense or debit-balance
         // revenue account), and abs() would silently invert those edge cases.
-        $netIncome = $totalRevenue - $totalExpenses;
+        $netIncome = Money::sub($totalRevenue, $totalExpenses);
 
         $this->setData([
             'period' => [

@@ -185,7 +185,7 @@ class Invoice extends Model implements PostableModel
 {
     use Postable;
     
-    public function getPostableAmount(): float
+    public function getPostableAmount(): string
     {
         return $this->total;
     }
@@ -264,6 +264,7 @@ namespace App\Accounting\Templates;
 
 use RingleSoft\LaravelAccounting\Templates\AccountingTemplate;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class CustomRefundTemplate extends AccountingTemplate
 {
@@ -276,9 +277,10 @@ class CustomRefundTemplate extends AccountingTemplate
 
     public function configure(): void
     {
-        // Calculate amounts
-        $netAmount = fn($amount) => $amount / (1 + $this->taxRate);
-        $taxAmount = fn($amount) => $amount * $this->taxRate / (1 + $this->taxRate);
+        // Amount closures receive a 4-decimal numeric string. The tax is the
+        // remainder, so the entry balances exactly after rounding.
+        $netAmount = fn ($amount) => Money::div($amount, 1 + $this->taxRate);
+        $taxAmount = fn ($amount) => Money::sub($amount, $netAmount($amount));
 
         // Define entries
         $this->debit($this->salesReturnsAccount, $netAmount);
@@ -377,15 +379,18 @@ Call `configure()` and inspect the entries directly — no database, no model, n
 $template = new CustomRefundTemplate(taxRate: 0.15);
 $template->configure();
 
-$debits = $credits = 0;
+use RingleSoft\LaravelAccounting\Support\Money;
+
+$debits = $credits = Money::ZERO;
 foreach ($template->getEntries() as $entry) {
-    $amount = $entry->getAmount(1000.0); // simulate a $1000 transaction
+    $amount = $entry->getAmount('1000'); // simulate a $1000 transaction
     $entry->type === \RingleSoft\LaravelAccounting\Enums\EntryType::DEBIT
-        ? $debits += $amount
-        : $credits += $amount;
+        ? $debits = Money::add($debits, $amount)
+        : $credits = Money::add($credits, $amount);
 }
 
-abs($debits - $credits) < 0.01 || throw new \RuntimeException('Not balanced!');
+// Entries must balance exactly at 4 decimal places
+Money::equals($debits, $credits) || throw new \RuntimeException('Not balanced!');
 ```
 
 Then confirm every preset you referenced actually resolves to a seeded account: `YourTemplate::getPostableAccounts()` should return non-empty `DEBIT` and `CREDIT` arrays (see **Gotchas** below for what happens when it can't).

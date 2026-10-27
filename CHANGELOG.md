@@ -2,6 +2,18 @@
 
 All notable changes to `laravel-accounting` will be documented in this file.
 
+## Unreleased
+
+### Changed
+- All money columns are `DECIMAL(22, 4)` (was `DECIMAL(20, 2)`), and amounts are cast as `decimal:4`.
+- Amounts are numeric strings with 4 decimal places instead of floats, everywhere the package returns them: models, DTOs, services, reports and events. Inputs accept `string|int|float`.
+- Journal entries and vouchers must balance exactly at 4 decimal places; the 0.01 tolerance is gone. Period closing, report filters and zero checks also work at 4 decimal places.
+- Tax, discount and withholding templates post the second line as the remainder, so they always balance after rounding.
+- Requires the `bcmath` extension.
+
+### Added
+- `Support\Money`: fixed-scale decimal arithmetic, comparison and formatting for amounts.
+
 ## 0.1.2
 
 ### Added

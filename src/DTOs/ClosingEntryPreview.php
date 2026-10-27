@@ -3,11 +3,12 @@
 namespace RingleSoft\LaravelAccounting\DTOs;
 
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 /**
  * The result of ClosingService::preview() - the exact VoucherData that would
  * be posted for each closing step, or null for a step with nothing to close.
- * Nothing in this DTO has been persisted.
+ * Nothing in this DTO has been persisted. Totals are Money::SCALE numeric strings.
  */
 class ClosingEntryPreview
 {
@@ -17,15 +18,15 @@ class ClosingEntryPreview
         public ?VoucherData $closeExpenses = null,
         public ?VoucherData $closeIncomeSummary = null,
         public ?VoucherData $closeDividends = null,
-        public float $totalRevenue = 0.0,
-        public float $totalExpenses = 0.0,
-        public float $netIncome = 0.0,
-        public float $dividendsDeclared = 0.0,
+        public string $totalRevenue = Money::ZERO,
+        public string $totalExpenses = Money::ZERO,
+        public string $netIncome = Money::ZERO,
+        public string $dividendsDeclared = Money::ZERO,
     ) {}
 
     public function isProfit(): bool
     {
-        return $this->netIncome >= 0;
+        return ! Money::isNegative($this->netIncome);
     }
 
     public function hasNothingToClose(): bool

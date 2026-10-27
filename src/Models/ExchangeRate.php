@@ -5,6 +5,7 @@ namespace RingleSoft\LaravelAccounting\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use RingleSoft\LaravelAccounting\Support\Money;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\HasUuid;
 
@@ -48,10 +49,14 @@ class ExchangeRate extends Model
 
     // Static Helper Methods
 
-    public static function getRate(string $from, string $to, $date = null): ?float
+    /**
+     * Rates are returned as numeric strings at full precision (never
+     * floats), so a converted amount is only rounded once, by Money.
+     */
+    public static function getRate(string $from, string $to, $date = null): ?string
     {
         if ($from === $to) {
-            return 1.0;
+            return '1';
         }
 
         $date = $date ? Carbon::parse($date) : now();
@@ -61,7 +66,7 @@ class ExchangeRate extends Model
             ->first();
 
         if ($rate) {
-            return (float) $rate->rate;
+            return (string) $rate->rate;
         }
 
         // Try inverse rate
@@ -69,14 +74,14 @@ class ExchangeRate extends Model
             ->effectiveOn($date)
             ->first();
 
-        if ($inverseRate && $inverseRate->rate > 0) {
-            return 1 / (float) $inverseRate->rate;
+        if ($inverseRate && bccomp((string) $inverseRate->rate, '0', 10) > 0) {
+            return $inverseRate->getInverseRate();
         }
 
         return null;
     }
 
-    public static function convert(float $amount, string $from, string $to, $date = null): ?float
+    public static function convert(string|int|float $amount, string $from, string $to, $date = null): ?string
     {
         $rate = static::getRate($from, $to, $date);
 
@@ -84,14 +89,16 @@ class ExchangeRate extends Model
             return null;
         }
 
-        return $amount * $rate;
+        return Money::mul($amount, $rate);
     }
 
     // Helper Methods
 
-    public function getInverseRate(): float
+    public function getInverseRate(): string
     {
-        return $this->rate > 0 ? 1 / (float) $this->rate : 0;
+        $rate = (string) $this->rate;
+
+        return bccomp($rate, '0', 10) > 0 ? bcdiv('1', $rate, 16) : '0';
     }
 
     // Validation Rules

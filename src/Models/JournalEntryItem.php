@@ -6,12 +6,16 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use RingleSoft\LaravelAccounting\Support\Money;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\HasUuid;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
 /**
  * @mixin Builder<JournalEntryItem>
+ *
+ * @property string $debit_amount
+ * @property string $credit_amount
  */
 class JournalEntryItem extends Model
 {
@@ -33,8 +37,8 @@ class JournalEntryItem extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'debit_amount' => 'decimal:2',
-        'credit_amount' => 'decimal:2',
+        'debit_amount' => 'decimal:4',
+        'credit_amount' => 'decimal:4',
         'exchange_rate' => 'decimal:10',
     ];
 
@@ -89,24 +93,24 @@ class JournalEntryItem extends Model
 
     // Helper Methods
 
-    public function getAmount(): float
+    public function getAmount(): string
     {
-        return $this->debit_amount > 0 ? (float) $this->debit_amount : (float) $this->credit_amount;
+        return $this->isDebit() ? Money::of($this->debit_amount) : Money::of($this->credit_amount);
     }
 
     public function getType(): string
     {
-        return $this->debit_amount > 0 ? 'debit' : 'credit';
+        return $this->isDebit() ? 'debit' : 'credit';
     }
 
     public function isDebit(): bool
     {
-        return $this->debit_amount > 0;
+        return Money::isPositive($this->debit_amount);
     }
 
     public function isCredit(): bool
     {
-        return $this->credit_amount > 0;
+        return Money::isPositive($this->credit_amount);
     }
 
     // Validation Rules

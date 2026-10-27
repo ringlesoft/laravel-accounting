@@ -6,6 +6,7 @@ use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class CreditSaleTemplate extends AccountingTemplate
 {
@@ -19,11 +20,17 @@ class CreditSaleTemplate extends AccountingTemplate
     public function configure(): void
     {
         $this->debit($this->receivableAccount);
-        $this->credit($this->revenueAccount, fn ($amount) => ($amount / (1 + $this->taxRate)));
+        $this->credit($this->revenueAccount, fn ($amount) => $this->netOfTax($amount));
 
         if ($this->taxRate > 0 && $this->taxAccount) {
-            $this->credit($this->taxAccount, fn ($amount) => ($amount * $this->taxRate / (1 + $this->taxRate)));
+            // The tax is the remainder, so the entry balances exactly after rounding
+            $this->credit($this->taxAccount, fn ($amount) => Money::sub($amount, $this->netOfTax($amount)));
         }
+    }
+
+    protected function netOfTax(string $amount): string
+    {
+        return Money::div($amount, 1 + $this->taxRate);
     }
 
     public function validate(PostableModel $model): void

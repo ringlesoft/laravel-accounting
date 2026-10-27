@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Services\ClosingService;
 use RingleSoft\LaravelAccounting\Services\PeriodService;
+use RingleSoft\LaravelAccounting\Support\Money;
 use Throwable;
 
 /**
@@ -134,10 +135,10 @@ class ClosePeriodCommand extends Command
 
             $this->line(sprintf(
                 '  Revenue: %s | Expenses: %s | Net income: %s | Dividends: %s',
-                number_format($preview->totalRevenue, 2),
-                number_format($preview->totalExpenses, 2),
-                number_format($preview->netIncome, 2),
-                number_format($preview->dividendsDeclared, 2),
+                Money::format($preview->totalRevenue),
+                Money::format($preview->totalExpenses),
+                Money::format($preview->netIncome),
+                Money::format($preview->dividendsDeclared),
             ));
 
             if ($dryRun) {

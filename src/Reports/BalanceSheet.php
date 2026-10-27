@@ -5,6 +5,7 @@ namespace RingleSoft\LaravelAccounting\Reports;
 use Carbon\Carbon;
 use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Report;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class BalanceSheet extends Report
 {
@@ -24,10 +25,10 @@ class BalanceSheet extends Report
         if (! $assetType || ! $liabilityType || ! $equityType) {
             $this->setData([
                 'as_of_date' => $asOfDate->toDateString(),
-                'assets' => ['accounts' => [], 'total' => 0],
-                'liabilities' => ['accounts' => [], 'total' => 0],
-                'equity' => ['accounts' => [], 'total' => 0],
-                'total_liabilities_and_equity' => 0,
+                'assets' => ['accounts' => [], 'total' => Money::ZERO],
+                'liabilities' => ['accounts' => [], 'total' => Money::ZERO],
+                'equity' => ['accounts' => [], 'total' => Money::ZERO],
+                'total_liabilities_and_equity' => Money::ZERO,
                 'is_balanced' => true,
             ]);
 
@@ -59,9 +60,10 @@ class BalanceSheet extends Report
             'balance' => $item['balance'],
         ])->toArray();
 
-        $totalAssets = $assetBalances->sum('balance');
-        $totalLiabilities = $liabilityBalances->sum('balance');
-        $totalEquity = $equityBalances->sum('balance');
+        $totalAssets = Money::sum($assetBalances->pluck('balance'));
+        $totalLiabilities = Money::sum($liabilityBalances->pluck('balance'));
+        $totalEquity = Money::sum($equityBalances->pluck('balance'));
+        $totalLiabilitiesAndEquity = Money::add($totalLiabilities, $totalEquity);
 
         $this->setData([
             'as_of_date' => $asOfDate->toDateString(),
@@ -77,8 +79,8 @@ class BalanceSheet extends Report
                 'accounts' => $equity,
                 'total' => $totalEquity,
             ],
-            'total_liabilities_and_equity' => $totalLiabilities + $totalEquity,
-            'is_balanced' => abs($totalAssets - ($totalLiabilities + $totalEquity)) < 0.01,
+            'total_liabilities_and_equity' => $totalLiabilitiesAndEquity,
+            'is_balanced' => Money::equals($totalAssets, $totalLiabilitiesAndEquity),
         ]);
 
         return $this;

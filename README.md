@@ -77,9 +77,9 @@ class Invoice extends Model implements PostableModel
 {
     use Postable;
 
-    public function getPostableAmount(): float // You must implement this
+    public function getPostableAmount(): string // You must implement this
     {
-        return $this->total;
+        return $this->total; // e.g. a 'decimal:4' cast attribute
     }
 }
 ```
@@ -270,6 +270,14 @@ Before a Journal Entry exists, a template (or your own code) builds a **Voucher 
 that standardizes how debit/credit lines are described. Journal Entries only ever accept lines in this format, which
 is why both posting paths below — a template, or a hand-built `VoucherData` — end up going through the same
 `createDraft()`/`post()` pipeline.
+
+**Amounts & precision.** Every amount column is `DECIMAL(22, 4)`, and every amount the package returns (balances,
+report totals, DTO fields) is a numeric string with exactly 4 decimal places, e.g. `"1250.5000"` — never a float.
+Inputs (`debit()`, `credit()`, `getPostableAmount()`, template parameters) accept `string|int|float`; pass strings to
+keep full precision. A journal entry must balance exactly at 4 decimal places — there is no rounding tolerance. Use
+`RingleSoft\LaravelAccounting\Support\Money` for arithmetic on amounts (`Money::add()`, `sub()`, `mul()`, `div()`,
+`compare()`, `isZero()`, `format()`); it requires the `bcmath` extension. Note that SQLite has no exact decimal type,
+so very large amounts lose precision there; use MySQL, MariaDB or PostgreSQL in production.
 
 #### Accounting Templates
 

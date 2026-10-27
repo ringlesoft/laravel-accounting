@@ -13,6 +13,7 @@ use RingleSoft\LaravelAccounting\Enums\TransactionTemplate;
 use RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Services\AccountService;
+use RingleSoft\LaravelAccounting\Support\Money;
 use RingleSoft\LaravelAccounting\Templates\AccountingTemplate;
 use RingleSoft\LaravelAccounting\Templates\CashSaleTemplate;
 use RingleSoft\LaravelAccounting\Traits\Postable;
@@ -29,9 +30,9 @@ class SaleModel extends Model implements PostableModel
 {
     use Postable;
 
-    public function getPostableAmount(): float
+    public function getPostableAmount(): string
     {
-        return 100.0;
+        return '100';
     }
 }
 
@@ -82,13 +83,13 @@ function presetAccount(string $code, AccountTypeEnum $type, ?AccountPresetContra
 }
 
 /**
- * @return array<string, float> account id => signed amount (debit +, credit -)
+ * @return array<string, string> account id => signed amount (debit +, credit -)
  */
 function voucherLines(AccountingTemplate $template, PostableModel $model): array
 {
     $lines = [];
     foreach ($template->make($model)->entries as $item) {
-        $lines[$item->accountId] = $item->type === EntryType::DEBIT ? $item->amount : -$item->amount;
+        $lines[$item->accountId] = $item->type === EntryType::DEBIT ? $item->amount : Money::negate($item->amount);
     }
 
     return $lines;
@@ -99,7 +100,7 @@ it('posts a custom template built entirely from custom presets', function () {
     $revenue = presetAccount('4000', AccountTypeEnum::INCOME, CustomPreset::CONSULTING_REVENUE);
 
     expect(voucherLines(new ConsultingTemplate, new SaleModel))
-        ->toBe([$bank->id => 100.0, $revenue->id => -100.0]);
+        ->toBe([$bank->id => '100.0000', $revenue->id => '-100.0000']);
 });
 
 it('accepts custom presets in built-in template constructors alongside built-in ones', function () {
@@ -109,7 +110,7 @@ it('accepts custom presets in built-in template constructors alongside built-in 
     $template = new CashSaleTemplate(cashAccount: CustomPreset::SECONDARY_BANK, taxAccount: null);
 
     expect(voucherLines($template, new SaleModel))
-        ->toBe([$bank->id => 100.0, $sales->id => -100.0]);
+        ->toBe([$bank->id => '100.0000', $sales->id => '-100.0000']);
 });
 
 it('lets resolveAccount() override a custom preset', function () {
@@ -120,7 +121,7 @@ it('lets resolveAccount() override a custom preset', function () {
     $template = (new ConsultingTemplate)->resolveAccount(CustomPreset::SECONDARY_BANK, $other);
 
     expect(voucherLines($template, new SaleModel))
-        ->toBe([$other->id => 100.0, $revenue->id => -100.0]);
+        ->toBe([$other->id => '100.0000', $revenue->id => '-100.0000']);
 });
 
 it('passes custom presets to a model implementing ResolvesAccountPresets', function () {
@@ -130,7 +131,7 @@ it('passes custom presets to a model implementing ResolvesAccountPresets', funct
     SaleModelResolvingPresets::$resolveTo = $other->id;
 
     expect(voucherLines(new ConsultingTemplate, new SaleModelResolvingPresets))
-        ->toBe([$other->id => 100.0, $revenue->id => -100.0])
+        ->toBe([$other->id => '100.0000', $revenue->id => '-100.0000'])
         ->and(SaleModelResolvingPresets::$received)->toBe(CustomPreset::SECONDARY_BANK);
 });
 
@@ -160,7 +161,7 @@ it('de-duplicates entries using custom presets', function () {
 
     expect($entries)->toHaveCount(2)
         ->and($entries[0]->account)->toBe(CustomPreset::SECONDARY_BANK)
-        ->and($entries[0]->getAmount(100))->toBe(100.0);
+        ->and($entries[0]->getAmount(100))->toBe('100.0000');
 });
 
 it('names the custom preset enum in the ambiguous parent error', function () {

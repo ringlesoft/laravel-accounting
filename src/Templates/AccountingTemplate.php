@@ -20,6 +20,7 @@ use RingleSoft\LaravelAccounting\Exceptions\JournalNotBalancedException;
 use RingleSoft\LaravelAccounting\Exceptions\ParentAccountPostingException;
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Models\Account as AccountAlias;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 /**
  * @mixin PostableTemplate
@@ -68,7 +69,7 @@ abstract class AccountingTemplate implements PostableTemplate
     }
 
     /**
-     * @param  Closure(float): float|null  $amount
+     * @param  Closure(string): (string|int|float)|null  $amount  receives the postable amount as a Money::SCALE numeric string
      * @return $this
      */
     public function debit(AccountPresetContract $account, ?Closure $amount = null, Closure|string|null $memo = null): self
@@ -79,7 +80,7 @@ abstract class AccountingTemplate implements PostableTemplate
     }
 
     /**
-     * @param  Closure(float): float|null  $amount
+     * @param  Closure(string): (string|int|float)|null  $amount  receives the postable amount as a Money::SCALE numeric string
      * @return $this
      */
     public function credit(AccountPresetContract $account, ?Closure $amount = null, Closure|string|null $memo = null): self
@@ -185,7 +186,7 @@ abstract class AccountingTemplate implements PostableTemplate
             if (isset($deduplicated[$key])) {
                 $existingAmount = $deduplicated[$key]->getAmount(0);
                 $newAmount = $entry->getAmount(0);
-                $deduplicated[$key]->amount = fn ($total) => $existingAmount + $newAmount;
+                $deduplicated[$key]->amount = fn ($total) => Money::add($existingAmount, $newAmount);
             } else {
                 $deduplicated[$key] = $entry;
             }

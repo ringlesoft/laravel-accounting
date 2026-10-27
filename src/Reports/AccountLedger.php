@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\JournalEntryItem;
 use RingleSoft\LaravelAccounting\Models\Report;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class AccountLedger extends Report
 {
@@ -46,21 +47,19 @@ class AccountLedger extends Report
 
         $transactions = [];
         $runningBalance = $openingBalance;
-        $totalDebits = 0;
-        $totalCredits = 0;
+        $totalDebits = Money::ZERO;
+        $totalCredits = Money::ZERO;
 
         $normalBalance = $account->accountType->normal_balance;
 
         foreach ($items as $item) {
-            $balanceChange = 0;
-
             if ($normalBalance === 'debit') {
-                $balanceChange = $item->debit_amount - $item->credit_amount;
+                $balanceChange = Money::sub($item->debit_amount, $item->credit_amount);
             } else {
-                $balanceChange = $item->credit_amount - $item->debit_amount;
+                $balanceChange = Money::sub($item->credit_amount, $item->debit_amount);
             }
 
-            $runningBalance += $balanceChange;
+            $runningBalance = Money::add($runningBalance, $balanceChange);
 
             $transactions[] = [
                 'date' => $item->journalEntry->transaction_date->toDateString(),
@@ -72,8 +71,8 @@ class AccountLedger extends Report
                 'balance' => $runningBalance,
             ];
 
-            $totalDebits += $item->debit_amount;
-            $totalCredits += $item->credit_amount;
+            $totalDebits = Money::add($totalDebits, $item->debit_amount);
+            $totalCredits = Money::add($totalCredits, $item->credit_amount);
         }
 
         $closingBalance = $this->balanceService->getAccountBalance($account, $endDate);
@@ -95,7 +94,7 @@ class AccountLedger extends Report
             'total_debits' => $totalDebits,
             'total_credits' => $totalCredits,
             'closing_balance' => $closingBalance,
-            'net_change' => $closingBalance - $openingBalance,
+            'net_change' => Money::sub($closingBalance, $openingBalance),
             'transaction_count' => count($transactions),
         ]);
 

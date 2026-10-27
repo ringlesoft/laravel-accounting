@@ -5,6 +5,7 @@ namespace RingleSoft\LaravelAccounting\Reports;
 use Carbon\Carbon;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\Report;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class TrialBalance extends Report
 {
@@ -22,26 +23,25 @@ class TrialBalance extends Report
             ->get();
 
         $accountBalances = [];
-        $totalDebits = 0;
-        $totalCredits = 0;
+        $totalDebits = Money::ZERO;
+        $totalCredits = Money::ZERO;
 
         foreach ($accounts as $account) {
             $balance = $this->balanceService->getAccountBalance($account, $asOfDate);
 
-            if (abs($balance) < 0.01) {
+            if (Money::isZero($balance)) {
                 continue;
             }
 
             $normalBalance = $account->accountType->normal_balance;
-            $debitBalance = 0;
-            $creditBalance = 0;
+            $isAbnormal = Money::isNegative($balance);
 
             if ($normalBalance === 'debit') {
-                $debitBalance = $balance >= 0 ? $balance : 0;
-                $creditBalance = $balance < 0 ? abs($balance) : 0;
+                $debitBalance = $isAbnormal ? Money::ZERO : $balance;
+                $creditBalance = $isAbnormal ? Money::abs($balance) : Money::ZERO;
             } else {
-                $creditBalance = $balance >= 0 ? $balance : 0;
-                $debitBalance = $balance < 0 ? abs($balance) : 0;
+                $creditBalance = $isAbnormal ? Money::ZERO : $balance;
+                $debitBalance = $isAbnormal ? Money::abs($balance) : Money::ZERO;
             }
 
             $accountBalances[] = [
@@ -53,12 +53,12 @@ class TrialBalance extends Report
                 'credit_balance' => $creditBalance,
             ];
 
-            $totalDebits += $debitBalance;
-            $totalCredits += $creditBalance;
+            $totalDebits = Money::add($totalDebits, $debitBalance);
+            $totalCredits = Money::add($totalCredits, $creditBalance);
         }
 
-        $isBalanced = abs($totalDebits - $totalCredits) < 0.01;
-        $difference = $totalDebits - $totalCredits;
+        $isBalanced = Money::equals($totalDebits, $totalCredits);
+        $difference = Money::sub($totalDebits, $totalCredits);
 
         $this->setData([
             'as_of_date' => $asOfDate->toDateString(),

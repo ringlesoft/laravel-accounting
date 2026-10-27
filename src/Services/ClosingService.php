@@ -15,6 +15,7 @@ use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
+use RingleSoft\LaravelAccounting\Support\Money;
 use Throwable;
 
 /**
@@ -63,7 +64,7 @@ class ClosingService
             closeDividends: $closeDividends,
             totalRevenue: $totalRevenue,
             totalExpenses: $totalExpenses,
-            netIncome: round($totalRevenue - $totalExpenses, 2),
+            netIncome: Money::sub($totalRevenue, $totalExpenses),
             dividendsDeclared: $this->dividendsDeclaredTotal($period),
         );
     }
@@ -116,35 +117,36 @@ class ClosingService
         $balances = $this->balanceService->getPeriodBalancesByAccountType($incomeType, $period->start_date, $period->end_date);
 
         $voucher = $this->voucherFor($period, "Close revenue to Income Summary - {$period->name}");
-        $total = 0.0;
+        $total = Money::ZERO;
 
         foreach ($balances as $row) {
-            $amount = round($row['balance'], 2);
-            if (abs($amount) < 0.01) {
+            // Closed at full stored precision, so no sub-cent residue is left behind
+            $amount = Money::of($row['balance']);
+            if (Money::isZero($amount)) {
                 continue;
             }
 
             // Normal credit balance -> debit it to zero. An abnormal debit
             // balance (e.g. a contra-revenue account) -> credit it instead.
-            if ($amount > 0) {
+            if (Money::isPositive($amount)) {
                 $voucher->debit($row['account_id'], $amount, "Close {$row['name']}");
             } else {
-                $voucher->credit($row['account_id'], abs($amount), "Close {$row['name']}");
+                $voucher->credit($row['account_id'], Money::abs($amount), "Close {$row['name']}");
             }
 
-            $total += $amount;
+            $total = Money::add($total, $amount);
         }
 
-        if (abs($total) < 0.01) {
+        if (Money::isZero($total)) {
             return null;
         }
 
         $incomeSummary = $this->resolveClosingAccount(AccountPreset::INCOME_SUMMARY);
 
-        if ($total > 0) {
+        if (Money::isPositive($total)) {
             $voucher->credit($incomeSummary->id, $total, 'Total revenue closed');
         } else {
-            $voucher->debit($incomeSummary->id, abs($total), 'Total revenue closed');
+            $voucher->debit($incomeSummary->id, Money::abs($total), 'Total revenue closed');
         }
 
         return $voucher;
@@ -187,35 +189,36 @@ class ClosingService
         $balances = $this->balanceService->getPeriodBalancesByAccountType($expenseType, $period->start_date, $period->end_date);
 
         $voucher = $this->voucherFor($period, "Close expenses to Income Summary - {$period->name}");
-        $total = 0.0;
+        $total = Money::ZERO;
 
         foreach ($balances as $row) {
-            $amount = round($row['balance'], 2);
-            if (abs($amount) < 0.01) {
+            // Closed at full stored precision, so no sub-cent residue is left behind
+            $amount = Money::of($row['balance']);
+            if (Money::isZero($amount)) {
                 continue;
             }
 
             // Normal debit balance -> credit it to zero. An abnormal credit
             // balance (e.g. a contra-expense/recovery account) -> debit it.
-            if ($amount > 0) {
+            if (Money::isPositive($amount)) {
                 $voucher->credit($row['account_id'], $amount, "Close {$row['name']}");
             } else {
-                $voucher->debit($row['account_id'], abs($amount), "Close {$row['name']}");
+                $voucher->debit($row['account_id'], Money::abs($amount), "Close {$row['name']}");
             }
 
-            $total += $amount;
+            $total = Money::add($total, $amount);
         }
 
-        if (abs($total) < 0.01) {
+        if (Money::isZero($total)) {
             return null;
         }
 
         $incomeSummary = $this->resolveClosingAccount(AccountPreset::INCOME_SUMMARY);
 
-        if ($total > 0) {
+        if (Money::isPositive($total)) {
             $voucher->debit($incomeSummary->id, $total, 'Total expenses closed');
         } else {
-            $voucher->credit($incomeSummary->id, abs($total), 'Total expenses closed');
+            $voucher->credit($incomeSummary->id, Money::abs($total), 'Total expenses closed');
         }
 
         return $voucher;
@@ -260,14 +263,14 @@ class ClosingService
         $incomeSummary = $this->resolveClosingAccount(AccountPreset::INCOME_SUMMARY);
         $movement = $this->balanceService->getPeriodMovement($incomeSummary, $period);
 
-        $netCredit = round($movement['total_credits'] - $movement['total_debits'], 2);
-        if (abs($netCredit) < 0.01) {
+        $netCredit = Money::sub($movement['total_credits'], $movement['total_debits']);
+        if (Money::isZero($netCredit)) {
             return null;
         }
 
         $retainedEarnings = $this->resolveClosingAccount(AccountPreset::RETAINED_EARNINGS);
-        $isProfit = $netCredit > 0;
-        $amount = abs($netCredit);
+        $isProfit = Money::isPositive($netCredit);
+        $amount = Money::abs($netCredit);
         $label = $isProfit ? 'Close net income' : 'Close net loss';
 
         $voucher = $this->voucherFor($period, "{$label} to Retained Earnings - {$period->name}");
@@ -297,7 +300,7 @@ class ClosingService
         // show the now-closed (zeroed) result instead of what we just closed.
         $incomeSummary = $this->resolveClosingAccount(AccountPreset::INCOME_SUMMARY);
         $movement = $this->balanceService->getPeriodMovement($incomeSummary, $period);
-        $netIncome = round($movement['total_credits'] - $movement['total_debits'], 2);
+        $netIncome = Money::sub($movement['total_credits'], $movement['total_debits']);
 
         $voucher = $this->previewCloseIncomeSummary($period);
         if (! $voucher) {
@@ -329,9 +332,9 @@ class ClosingService
         }
 
         $movement = $this->balanceService->getPeriodMovement($dividendsAccount, $period);
-        $netDebit = round($movement['total_debits'] - $movement['total_credits'], 2);
+        $netDebit = Money::sub($movement['total_debits'], $movement['total_credits']);
 
-        if ($netDebit < 0.01) {
+        if (! Money::isPositive($netDebit)) {
             return null;
         }
 
@@ -399,41 +402,39 @@ class ClosingService
         }
     }
 
-    protected function revenueTotal(FiscalPeriod $period): float
+    protected function revenueTotal(FiscalPeriod $period): string
     {
         $incomeType = AccountTypeEnum::INCOME->accountType();
         if (! $incomeType) {
-            return 0.0;
+            return Money::ZERO;
         }
 
-        return round(
-            $this->balanceService->getPeriodBalancesByAccountType($incomeType, $period->start_date, $period->end_date)->sum('balance'),
-            2
+        return Money::sum(
+            $this->balanceService->getPeriodBalancesByAccountType($incomeType, $period->start_date, $period->end_date)->pluck('balance')
         );
     }
 
-    protected function expenseTotal(FiscalPeriod $period): float
+    protected function expenseTotal(FiscalPeriod $period): string
     {
         $expenseType = AccountTypeEnum::EXPENSE->accountType();
         if (! $expenseType) {
-            return 0.0;
+            return Money::ZERO;
         }
 
-        return round(
-            $this->balanceService->getPeriodBalancesByAccountType($expenseType, $period->start_date, $period->end_date)->sum('balance'),
-            2
+        return Money::sum(
+            $this->balanceService->getPeriodBalancesByAccountType($expenseType, $period->start_date, $period->end_date)->pluck('balance')
         );
     }
 
-    protected function dividendsDeclaredTotal(FiscalPeriod $period): float
+    protected function dividendsDeclaredTotal(FiscalPeriod $period): string
     {
         $dividendsAccount = $this->accountService->findByPreset(AccountPreset::DIVIDENDS_DECLARED);
         if (! $dividendsAccount) {
-            return 0.0;
+            return Money::ZERO;
         }
 
         $movement = $this->balanceService->getPeriodMovement($dividendsAccount, $period);
 
-        return round(max(0.0, $movement['total_debits'] - $movement['total_credits']), 2);
+        return Money::max(Money::ZERO, Money::sub($movement['total_debits'], $movement['total_credits']));
     }
 }

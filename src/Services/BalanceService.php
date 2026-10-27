@@ -15,8 +15,12 @@ use RingleSoft\LaravelAccounting\Models\AccountType;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Models\JournalEntryItem;
+use RingleSoft\LaravelAccounting\Support\Money;
 use Throwable;
 
+/**
+ * Every amount returned here is a numeric string with Money::SCALE decimal places.
+ */
 class BalanceService
 {
     public function __construct(protected AccountService $accountService) {}
@@ -24,7 +28,7 @@ class BalanceService
     /**
      * Get the balance of an account as of a specific date
      */
-    public function getAccountBalance(Account $account, ?Carbon $asOfDate = null): float
+    public function getAccountBalance(Account $account, ?Carbon $asOfDate = null): string
     {
         $asOfDate = $asOfDate ?? now();
 
@@ -36,16 +40,16 @@ class BalanceService
             })
             ->get();
 
-        $totalDebits = $items->sum('debit_amount');
-        $totalCredits = $items->sum('credit_amount');
+        $totalDebits = Money::sum($items->pluck('debit_amount'));
+        $totalCredits = Money::sum($items->pluck('credit_amount'));
 
         $normalBalance = $account->accountType->normal_balance;
 
         if ($normalBalance === NormalBalance::DEBIT->value) {
-            return $totalDebits - $totalCredits;
+            return Money::sub($totalDebits, $totalCredits);
         }
 
-        return $totalCredits - $totalDebits;
+        return Money::sub($totalCredits, $totalDebits);
     }
 
     /**
@@ -65,6 +69,7 @@ class BalanceService
 
         return $accounts->map(function ($account) use ($endDate) {
             $balance = $this->getAccountBalance($account, $endDate);
+            $isNormal = ! Money::isNegative($balance);
 
             return [
                 'account_id' => $account->id,
@@ -72,12 +77,12 @@ class BalanceService
                 'account_name' => $account->name,
                 'account_type' => $account->accountType->name,
                 'normal_balance' => $account->accountType->normal_balance,
-                'debit_balance' => $balance >= 0 && $account->accountType->normal_balance === NormalBalance::DEBIT->value ? $balance : 0,
-                'credit_balance' => $balance >= 0 && $account->accountType->normal_balance === NormalBalance::CREDIT->value ? $balance : 0,
+                'debit_balance' => $isNormal && $account->accountType->normal_balance === NormalBalance::DEBIT->value ? $balance : Money::ZERO,
+                'credit_balance' => $isNormal && $account->accountType->normal_balance === NormalBalance::CREDIT->value ? $balance : Money::ZERO,
                 'balance' => $balance,
             ];
         })->filter(function ($item) {
-            return abs($item['balance']) > 0.01;
+            return ! Money::isZero($item['balance']);
         })->values();
     }
 
@@ -94,8 +99,8 @@ class BalanceService
             })
             ->get();
 
-        $totalDebits = $items->sum('debit_amount');
-        $totalCredits = $items->sum('credit_amount');
+        $totalDebits = Money::sum($items->pluck('debit_amount'));
+        $totalCredits = Money::sum($items->pluck('credit_amount'));
 
         $openingBalance = $this->getAccountBalance($account, $period->start_date->subDay());
         $closingBalance = $this->getAccountBalance($account, $period->end_date);
@@ -109,7 +114,7 @@ class BalanceService
             'opening_balance' => $openingBalance,
             'total_debits' => $totalDebits,
             'total_credits' => $totalCredits,
-            'net_movement' => $totalDebits - $totalCredits,
+            'net_movement' => Money::sub($totalDebits, $totalCredits),
             'closing_balance' => $closingBalance,
         ];
     }
@@ -151,14 +156,14 @@ class BalanceService
     /**
      * Get opening balance for an account in a period
      */
-    public function getOpeningBalance(Account $account, FiscalPeriod $period): float
+    public function getOpeningBalance(Account $account, FiscalPeriod $period): string
     {
         $cachedBalance = AccountBalance::where('account_id', $account->id)
             ->where('fiscal_period_id', $period->id)
             ->first();
 
         if ($cachedBalance) {
-            return $cachedBalance->opening_balance;
+            return Money::of($cachedBalance->opening_balance);
         }
 
         return $this->getAccountBalance($account, $period->start_date->subDay());
@@ -167,14 +172,14 @@ class BalanceService
     /**
      * Get closing balance for an account in a period
      */
-    public function getClosingBalance(Account $account, FiscalPeriod $period): float
+    public function getClosingBalance(Account $account, FiscalPeriod $period): string
     {
         $cachedBalance = AccountBalance::where('account_id', $account->id)
             ->where('fiscal_period_id', $period->id)
             ->first();
 
         if ($cachedBalance) {
-            return $cachedBalance->closing_balance;
+            return Money::of($cachedBalance->closing_balance);
         }
 
         return $this->getAccountBalance($account, $period->end_date);
@@ -187,16 +192,14 @@ class BalanceService
     {
         $trialBalance = $this->getTrialBalance($period);
 
-        $totalDebits = $trialBalance->sum('debit_balance');
-        $totalCredits = $trialBalance->sum('credit_balance');
-
-        $isBalanced = abs($totalDebits - $totalCredits) < 0.01;
+        $totalDebits = Money::sum($trialBalance->pluck('debit_balance'));
+        $totalCredits = Money::sum($trialBalance->pluck('credit_balance'));
 
         return [
-            'is_balanced' => $isBalanced,
+            'is_balanced' => Money::equals($totalDebits, $totalCredits),
             'total_debits' => $totalDebits,
             'total_credits' => $totalCredits,
-            'difference' => $totalDebits - $totalCredits,
+            'difference' => Money::sub($totalDebits, $totalCredits),
             'period' => $period?->name,
         ];
     }
@@ -271,19 +274,19 @@ class BalanceService
 
         return $results->map(function ($item) {
             $balance = $item->normal_balance === NormalBalance::DEBIT->value
-                ? $item->total_debits - $item->total_credits
-                : $item->total_credits - $item->total_debits;
+                ? Money::sub($item->total_debits, $item->total_credits)
+                : Money::sub($item->total_credits, $item->total_debits);
 
             return [
                 'account_id' => $item->account_id,
                 'code' => $item->code,
                 'name' => $item->name,
-                'total_debits' => (float) $item->total_debits,
-                'total_credits' => (float) $item->total_credits,
-                'balance' => (float) $balance,
+                'total_debits' => Money::of($item->total_debits),
+                'total_credits' => Money::of($item->total_credits),
+                'balance' => $balance,
             ];
         })->filter(function ($item) {
-            return abs($item['balance']) > 0.01;
+            return ! Money::isZero($item['balance']);
         })->values();
     }
 
@@ -330,19 +333,19 @@ class BalanceService
 
         return $results->map(function ($item) use ($normalBalance) {
             $balance = $normalBalance === NormalBalance::DEBIT->value
-                ? $item->total_debits - $item->total_credits
-                : $item->total_credits - $item->total_debits;
+                ? Money::sub($item->total_debits, $item->total_credits)
+                : Money::sub($item->total_credits, $item->total_debits);
 
             return [
                 'account_id' => $item->account_id,
                 'code' => $item->code,
                 'name' => $item->name,
-                'total_debits' => (float) $item->total_debits,
-                'total_credits' => (float) $item->total_credits,
-                'balance' => (float) $balance,
+                'total_debits' => Money::of($item->total_debits),
+                'total_credits' => Money::of($item->total_credits),
+                'balance' => $balance,
             ];
         })->filter(function ($item) {
-            return abs($item['balance']) > 0.01;
+            return ! Money::isZero($item['balance']);
         })->values();
     }
 
@@ -398,8 +401,8 @@ class BalanceService
                 'code' => $item->code,
                 'name' => $item->name,
                 'normal_balance' => $item->normal_balance,
-                'total_debits' => (float) $item->total_debits,
-                'total_credits' => (float) $item->total_credits,
+                'total_debits' => Money::of($item->total_debits),
+                'total_credits' => Money::of($item->total_credits),
             ];
         });
     }
@@ -410,12 +413,12 @@ class BalanceService
      * as of a date. Reusable wherever "cash on hand" is needed and a single Cash
      * account can't be assumed - e.g. Cash Flow Statement's beginning/ending cash.
      */
-    public function getCashAndCashEquivalentsBalance(?Carbon $asOfDate = null): float
+    public function getCashAndCashEquivalentsBalance(?Carbon $asOfDate = null): string
     {
         $asOfDate = $asOfDate ?? now();
 
-        return $this->accountService->getAccountsForPresetGroup(AccountPreset::CASH_AND_CASH_EQUIVALENT)
-            ->sum(fn (Account $account) => $this->getAccountBalance($account, $asOfDate));
+        return Money::sum($this->accountService->getAccountsForPresetGroup(AccountPreset::CASH_AND_CASH_EQUIVALENT)
+            ->map(fn (Account $account) => $this->getAccountBalance($account, $asOfDate)));
     }
 
     /**
@@ -424,19 +427,19 @@ class BalanceService
      * formula: Income Statement and Cash Flow Statement both derive net income
      * from this method so the two can never diverge.
      */
-    public function calculateNetIncome(Carbon $startDate, Carbon $endDate): float
+    public function calculateNetIncome(Carbon $startDate, Carbon $endDate): string
     {
         $incomeType = AccountTypeEnum::INCOME->accountType();
         $expenseType = AccountTypeEnum::EXPENSE->accountType();
 
         if (! $incomeType || ! $expenseType) {
-            return 0.0;
+            return Money::ZERO;
         }
 
-        $totalRevenue = $this->getPeriodBalancesByAccountType($incomeType, $startDate, $endDate)->sum('balance');
-        $totalExpenses = $this->getPeriodBalancesByAccountType($expenseType, $startDate, $endDate)->sum('balance');
+        $totalRevenue = Money::sum($this->getPeriodBalancesByAccountType($incomeType, $startDate, $endDate)->pluck('balance'));
+        $totalExpenses = Money::sum($this->getPeriodBalancesByAccountType($expenseType, $startDate, $endDate)->pluck('balance'));
 
-        return $totalRevenue - $totalExpenses;
+        return Money::sub($totalRevenue, $totalExpenses);
     }
 
     /**
@@ -447,18 +450,18 @@ class BalanceService
      * "Current Year Earnings" equity line on the Balance Sheet) are implemented.
      * Deliberately not wired into any report yet.
      */
-    public function calculateUnclosedEarnings(?Carbon $asOfDate = null): float
+    public function calculateUnclosedEarnings(?Carbon $asOfDate = null): string
     {
         $incomeType = AccountTypeEnum::INCOME->accountType();
         $expenseType = AccountTypeEnum::EXPENSE->accountType();
 
         if (! $incomeType || ! $expenseType) {
-            return 0.0;
+            return Money::ZERO;
         }
 
-        $totalIncome = $this->getBalancesByAccountType($incomeType, $asOfDate)->sum('balance');
-        $totalExpenses = $this->getBalancesByAccountType($expenseType, $asOfDate)->sum('balance');
+        $totalIncome = Money::sum($this->getBalancesByAccountType($incomeType, $asOfDate)->pluck('balance'));
+        $totalExpenses = Money::sum($this->getBalancesByAccountType($expenseType, $asOfDate)->pluck('balance'));
 
-        return $totalIncome - $totalExpenses;
+        return Money::sub($totalIncome, $totalExpenses);
     }
 }

@@ -2,24 +2,42 @@
 
 namespace RingleSoft\LaravelAccounting\DTOs;
 
+use RingleSoft\LaravelAccounting\Support\Money;
+
+/**
+ * All amounts are numeric strings with Money::SCALE decimal places.
+ */
 class BalanceData
 {
+    public string $opening;
+
+    public string $debits;
+
+    public string $credits;
+
+    public string $closing;
+
     public function __construct(
-        public float $opening = 0.0,
-        public float $debits = 0.0,
-        public float $credits = 0.0,
-        public float $closing = 0.0
-    ) {}
+        string|int|float $opening = 0,
+        string|int|float $debits = 0,
+        string|int|float $credits = 0,
+        string|int|float $closing = 0
+    ) {
+        $this->opening = Money::of($opening);
+        $this->debits = Money::of($debits);
+        $this->credits = Money::of($credits);
+        $this->closing = Money::of($closing);
+    }
 
     /**
      * Calculate closing balance from opening, debits, and credits
      */
-    public function calculateClosing(string $normalBalance = 'debit'): float
+    public function calculateClosing(string $normalBalance = 'debit'): string
     {
         if ($normalBalance === 'debit') {
-            $this->closing = $this->opening + $this->debits - $this->credits;
+            $this->closing = Money::sub(Money::add($this->opening, $this->debits), $this->credits);
         } else {
-            $this->closing = $this->opening + $this->credits - $this->debits;
+            $this->closing = Money::sub(Money::add($this->opening, $this->credits), $this->debits);
         }
 
         return $this->closing;
@@ -28,17 +46,17 @@ class BalanceData
     /**
      * Get net movement (debits - credits)
      */
-    public function getNetMovement(): float
+    public function getNetMovement(): string
     {
-        return $this->debits - $this->credits;
+        return Money::sub($this->debits, $this->credits);
     }
 
     /**
      * Get total activity (debits + credits)
      */
-    public function getTotalActivity(): float
+    public function getTotalActivity(): string
     {
-        return $this->debits + $this->credits;
+        return Money::add($this->debits, $this->credits);
     }
 
     /**
@@ -46,27 +64,27 @@ class BalanceData
      */
     public function hasActivity(): bool
     {
-        return $this->debits > 0 || $this->credits > 0;
+        return Money::isPositive($this->debits) || Money::isPositive($this->credits);
     }
 
     /**
      * Get the change from opening to closing
      */
-    public function getChange(): float
+    public function getChange(): string
     {
-        return $this->closing - $this->opening;
+        return Money::sub($this->closing, $this->opening);
     }
 
     /**
-     * Get percentage change
+     * Get percentage change. A ratio, not an amount, so it stays a float.
      */
     public function getPercentageChange(): ?float
     {
-        if ($this->opening == 0) {
+        if (Money::isZero($this->opening)) {
             return null;
         }
 
-        return (($this->closing - $this->opening) / abs($this->opening)) * 100;
+        return ((float) bcdiv($this->getChange(), Money::abs($this->opening), 10)) * 100;
     }
 
     /**
@@ -92,17 +110,17 @@ class BalanceData
     public static function fromArray(array $data): self
     {
         return new self(
-            opening: $data['opening'] ?? 0.0,
-            debits: $data['debits'] ?? 0.0,
-            credits: $data['credits'] ?? 0.0,
-            closing: $data['closing'] ?? 0.0
+            opening: $data['opening'] ?? 0,
+            debits: $data['debits'] ?? 0,
+            credits: $data['credits'] ?? 0,
+            closing: $data['closing'] ?? 0
         );
     }
 
     /**
      * Create with opening balance
      */
-    public static function withOpening(float $opening): self
+    public static function withOpening(string|int|float $opening): self
     {
         return new self(opening: $opening);
     }
@@ -110,9 +128,9 @@ class BalanceData
     /**
      * Add debit amount
      */
-    public function addDebit(float $amount): self
+    public function addDebit(string|int|float $amount): self
     {
-        $this->debits += abs($amount);
+        $this->debits = Money::add($this->debits, Money::abs($amount));
 
         return $this;
     }
@@ -120,9 +138,9 @@ class BalanceData
     /**
      * Add credit amount
      */
-    public function addCredit(float $amount): self
+    public function addCredit(string|int|float $amount): self
     {
-        $this->credits += abs($amount);
+        $this->credits = Money::add($this->credits, Money::abs($amount));
 
         return $this;
     }
@@ -130,9 +148,9 @@ class BalanceData
     /**
      * Set opening balance
      */
-    public function setOpening(float $opening): self
+    public function setOpening(string|int|float $opening): self
     {
-        $this->opening = $opening;
+        $this->opening = Money::of($opening);
 
         return $this;
     }
@@ -140,9 +158,9 @@ class BalanceData
     /**
      * Set closing balance
      */
-    public function setClosing(float $closing): self
+    public function setClosing(string|int|float $closing): self
     {
-        $this->closing = $closing;
+        $this->closing = Money::of($closing);
 
         return $this;
     }

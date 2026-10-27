@@ -4,12 +4,14 @@ namespace RingleSoft\LaravelAccounting\DTOs;
 
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 /**
  * The result of ClosingService::commit() - the actual posted JournalEntry
  * for each closing step, or null for a step that had nothing to close and
  * was skipped. Every non-null entry here was created and posted through
- * the normal JournalService::createDraft()/post() path.
+ * the normal JournalService::createDraft()/post() path. Totals are
+ * Money::SCALE numeric strings.
  */
 class ClosingResult
 {
@@ -19,15 +21,15 @@ class ClosingResult
         public ?JournalEntry $closeExpensesEntry = null,
         public ?JournalEntry $closeIncomeSummaryEntry = null,
         public ?JournalEntry $closeDividendsEntry = null,
-        public float $totalRevenue = 0.0,
-        public float $totalExpenses = 0.0,
-        public float $netIncome = 0.0,
-        public float $dividendsDeclared = 0.0,
+        public string $totalRevenue = Money::ZERO,
+        public string $totalExpenses = Money::ZERO,
+        public string $netIncome = Money::ZERO,
+        public string $dividendsDeclared = Money::ZERO,
     ) {}
 
     public function isProfit(): bool
     {
-        return $this->netIncome >= 0;
+        return ! Money::isNegative($this->netIncome);
     }
 
     public function hasNothingClosed(): bool

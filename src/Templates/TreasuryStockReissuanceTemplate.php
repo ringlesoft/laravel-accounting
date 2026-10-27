@@ -6,6 +6,7 @@ use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 /**
  * Covers reissuing treasury stock at or above its cost basis (a gain,
@@ -20,7 +21,7 @@ class TreasuryStockReissuanceTemplate extends AccountingTemplate
         protected AccountPresetContract $cashAccount = AccountPreset::CASH,
         protected AccountPresetContract $treasuryStockAccount = AccountPreset::TREASURY_STOCK,
         protected AccountPresetContract $additionalPaidInCapitalAccount = AccountPreset::ADDITIONAL_PAID_IN_CAPITAL,
-        protected float $costBasis = 0.0,
+        protected string|int|float $costBasis = 0,
     ) {}
 
     public function configure(): void
@@ -29,18 +30,18 @@ class TreasuryStockReissuanceTemplate extends AccountingTemplate
         $this->debit($this->cashAccount);
         $this->credit($this->treasuryStockAccount, fn () => $this->costBasis);
 
-        if ($this->costBasis > 0) {
-            $this->credit($this->additionalPaidInCapitalAccount, fn ($amount) => $amount - $this->costBasis);
+        if (Money::isPositive($this->costBasis)) {
+            $this->credit($this->additionalPaidInCapitalAccount, fn ($amount) => Money::sub($amount, $this->costBasis));
         }
     }
 
     public function validate(PostableModel $model): void
     {
-        if ($this->costBasis < 0) {
+        if (Money::isNegative($this->costBasis)) {
             throw new InvalidVoucherException("costBasis must be >= 0, got {$this->costBasis}");
         }
 
-        if ($this->costBasis > $model->getPostableAmount()) {
+        if (Money::compare($this->costBasis, $model->getPostableAmount()) > 0) {
             throw new InvalidVoucherException(
                 "costBasis ({$this->costBasis}) cannot exceed the reissue proceeds ({$model->getPostableAmount()}) - ".
                 'reissuing below cost is a loss, which this template does not model.'

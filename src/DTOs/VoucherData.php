@@ -53,7 +53,7 @@ class VoucherData
     /**
      * Add a debit entry
      */
-    public function debit(int|string $accountId, float $amount, ?string $memo = null): self
+    public function debit(int|string $accountId, string|int|float $amount, ?string $memo = null): self
     {
         $this->entries[] = new VoucherDataItem(EntryType::DEBIT, $accountId, $amount, $memo);
 
@@ -63,7 +63,7 @@ class VoucherData
     /**
      * Add a credit entry
      */
-    public function credit(int|string $accountId, float $amount, ?string $memo = null): self
+    public function credit(int|string $accountId, string|int|float $amount, ?string $memo = null): self
     {
         $this->entries[] = new VoucherDataItem(EntryType::CREDIT, $accountId, $amount, $memo);
 

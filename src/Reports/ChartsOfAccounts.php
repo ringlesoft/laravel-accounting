@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\Report;
 use RingleSoft\LaravelAccounting\Services\AccountService;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class ChartsOfAccounts extends Report
 {
@@ -94,8 +95,8 @@ class ChartsOfAccounts extends Report
             );
 
             $account['balance'] = $balance;
-            $account['balance_formatted'] = number_format(abs($balance), 2);
-            $account['balance_type'] = $balance >= 0 ? 'normal' : 'abnormal';
+            $account['balance_formatted'] = Money::format(Money::abs($balance));
+            $account['balance_type'] = Money::isNegative($balance) ? 'abnormal' : 'normal';
         }
 
         if (! empty($account['children'])) {

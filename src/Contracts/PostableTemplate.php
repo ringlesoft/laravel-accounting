@@ -18,14 +18,14 @@ interface PostableTemplate
     /**
      * Add a debit entry to the template
      *
-     * @param  Closure(float): float|null  $amount
+     * @param  Closure(string): (string|int|float)|null  $amount  receives the postable amount as a Money::SCALE numeric string
      */
     public function debit(AccountPresetContract $account, ?Closure $amount, Closure|string|null $memo = null): self;
 
     /**
      * Add a credit entry to the template
      *
-     * @param  Closure(float): float|null  $amount
+     * @param  Closure(string): (string|int|float)|null  $amount  receives the postable amount as a Money::SCALE numeric string
      */
     public function credit(AccountPresetContract $account, ?Closure $amount, Closure|string|null $memo = null): self;
 

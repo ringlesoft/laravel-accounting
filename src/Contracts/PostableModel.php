@@ -19,8 +19,11 @@ interface PostableModel
      * avoid colliding with a method of that very generic name a host
      * application's own model is quite likely to already have, for an
      * unrelated purpose.
+     *
+     * Return a numeric string (e.g. a `decimal:4` cast attribute) to keep full
+     * precision; ints and floats are accepted and normalized to Money::SCALE.
      */
-    public function getPostableAmount(): float;
+    public function getPostableAmount(): string|int|float;
 
     public function getReference(): ?string;
 

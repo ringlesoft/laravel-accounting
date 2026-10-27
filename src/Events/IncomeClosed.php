@@ -13,7 +13,7 @@ class IncomeClosed
 
     public function __construct(
         public FiscalPeriod $period,
-        public float $netIncome,
+        public string $netIncome,
         public ?int $userId = null
     ) {}
 }

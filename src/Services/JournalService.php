@@ -9,7 +9,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\DTOs\VoucherData;
-use RingleSoft\LaravelAccounting\Enums\EntryType;
 use RingleSoft\LaravelAccounting\Events\JournalEntryCreated;
 use RingleSoft\LaravelAccounting\Events\JournalEntryPosted;
 use RingleSoft\LaravelAccounting\Events\JournalEntryReversed;
@@ -22,6 +21,7 @@ use RingleSoft\LaravelAccounting\Exceptions\PeriodClosedException;
 use RingleSoft\LaravelAccounting\Models\FiscalPeriod;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Models\JournalEntryItem;
+use RingleSoft\LaravelAccounting\Support\Money;
 use Throwable;
 
 class JournalService
@@ -80,8 +80,8 @@ class JournalService
                     'journal_entry_id' => $journalEntry->id,
                     'account_id' => $entry->accountId,
                     'description' => $entry->memo,
-                    'debit_amount' => $entry->isDebit() ? abs($entry->amount) : 0,
-                    'credit_amount' => $entry->isCredit() ? abs($entry->amount) : 0,
+                    'debit_amount' => $entry->getDebitAmount(),
+                    'credit_amount' => $entry->getCreditAmount(),
                     'currency_code' => $journalEntry->currency_code,
                 ]);
             }
@@ -95,18 +95,17 @@ class JournalService
     }
 
     /**
-     * Validate that journal entry is balanced
+     * Validate that journal entry is balanced. Debits and credits must match
+     * exactly at Money::SCALE - there is no rounding tolerance.
      *
      * @throws JournalNotBalancedException
      */
     public function validateBalance(JournalEntry $entry): bool
     {
-        $totalDebits = $entry->items->sum('debit_amount');
-        $totalCredits = $entry->items->sum('credit_amount');
+        $totalDebits = Money::sum($entry->items->pluck('debit_amount'));
+        $totalCredits = Money::sum($entry->items->pluck('credit_amount'));
 
-        $difference = abs($totalDebits - $totalCredits);
-
-        if ($difference > 0.01) {
+        if (! Money::equals($totalDebits, $totalCredits)) {
             throw new JournalNotBalancedException(
                 "Journal entry is not balanced. Debits: {$totalDebits}, Credits: {$totalCredits}"
             );
@@ -459,12 +458,14 @@ class JournalService
             throw new InvalidVoucherException('Voucher must have at least two entries (debit and credit)');
         }
 
-        $totalAmount = array_reduce($voucher->entries, static function ($carry, $entry) {
-            return $carry + ($entry->type === EntryType::CREDIT ? $entry->amount : -$entry->amount);
-        }, 0);
+        $totalDebits = Money::sum(array_map(static fn ($entry) => $entry->getDebitAmount(), $voucher->entries));
+        $totalCredits = Money::sum(array_map(static fn ($entry) => $entry->getCreditAmount(), $voucher->entries));
 
-        if (abs($totalAmount) > 0.01) {
-            throw new JournalNotBalancedException('Voucher entries are not balanced');
+        // Exact at Money::SCALE - no rounding tolerance
+        if (! Money::equals($totalDebits, $totalCredits)) {
+            throw new JournalNotBalancedException(
+                "Voucher entries are not balanced. Debits: {$totalDebits}, Credits: {$totalCredits}"
+            );
         }
 
     }

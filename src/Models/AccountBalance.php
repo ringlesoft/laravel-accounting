@@ -5,12 +5,18 @@ namespace RingleSoft\LaravelAccounting\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use RingleSoft\LaravelAccounting\Support\Money;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\HasUuid;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
 
 /**
  * @mixin Builder<AccountBalance>
+ *
+ * @property string $opening_balance
+ * @property string $debit_total
+ * @property string $credit_total
+ * @property string $closing_balance
  */
 class AccountBalance extends Model
 {
@@ -30,10 +36,10 @@ class AccountBalance extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'opening_balance' => 'decimal:2',
-        'debit_total' => 'decimal:2',
-        'credit_total' => 'decimal:2',
-        'closing_balance' => 'decimal:2',
+        'opening_balance' => 'decimal:4',
+        'debit_total' => 'decimal:4',
+        'credit_total' => 'decimal:4',
+        'closing_balance' => 'decimal:4',
     ];
 
     public function __construct(array $attributes = [])
@@ -73,26 +79,25 @@ class AccountBalance extends Model
 
     // Helper Methods
 
-    public function calculateClosingBalance(): float
+    public function calculateClosingBalance(): string
     {
         $account = $this->account;
         $accountType = $account->accountType;
 
         if ($accountType->normal_balance === 'debit') {
-            return (float) ($this->opening_balance + $this->debit_total - $this->credit_total);
-        } else {
-            return (float) ($this->opening_balance + $this->credit_total - $this->debit_total);
+            return Money::sub(Money::add($this->opening_balance, $this->debit_total), $this->credit_total);
         }
+        return Money::sub(Money::add($this->opening_balance, $this->credit_total), $this->debit_total);
     }
 
-    public function getNetMovement(): float
+    public function getNetMovement(): string
     {
-        return (float) ($this->debit_total - $this->credit_total);
+        return Money::sub($this->debit_total, $this->credit_total);
     }
 
     public function hasActivity(): bool
     {
-        return $this->debit_total > 0 || $this->credit_total > 0;
+        return Money::isPositive($this->debit_total) || Money::isPositive($this->credit_total);
     }
 
     // Validation Rules

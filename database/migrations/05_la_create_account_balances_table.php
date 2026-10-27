@@ -28,10 +28,10 @@ return new class extends Migration
                 $table->unsignedBigInteger('tenant_id')->nullable();
             }
 
-            $table->decimal('opening_balance', 20, 2)->default(0);
-            $table->decimal('debit_total', 20, 2)->default(0);
-            $table->decimal('credit_total', 20, 2)->default(0);
-            $table->decimal('closing_balance', 20, 2)->default(0);
+            $table->decimal('opening_balance', 22, 4)->default(0);
+            $table->decimal('debit_total', 22, 4)->default(0);
+            $table->decimal('credit_total', 22, 4)->default(0);
+            $table->decimal('closing_balance', 22, 4)->default(0);
             $table->string('currency_code', 3);
             $table->timestamps();
 

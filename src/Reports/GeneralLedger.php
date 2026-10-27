@@ -5,6 +5,7 @@ namespace RingleSoft\LaravelAccounting\Reports;
 use Carbon\Carbon;
 use RingleSoft\LaravelAccounting\Models\JournalEntry;
 use RingleSoft\LaravelAccounting\Models\Report;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class GeneralLedger extends Report
 {
@@ -66,15 +67,13 @@ class GeneralLedger extends Report
                 }
 
                 $normalBalance = $item->account->accountType->normal_balance;
-                $balanceChange = 0;
-
                 if ($normalBalance === 'debit') {
-                    $balanceChange = $item->debit_amount - $item->credit_amount;
+                    $balanceChange = Money::sub($item->debit_amount, $item->credit_amount);
                 } else {
-                    $balanceChange = $item->credit_amount - $item->debit_amount;
+                    $balanceChange = Money::sub($item->credit_amount, $item->debit_amount);
                 }
 
-                $accountBalances[$accountCode]['running_balance'] += $balanceChange;
+                $accountBalances[$accountCode]['running_balance'] = Money::add($accountBalances[$accountCode]['running_balance'], $balanceChange);
 
                 $ledgerEntries[] = [
                     'date' => $entry->transaction_date->toDateString(),

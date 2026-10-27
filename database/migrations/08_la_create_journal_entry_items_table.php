@@ -27,8 +27,8 @@ return new class extends Migration
             }
 
             $table->text('description')->nullable();
-            $table->decimal('debit_amount', 20, 2)->default(0);
-            $table->decimal('credit_amount', 20, 2)->default(0);
+            $table->decimal('debit_amount', 22, 4)->default(0);
+            $table->decimal('credit_amount', 22, 4)->default(0);
             $table->string('currency_code', 3);
             $table->decimal('exchange_rate', 20, 10)->default(1);
 

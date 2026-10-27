@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use RingleSoft\LaravelAccounting\Exceptions\LaravelAccountingException;
 use RingleSoft\LaravelAccounting\Facades\LaravelAccounting;
 use RingleSoft\LaravelAccounting\Services\JournalService;
+use RingleSoft\LaravelAccounting\Support\Money;
 use RingleSoft\LaravelAccounting\Traits\HasTablePrefix;
 use RingleSoft\LaravelAccounting\Traits\HasUuid;
 use RingleSoft\LaravelAccounting\Traits\MultiTenant;
@@ -182,20 +183,17 @@ class JournalEntry extends Model
 
     public function isBalanced(): bool
     {
-        $totalDebits = $this->items()->sum('debit_amount');
-        $totalCredits = $this->items()->sum('credit_amount');
-
-        return bccomp((string) $totalDebits, (string) $totalCredits, 2) === 0;
+        return Money::equals($this->getTotalDebits(), $this->getTotalCredits());
     }
 
-    public function getTotalDebits(): float
+    public function getTotalDebits(): string
     {
-        return (float) $this->items()->sum('debit_amount');
+        return Money::of($this->items()->sum('debit_amount'));
     }
 
-    public function getTotalCredits(): float
+    public function getTotalCredits(): string
     {
-        return (float) $this->items()->sum('credit_amount');
+        return Money::of($this->items()->sum('credit_amount'));
     }
 
     public function canBePosted(): bool

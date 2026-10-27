@@ -8,6 +8,7 @@ use RingleSoft\LaravelAccounting\Enums\AccountTypeEnum;
 use RingleSoft\LaravelAccounting\Models\Account;
 use RingleSoft\LaravelAccounting\Models\Report;
 use RingleSoft\LaravelAccounting\Services\AccountService;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class CashFlowStatement extends Report
 {
@@ -39,7 +40,7 @@ class CashFlowStatement extends Report
         $investing = $this->calculateInvestingActivities($startDate, $endDate);
         $financing = $this->calculateFinancingActivities($startDate, $endDate);
 
-        $netCashFlow = $operating['total'] + $investing['total'] + $financing['total'];
+        $netCashFlow = Money::add($operating['total'], $investing['total'], $financing['total']);
 
         $beginningCash = $this->balanceService->getCashAndCashEquivalentsBalance($startDate->copy()->subDay());
         $endingCash = $this->balanceService->getCashAndCashEquivalentsBalance($endDate);
@@ -55,7 +56,7 @@ class CashFlowStatement extends Report
             'net_cash_flow' => $netCashFlow,
             'beginning_cash' => $beginningCash,
             'ending_cash' => $endingCash,
-            'reconciliation_difference' => abs(($beginningCash + $netCashFlow) - $endingCash),
+            'reconciliation_difference' => Money::abs(Money::sub(Money::add($beginningCash, $netCashFlow), $endingCash)),
         ]);
 
         return $this;
@@ -66,15 +67,15 @@ class CashFlowStatement extends Report
      * getAccountBalance() sign convention (positive = normal-side balance).
      * Shared by every "changes in X over the period" section below.
      */
-    protected function balanceChange(Account $account, Carbon $startDate, Carbon $endDate): float
+    protected function balanceChange(Account $account, Carbon $startDate, Carbon $endDate): string
     {
         $beginningBalance = $this->balanceService->getAccountBalance($account, $startDate->copy()->subDay());
         $endingBalance = $this->balanceService->getAccountBalance($account, $endDate);
 
-        return $endingBalance - $beginningBalance;
+        return Money::sub($endingBalance, $beginningBalance);
     }
 
-    protected function calculateOperatingActivities(Carbon $startDate, Carbon $endDate, float $netIncome): array
+    protected function calculateOperatingActivities(Carbon $startDate, Carbon $endDate, string $netIncome): array
     {
         $adjustments = [];
         $total = $netIncome;
@@ -104,12 +105,12 @@ class CashFlowStatement extends Report
         foreach ($currentAssets as $account) {
             $change = $this->balanceChange($account, $startDate, $endDate);
 
-            if (abs($change) > 0.01) {
+            if (! Money::isZero($change)) {
                 $adjustments[] = [
                     'description' => "Change in {$account->name}",
-                    'amount' => -$change,
+                    'amount' => Money::negate($change),
                 ];
-                $total -= $change;
+                $total = Money::sub($total, $change);
             }
         }
 
@@ -121,12 +122,12 @@ class CashFlowStatement extends Report
         foreach ($currentLiabilities as $account) {
             $change = $this->balanceChange($account, $startDate, $endDate);
 
-            if (abs($change) > 0.01) {
+            if (! Money::isZero($change)) {
                 $adjustments[] = [
                     'description' => "Change in {$account->name}",
                     'amount' => $change,
                 ];
-                $total += $change;
+                $total = Money::add($total, $change);
             }
         }
 
@@ -140,19 +141,19 @@ class CashFlowStatement extends Report
     protected function calculateInvestingActivities(Carbon $startDate, Carbon $endDate): array
     {
         $activities = [];
-        $total = 0;
+        $total = Money::ZERO;
 
         $fixedAssets = $this->accountService->getAccountsForPresetGroup(AccountPreset::FIXED_ASSETS);
 
         foreach ($fixedAssets as $account) {
             $change = $this->balanceChange($account, $startDate, $endDate);
 
-            if (abs($change) > 0.01) {
+            if (! Money::isZero($change)) {
                 $activities[] = [
-                    'description' => $change > 0 ? "Purchase of {$account->name}" : "Sale of {$account->name}",
-                    'amount' => -$change,
+                    'description' => Money::isPositive($change) ? "Purchase of {$account->name}" : "Sale of {$account->name}",
+                    'amount' => Money::negate($change),
                 ];
-                $total -= $change;
+                $total = Money::sub($total, $change);
             }
         }
 
@@ -165,7 +166,7 @@ class CashFlowStatement extends Report
     protected function calculateFinancingActivities(Carbon $startDate, Carbon $endDate): array
     {
         $activities = [];
-        $total = 0;
+        $total = Money::ZERO;
 
         $liabilityTypeId = AccountTypeEnum::LIABILITY->getId();
         $equityTypeId = AccountTypeEnum::EQUITY->getId();
@@ -182,12 +183,12 @@ class CashFlowStatement extends Report
         foreach ($longTermLiabilities as $account) {
             $change = $this->balanceChange($account, $startDate, $endDate);
 
-            if (abs($change) > 0.01) {
+            if (! Money::isZero($change)) {
                 $activities[] = [
-                    'description' => $change > 0 ? "Proceeds from {$account->name}" : "Repayment of {$account->name}",
+                    'description' => Money::isPositive($change) ? "Proceeds from {$account->name}" : "Repayment of {$account->name}",
                     'amount' => $change,
                 ];
-                $total += $change;
+                $total = Money::add($total, $change);
             }
         }
 
@@ -198,12 +199,12 @@ class CashFlowStatement extends Report
         foreach ($equityAccounts as $account) {
             $change = $this->balanceChange($account, $startDate, $endDate);
 
-            if (abs($change) > 0.01) {
+            if (! Money::isZero($change)) {
                 $activities[] = [
-                    'description' => $change > 0 ? 'Capital contribution' : 'Dividends paid',
+                    'description' => Money::isPositive($change) ? 'Capital contribution' : 'Dividends paid',
                     'amount' => $change,
                 ];
-                $total += $change;
+                $total = Money::add($total, $change);
             }
         }
 

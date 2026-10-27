@@ -6,6 +6,7 @@ use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class PayrollAccrualTemplate extends AccountingTemplate
 {
@@ -20,10 +21,11 @@ class PayrollAccrualTemplate extends AccountingTemplate
     {
         // Salary Expense → Wages Payable + Tax Payable
         $this->debit($this->salaryExpenseAccount);
-        $this->credit($this->wagesPayableAccount, fn ($amount) => $amount * (1 - $this->taxWithholdingRate));
+        // Net wages are the remainder, so the entry balances exactly after rounding
+        $this->credit($this->wagesPayableAccount, fn ($amount) => Money::sub($amount, Money::mul($amount, $this->taxWithholdingRate)));
 
         if ($this->taxWithholdingRate > 0 && $this->taxPayableAccount) {
-            $this->credit($this->taxPayableAccount, fn ($amount) => $amount * $this->taxWithholdingRate);
+            $this->credit($this->taxPayableAccount, fn ($amount) => Money::mul($amount, $this->taxWithholdingRate));
         }
     }
 

@@ -6,6 +6,7 @@ use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class SalesDiscountTemplate extends AccountingTemplate
 {
@@ -19,10 +20,11 @@ class SalesDiscountTemplate extends AccountingTemplate
     public function configure(): void
     {
         // Cash (net of discount) + Sales Discount → Accounts Receivable (full)
-        $this->debit($this->cashAccount, fn ($amount) => $amount * (1 - $this->discountRate));
+        // Net cash is the remainder, so the entry balances exactly after rounding
+        $this->debit($this->cashAccount, fn ($amount) => Money::sub($amount, Money::mul($amount, $this->discountRate)));
 
         if ($this->discountRate > 0) {
-            $this->debit($this->salesDiscountAccount, fn ($amount) => $amount * $this->discountRate);
+            $this->debit($this->salesDiscountAccount, fn ($amount) => Money::mul($amount, $this->discountRate));
         }
 
         $this->credit($this->receivableAccount);

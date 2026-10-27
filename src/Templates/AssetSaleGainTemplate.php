@@ -6,6 +6,7 @@ use RingleSoft\LaravelAccounting\Contracts\AccountPresetContract;
 use RingleSoft\LaravelAccounting\Contracts\PostableModel;
 use RingleSoft\LaravelAccounting\Enums\AccountPreset;
 use RingleSoft\LaravelAccounting\Exceptions\InvalidVoucherException;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 /**
  * $model->getPostableAmount() is the cash proceeds received. $originalCost and
@@ -21,8 +22,8 @@ class AssetSaleGainTemplate extends AccountingTemplate
         protected AccountPresetContract $accumulatedDepreciationAccount = AccountPreset::ACCUMULATED_DEPRECIATION,
         protected AccountPresetContract $fixedAssetAccount = AccountPreset::FIXED_ASSETS,
         protected AccountPresetContract $gainAccount = AccountPreset::GAIN_ON_SALE_OF_ASSETS,
-        protected float $originalCost = 0.0,
-        protected float $accumulatedDepreciation = 0.0,
+        protected string|int|float $originalCost = 0,
+        protected string|int|float $accumulatedDepreciation = 0,
     ) {}
 
     public function configure(): void
@@ -33,25 +34,25 @@ class AssetSaleGainTemplate extends AccountingTemplate
         $this->credit($this->fixedAssetAccount, fn () => $this->originalCost);
         $this->credit(
             $this->gainAccount,
-            fn ($amount) => $amount + $this->accumulatedDepreciation - $this->originalCost
+            fn ($amount) => Money::sub(Money::add($amount, $this->accumulatedDepreciation), $this->originalCost)
         );
     }
 
     public function validate(PostableModel $model): void
     {
-        if ($this->originalCost < 0) {
+        if (Money::isNegative($this->originalCost)) {
             throw new InvalidVoucherException("originalCost must be >= 0, got {$this->originalCost}");
         }
 
-        if ($this->accumulatedDepreciation < 0 || $this->accumulatedDepreciation > $this->originalCost) {
+        if (Money::isNegative($this->accumulatedDepreciation) || Money::compare($this->accumulatedDepreciation, $this->originalCost) > 0) {
             throw new InvalidVoucherException(
                 "accumulatedDepreciation must be between 0 and originalCost ({$this->originalCost}), got {$this->accumulatedDepreciation}"
             );
         }
 
-        $bookValue = $this->originalCost - $this->accumulatedDepreciation;
+        $bookValue = Money::sub($this->originalCost, $this->accumulatedDepreciation);
 
-        if ($model->getPostableAmount() < $bookValue) {
+        if (Money::compare($model->getPostableAmount(), $bookValue) < 0) {
             throw new InvalidVoucherException(
                 "Proceeds ({$model->getPostableAmount()}) are below book value ({$bookValue}) - this is a loss, not a gain; use AssetSaleLossTemplate instead."
             );

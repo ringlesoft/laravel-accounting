@@ -4,16 +4,23 @@ namespace RingleSoft\LaravelAccounting\DTOs;
 
 use InvalidArgumentException;
 use RingleSoft\LaravelAccounting\Enums\EntryType;
+use RingleSoft\LaravelAccounting\Support\Money;
 
 class VoucherDataItem
 {
+    /**
+     * @var string The amount as a numeric string with Money::SCALE decimal places
+     */
+    public string $amount;
+
     public function __construct(
         public EntryType $type,
         public int|string $accountId,
-        public float $amount,
+        string|int|float $amount,
         public ?string $memo = null,
         public ?array $dimension = null
     ) {
+        $this->amount = Money::of($amount);
         $this->validate();
     }
 
@@ -26,7 +33,7 @@ class VoucherDataItem
             throw new InvalidArgumentException('Account ID is required');
         }
 
-        if ($this->amount <= 0.0) {
+        if (! Money::isPositive($this->amount)) {
             throw new InvalidArgumentException('Amount cannot be zero or less');
         }
     }
@@ -50,17 +57,17 @@ class VoucherDataItem
     /**
      * Get the debit amount
      */
-    public function getDebitAmount(): float
+    public function getDebitAmount(): string
     {
-        return $this->isDebit() ? $this->amount : 0;
+        return $this->isDebit() ? $this->amount : Money::ZERO;
     }
 
     /**
      * Get the credit amount
      */
-    public function getCreditAmount(): float
+    public function getCreditAmount(): string
     {
-        return $this->isCredit() ? $this->amount : 0;
+        return $this->isCredit() ? $this->amount : Money::ZERO;
     }
 
     /**
@@ -81,16 +88,16 @@ class VoucherDataItem
     /**
      * Create a debit entry
      */
-    public static function debit(int|string $accountId, float $amount, ?string $memo = null): self
+    public static function debit(int|string $accountId, string|int|float $amount, ?string $memo = null): self
     {
-        return new self(EntryType::DEBIT, $accountId, abs($amount), $memo);
+        return new self(EntryType::DEBIT, $accountId, Money::abs($amount), $memo);
     }
 
     /**
      * Create a credit entry
      */
-    public static function credit(int|string $accountId, float $amount, ?string $memo = null): self
+    public static function credit(int|string $accountId, string|int|float $amount, ?string $memo = null): self
     {
-        return new self(EntryType::CREDIT, $accountId, abs($amount), $memo);
+        return new self(EntryType::CREDIT, $accountId, Money::abs($amount), $memo);
     }
 }

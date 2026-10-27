@@ -1,5 +1,6 @@
 <?php
 
+use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 use RingleSoft\LaravelAccounting\Support\Money;
 
 it('normalizes every input to a 4-decimal string', function () {
@@ -48,9 +49,41 @@ it('compares at 4 decimal places', function () {
 });
 
 it('formats without going through a float', function () {
-    expect(Money::format('1234567.5'))->toBe('1,234,567.5000')
+    expect(Money::format('1234567.5', 4))->toBe('1,234,567.5000')
         ->and(Money::format('-1234567.125', 2))->toBe('-1,234,567.13')
-        ->and(Money::format('999999999999999999.9999'))->toBe('999,999,999,999,999,999.9999');
+        ->and(Money::format('999999999999999999.9999', 4))->toBe('999,999,999,999,999,999.9999')
+        ->and(Money::format('1234.5', 2, decimalSeparator: ',', thousandsSeparator: '.'))->toBe('1.234,50');
+});
+
+it('formats with the configured display decimals by default', function () {
+    expect(Money::format('1234.5678'))->toBe('1,234.57');
+
+    config()->set('laravel_accounting.display_decimals', 3);
+    expect(Money::format('1234.5678'))->toBe('1,234.568');
+
+    config()->set('laravel_accounting.display_decimals', 0);
+    expect(Money::format('1234.5678'))->toBe('1,235');
+});
+
+it('formats with the currency decimals when display decimals is null', function () {
+    config()->set('laravel_accounting.display_decimals', null);
+
+    expect(Money::format('1234.5678'))->toBe('1,234.57') // default_currency_code USD
+        ->and(Money::format('1234.5678', currency: 'JPY'))->toBe('1,235')
+        ->and(Money::format('1234.5678', currency: CurrencyCode::KWD))->toBe('1,234.568')
+        ->and(Money::format('1234.5678', 4, 'JPY'))->toBe('1,234.5678')
+        ->and(Money::format('1234.5678', currency: 'XYZ'))->toBe('1,234.57');
+
+    config()->set('laravel_accounting.default_currency_code', 'JPY');
+    expect(Money::format('1234.5678'))->toBe('1,235');
+});
+
+it('only rounds the display, never the stored value', function () {
+    $lines = ['0.3333', '0.3333', '0.3333'];
+
+    expect(array_map(fn ($line) => Money::format($line), $lines))->toBe(['0.33', '0.33', '0.33'])
+        ->and(Money::sum($lines))->toBe('0.9999')
+        ->and(Money::format(Money::sum($lines)))->toBe('1.00');
 });
 
 it('rejects invalid amounts', function (mixed $value) {

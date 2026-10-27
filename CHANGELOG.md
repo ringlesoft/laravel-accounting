@@ -13,6 +13,7 @@ All notable changes to `laravel-accounting` will be documented in this file.
 
 ### Added
 - `Support\Money`: fixed-scale decimal arithmetic, comparison and formatting for amounts.
+- `display_decimals` config (default 2): decimal places used by `Money::format()`, the close-period command and Charts of Accounts' `balance_formatted`. Set it to `null` to use each currency's own decimal places. Storage and calculations stay at 4 decimal places.
 
 ## 0.1.2
 

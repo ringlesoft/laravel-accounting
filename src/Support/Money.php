@@ -3,6 +3,7 @@
 namespace RingleSoft\LaravelAccounting\Support;
 
 use InvalidArgumentException;
+use RingleSoft\LaravelAccounting\Enums\CurrencyCode;
 
 /**
  * Fixed-scale decimal arithmetic for monetary amounts.
@@ -24,6 +25,11 @@ final class Money
     public const SCALE = 4;
 
     public const ZERO = '0.0000';
+
+    /**
+     * Display decimal places when nothing else is configured.
+     */
+    public const DEFAULT_DISPLAY_DECIMALS = 2;
 
     /**
      * Precision used for intermediate multiplication/division results,
@@ -136,11 +142,25 @@ final class Money
     }
 
     /**
-     * Format for display without going through a float: thousands separated,
-     * rounded to $decimals places (SCALE by default).
+     * Format for display without going through a float: thousands separated
+     * and rounded half away from zero. Display only - never feed the result
+     * back into calculations.
+     *
+     * Decimal places, in order of precedence:
+     * 1. $decimals, when given;
+     * 2. the `display_decimals` config value, when it is an int;
+     * 3. when `display_decimals` is null, the currency's own decimal places
+     *    ($currency, or `default_currency_code`), e.g. 0 for JPY, 3 for KWD.
      */
-    public static function format(string|int|float|null $value, int $decimals = self::SCALE, string $decimalSeparator = '.', string $thousandsSeparator = ','): string
-    {
+    public static function format(
+        string|int|float|null $value,
+        ?int $decimals = null,
+        CurrencyCode|string|null $currency = null,
+        string $decimalSeparator = '.',
+        string $thousandsSeparator = ',',
+    ): string {
+        $decimals = max(0, $decimals ?? self::displayDecimals($currency));
+
         $rounded = self::round(self::number($value), $decimals);
         $negative = str_starts_with($rounded, '-');
         [$integer, $fraction] = array_pad(explode('.', ltrim($rounded, '-')), 2, '');
@@ -148,6 +168,38 @@ final class Money
         $integer = strrev(implode($thousandsSeparator, str_split(strrev($integer), 3)));
 
         return ($negative ? '-' : '').$integer.($decimals > 0 ? $decimalSeparator.$fraction : '');
+    }
+
+    /**
+     * The decimal places to display when format() is not given any.
+     */
+    public static function displayDecimals(CurrencyCode|string|null $currency = null): int
+    {
+        $config = self::config();
+        $decimals = $config['display_decimals'] ?? null;
+
+        if (is_numeric($decimals)) {
+            return (int) $decimals;
+        }
+
+        $currency ??= $config['default_currency_code'] ?? null;
+        if (is_string($currency)) {
+            $currency = CurrencyCode::tryFrom(strtoupper($currency));
+        }
+
+        return $currency?->decimalDigits() ?? self::DEFAULT_DISPLAY_DECIMALS;
+    }
+
+    /**
+     * The package config, or [] outside a booted Laravel application.
+     */
+    private static function config(): array
+    {
+        try {
+            return (array) config('laravel_accounting', []);
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /**

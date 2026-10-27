@@ -276,7 +276,13 @@ report totals, DTO fields) is a numeric string with exactly 4 decimal places, e.
 Inputs (`debit()`, `credit()`, `getPostableAmount()`, template parameters) accept `string|int|float`; pass strings to
 keep full precision. A journal entry must balance exactly at 4 decimal places — there is no rounding tolerance. Use
 `RingleSoft\LaravelAccounting\Support\Money` for arithmetic on amounts (`Money::add()`, `sub()`, `mul()`, `div()`,
-`compare()`, `isZero()`, `format()`); it requires the `bcmath` extension. Note that SQLite has no exact decimal type,
+`compare()`, `isZero()`, `format()`); it requires the `bcmath` extension.
+
+Display is separate from storage: `Money::format()` rounds to the `display_decimals` config value (2 by default), or
+to each currency's own decimal places when it is `null` (0 for JPY, 3 for KWD), e.g.
+`Money::format($balance, currency: 'JPY')`. Pass decimals explicitly to override: `Money::format($balance, 4)`.
+Formatted values are for display only, so rounded lines may not visibly add up to a rounded total
+(0.33 + 0.33 + 0.33 shown against a total of 1.00 for 0.9999); never calculate with them. Note that SQLite has no exact decimal type,
 so very large amounts lose precision there; use MySQL, MariaDB or PostgreSQL in production.
 
 #### Accounting Templates

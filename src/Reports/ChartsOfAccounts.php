@@ -95,7 +95,7 @@ class ChartsOfAccounts extends Report
             );
 
             $account['balance'] = $balance;
-            $account['balance_formatted'] = Money::format(Money::abs($balance));
+            $account['balance_formatted'] = Money::format(Money::abs($balance), currency: $accountModel->currency_code);
             $account['balance_type'] = Money::isNegative($balance) ? 'abnormal' : 'normal';
         }
 
